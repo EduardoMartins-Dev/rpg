@@ -61,10 +61,13 @@ export default function AdminPage() {
         `/systems/${selected}/documents/upload-url`, { filename: storageFile.name });
       const put = await fetch(su.uploadUrl, {
         method: "PUT",
-        headers: { "Content-Type": storageFile.type || "application/octet-stream", "x-upsert": "true" },
+        headers: { "Content-Type": storageFile.type || "application/octet-stream" },
         body: storageFile,
       });
-      if (!put.ok) throw new Error(`falha no upload pro Storage (${put.status})`);
+      if (!put.ok) {
+        const detail = await put.text().catch(() => "");
+        throw new Error(`falha no upload pro Storage (${put.status}) ${detail}`);
+      }
       await api.post(`/systems/${selected}/documents/storage?clear=${clearFirst}`, { path: su.path });
       setStorageFile(null);
       setMsg("Livro enviado ao Storage. Indexando em background…");
