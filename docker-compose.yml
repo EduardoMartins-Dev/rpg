@@ -1,0 +1,22 @@
+# Local dev DB. Run with: podman compose up -d  (or docker compose up -d)
+# pgvector/pgvector:pg16 = same image the test suite uses (Testcontainers).
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    container_name: portalrpg-db
+    environment:
+      POSTGRES_DB: portalrpg
+      POSTGRES_USER: portalrpg
+      POSTGRES_PASSWORD: portalrpg
+    ports:
+      - "5432:5432"
+    volumes:
+      - portalrpg-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U portalrpg -d portalrpg"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  portalrpg-pgdata:

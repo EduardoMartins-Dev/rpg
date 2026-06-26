@@ -1,0 +1,163 @@
+package com.portalrpg.rules;
+
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * Static V5 reference data (Apêndice 13). Factual fixtures only — names, levels,
+ * mechanics. The INTEGRAL text of powers/lore comes from the indexed PDF at runtime
+ * (F5), never hardcoded here. Sources of truth: prompt §9.6 + §13.1/13.2/13.6.
+ */
+public final class V5Catalog {
+
+    private V5Catalog() {
+    }
+
+    // --- Clãs (núcleo + Companion) · §9.6 + §13.2 --------------------------
+
+    public enum Clan {
+        BRUJAH, GANGREL, MALKAVIAN, NOSFERATU, TOREADOR, TREMERE, VENTRUE,
+        CAITIFF, THIN_BLOOD, RAVNOS, SALUBRI, TZIMISCE
+    }
+
+    /** disciplines: as 3 disciplinas de clã (vazia/Alquimia em casos especiais). */
+    public record ClanInfo(Clan clan, List<String> disciplines, String bane, String compulsion) {
+    }
+
+    private static final Map<Clan, ClanInfo> CLANS = new LinkedHashMap<>();
+
+    private static void clan(Clan c, List<String> disc, String bane, String compulsion) {
+        CLANS.put(c, new ClanInfo(c, List.copyOf(disc), bane, compulsion));
+    }
+
+    static {
+        clan(Clan.BRUJAH, List.of("Celeridade", "Potência", "Presença"),
+                "penalidade vs frenesi de fúria", "Rebelião");
+        clan(Clan.GANGREL, List.of("Animalismo", "Fortitude", "Proteanismo"),
+                "traços animais em frenesi", "Impulsos Ferais");
+        clan(Clan.MALKAVIAN, List.of("Auspícios", "Dominação", "Ofuscação"),
+                "perturbação mental", "Delírio");
+        clan(Clan.NOSFERATU, List.of("Animalismo", "Ofuscação", "Potência"),
+                "Repulsivo; sem Aparência", "Criptofilia");
+        clan(Clan.TOREADOR, List.of("Auspícios", "Celeridade", "Presença"),
+                "perde dados sem beleza", "Obsessão");
+        clan(Clan.TREMERE, List.of("Auspícios", "Dominação", "Feitiçaria de Sangue"),
+                "Laço de Sangue alterado", "Perfeccionismo");
+        clan(Clan.VENTRUE, List.of("Dominação", "Fortitude", "Presença"),
+                "só bebe de presa específica", "Arrogância");
+        clan(Clan.CAITIFF, List.of(),
+                "nenhuma", "Defeito Suspeito");
+        clan(Clan.THIN_BLOOD, List.of("Alquimia"),
+                "sofre dano como mortal", "nenhuma");
+        // Companion (§13.2)
+        clan(Clan.RAVNOS, List.of("Animalismo", "Ofuscação", "Presença"),
+                "queima ao dormir 2x no mesmo local em 7 noites (dano agravado por Gravidade da Perdição)",
+                "Destino Tentador");
+        clan(Clan.SALUBRI, List.of("Auspícios", "Dominação", "Fortitude"),
+                "caçados: quem bebe seu vitae testa frenesi p/ parar; 3º olho chora sangue ao usar disciplina",
+                "Empatia Afetiva");
+        clan(Clan.TZIMISCE, List.of("Animalismo", "Dominação", "Proteanismo"),
+                "enraizado: dormir cercado da posse escolhida ou dano agravado à FdV",
+                "Cobiça");
+    }
+
+    public static ClanInfo clan(Clan clan) {
+        ClanInfo info = CLANS.get(clan);
+        if (info == null) {
+            throw new IllegalArgumentException("unknown clan: " + clan);
+        }
+        return info;
+    }
+
+    public static Clan clanOf(String name) {
+        try {
+            return Clan.valueOf(name.trim().toUpperCase().replace('-', '_').replace(' ', '_'));
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("unknown clan: " + name);
+        }
+    }
+
+    // --- Habilidades (27, 3 categorias) · §13.1 ----------------------------
+
+    public enum AbilityCategory { FISICAS, SOCIAIS, MENTAIS }
+
+    public record Ability(String name, AbilityCategory category) {
+    }
+
+    private static final List<Ability> ABILITIES = List.of(
+            // Físicas (9)
+            new Ability("Armas Brancas", AbilityCategory.FISICAS),
+            new Ability("Armas de Fogo", AbilityCategory.FISICAS),
+            new Ability("Atletismo", AbilityCategory.FISICAS),
+            new Ability("Briga", AbilityCategory.FISICAS),
+            new Ability("Condução", AbilityCategory.FISICAS),
+            new Ability("Furtividade", AbilityCategory.FISICAS),
+            new Ability("Ladroagem", AbilityCategory.FISICAS),
+            new Ability("Ofícios", AbilityCategory.FISICAS),
+            new Ability("Sobrevivência", AbilityCategory.FISICAS),
+            // Sociais (9)
+            new Ability("Empatia com Animais", AbilityCategory.SOCIAIS),
+            new Ability("Etiqueta", AbilityCategory.SOCIAIS),
+            new Ability("Sagacidade", AbilityCategory.SOCIAIS),
+            new Ability("Intimidação", AbilityCategory.SOCIAIS),
+            new Ability("Liderança", AbilityCategory.SOCIAIS),
+            new Ability("Performance", AbilityCategory.SOCIAIS),
+            new Ability("Persuasão", AbilityCategory.SOCIAIS),
+            new Ability("Manha", AbilityCategory.SOCIAIS),
+            new Ability("Subterfúgio", AbilityCategory.SOCIAIS),
+            // Mentais (9)
+            new Ability("Erudição", AbilityCategory.MENTAIS),
+            new Ability("Percepção", AbilityCategory.MENTAIS),
+            new Ability("Ciência", AbilityCategory.MENTAIS),
+            new Ability("Finanças", AbilityCategory.MENTAIS),
+            new Ability("Investigação", AbilityCategory.MENTAIS),
+            new Ability("Medicina", AbilityCategory.MENTAIS),
+            new Ability("Ocultismo", AbilityCategory.MENTAIS),
+            new Ability("Política", AbilityCategory.MENTAIS),
+            new Ability("Tecnologia", AbilityCategory.MENTAIS));
+
+    public static List<Ability> abilities() {
+        return ABILITIES;
+    }
+
+    public static List<Ability> abilities(AbilityCategory category) {
+        return ABILITIES.stream().filter(a -> a.category() == category).toList();
+    }
+
+    // --- Tabela de Potência de Sangue 0–6 (errata Companion §13.6) ---------
+
+    /**
+     * Linha da tabela de Potência de Sangue (já com a errata aplicada: Surto e
+     * Gravidade da Perdição com +1; intervalo 0–6).
+     */
+    public record BloodPotencyTier(
+            int potency,
+            int bloodSurge,        // Surto de Sangue (bônus de dados)
+            int rouseReroll,       // nível de disciplina até o qual rerrola Rouse (0 = nenhum)
+            int disciplineBonus,   // bônus de dados em disciplinas
+            int baneSeverity,      // Gravidade da Perdição
+            int mendingRouse) {    // dano superficial recuperado por Rouse
+    }
+
+    // potency, surge, rouseReroll, discBonus, baneSeverity, mending
+    private static final List<BloodPotencyTier> BLOOD_POTENCY = List.of(
+            new BloodPotencyTier(0, 1, 0, 0, 0, 1),
+            new BloodPotencyTier(1, 2, 1, 0, 2, 1),
+            new BloodPotencyTier(2, 2, 1, 1, 2, 2),
+            new BloodPotencyTier(3, 3, 2, 1, 3, 2),
+            new BloodPotencyTier(4, 3, 2, 2, 3, 3),
+            new BloodPotencyTier(5, 4, 3, 2, 4, 3),
+            new BloodPotencyTier(6, 4, 3, 3, 4, 3));
+
+    public static BloodPotencyTier bloodPotency(int potency) {
+        if (potency < 0 || potency > 6) {
+            throw new IllegalArgumentException("blood potency out of range 0–6: " + potency);
+        }
+        return BLOOD_POTENCY.get(potency);
+    }
+
+    // --- Tipos de personagem (§13.5) ---------------------------------------
+
+    public enum CharacterType { VAMPIRO, MORTAL, CARNICAL }
+}

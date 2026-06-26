@@ -1,0 +1,10 @@
+# Staging — managed Postgres (Neon/Vercel/Railway/Supabase). pgvector must be enabled.
+# Provide via env: DB_URL, DB_USER, DB_PASSWORD, JWT_SECRET, LLM_API_KEY
+spring:
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USER}
+    password: ${DB_PASSWORD}
+  jpa:
+    hibernate:
+      ddl-auto: validate

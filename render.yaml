@@ -1,0 +1,39 @@
+# Render Blueprint — só a API (Docker). O banco é o Supabase (Postgres + pgvector).
+# Suba via dashboard: New > Blueprint > aponte para este repo.
+# Secrets sync:false são definidos manualmente no painel (não vão pro git).
+services:
+  - type: web
+    name: portal-rpg-api
+    runtime: docker
+    plan: free                # free hiberna após inatividade (cold start lento)
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    healthCheckPath: /actuator/health
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
+      # --- banco: Supabase (use o SESSION POOLER, IPv4, porta 5432, sslmode=require) ---
+      # DB_URL = jdbc:postgresql://aws-0-<regiao>.pooler.supabase.com:5432/postgres?sslmode=require
+      - key: DB_URL
+        sync: false
+      # DB_USER = postgres.<project-ref>
+      - key: DB_USER
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      # --- segredos ---
+      # JWT_SECRET: HS384 exige >= 48 bytes. Gere com:  openssl rand -base64 48
+      - key: JWT_SECRET
+        sync: false
+      # --- IA real (Groq, compatível com OpenAI) ---
+      - key: AI_PROVIDER
+        value: groq
+      - key: GROQ_API_KEY
+        sync: false
+      - key: GROQ_MODEL
+        value: llama-3.3-70b-versatile
+      # --- bootstrap do admin inicial (ProdSeeder, idempotente) ---
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false

@@ -1,0 +1,91 @@
+package com.portalrpg.system;
+
+import java.util.List;
+import java.util.UUID;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
+
+import com.portalrpg.security.AppPrincipal;
+import com.portalrpg.system.dto.SystemDtos.DocumentResponse;
+import com.portalrpg.system.dto.SystemDtos.SheetSchemaRequest;
+import com.portalrpg.system.dto.SystemDtos.SheetSchemaResponse;
+import com.portalrpg.system.dto.SystemDtos.SystemRequest;
+import com.portalrpg.system.dto.SystemDtos.SystemResponse;
+
+import jakarta.validation.Valid;
+
+@RestController
+@RequestMapping("/api/systems")
+public class SystemController {
+
+    private final SystemService service;
+
+    public SystemController(SystemService service) {
+        this.service = service;
+    }
+
+    // --- read: any authenticated user --------------------------------------
+
+    @GetMapping
+    public List<SystemResponse> list() {
+        return service.list();
+    }
+
+    @GetMapping("/{id}")
+    public SystemResponse get(@PathVariable UUID id) {
+        return service.get(id);
+    }
+
+    @GetMapping("/{id}/sheet-schema")
+    public SheetSchemaResponse getSchema(@PathVariable UUID id) {
+        return service.getSchema(id);
+    }
+
+    @GetMapping("/{id}/documents")
+    @PreAuthorize("hasRole('ADMIN')")
+    public List<DocumentResponse> listDocuments(@PathVariable UUID id) {
+        return service.listDocuments(id);
+    }
+
+    // --- write: admin only -------------------------------------------------
+
+    @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
+    @ResponseStatus(HttpStatus.CREATED)
+    public SystemResponse create(@Valid @RequestBody SystemRequest req,
+            @AuthenticationPrincipal AppPrincipal principal) {
+        return service.create(req, principal.userId());
+    }
+
+    @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public SystemResponse update(@PathVariable UUID id, @Valid @RequestBody SystemRequest req) {
+        return service.update(id, req);
+    }
+
+    @PutMapping("/{id}/sheet-schema")
+    @PreAuthorize("hasRole('ADMIN')")
+    public SheetSchemaResponse putSchema(@PathVariable UUID id, @Valid @RequestBody SheetSchemaRequest req) {
+        return service.putSchema(id, req);
+    }
+
+    @PostMapping("/{id}/documents")
+    @PreAuthorize("hasRole('ADMIN')")
+    @ResponseStatus(HttpStatus.CREATED)
+    public DocumentResponse uploadDocument(@PathVariable UUID id,
+            @RequestParam("file") MultipartFile file) {
+        return service.uploadDocument(id, file);
+    }
+}
