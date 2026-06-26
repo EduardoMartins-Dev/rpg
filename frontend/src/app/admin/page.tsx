@@ -26,6 +26,9 @@ export default function AdminPage() {
   const [schemaText, setSchemaText] = useState(DEFAULT_SCHEMA);
   const [docs, setDocs] = useState<SystemDocument[]>([]);
   const [file, setFile] = useState<File | null>(null);
+  const [docText, setDocText] = useState("");
+  const [docTitle, setDocTitle] = useState("");
+  const [clearFirst, setClearFirst] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<AdminTab>("systems");
@@ -107,11 +110,37 @@ export default function AdminPage() {
     if (!selected || !file) return;
     setError(null); setMsg(null);
     try {
-      await uploadFile(`/systems/${selected}/documents`, file);
+      await uploadFile(`/systems/${selected}/documents?clear=${clearFirst}`, file);
       setDocs(await api.get<SystemDocument[]>(`/systems/${selected}/documents`));
       setMsg("Documento enviado e indexado.");
     } catch (err) {
       setError(err instanceof Error ? err.message : "erro no upload");
+    }
+  }
+
+  async function uploadText() {
+    if (!selected || !docText.trim()) return;
+    setError(null); setMsg(null);
+    try {
+      await api.post(`/systems/${selected}/documents/text?clear=${clearFirst}`, { title: docTitle, text: docText });
+      setDocText(""); setDocTitle("");
+      setDocs(await api.get<SystemDocument[]>(`/systems/${selected}/documents`));
+      setMsg("Texto indexado no RAG.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "erro ao indexar texto");
+    }
+  }
+
+  async function clearIndex() {
+    if (!selected) return;
+    if (!confirm("Limpar TODO o índice RAG deste sistema (chunks + documentos)? Ação permanente.")) return;
+    setError(null); setMsg(null);
+    try {
+      const r = await api.del<{ removedChunks: number }>(`/systems/${selected}/index`);
+      setDocs(await api.get<SystemDocument[]>(`/systems/${selected}/documents`));
+      setMsg(`Índice limpo: ${r.removedChunks} chunk(s) removidos.`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "erro ao limpar índice");
     }
   }
 
@@ -227,7 +256,16 @@ export default function AdminPage() {
             <button data-testid="schema-save" onClick={saveSchema}>Salvar schema</button>
           </div>
 
-          <h2 style={{ marginTop: "1.5rem" }}>Documentos (RAG)</h2>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "1.5rem", flexWrap: "wrap", gap: 10 }}>
+            <h2 style={{ margin: 0 }}>Material do RAG</h2>
+            <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "var(--muted)", margin: 0 }}>
+              <input type="checkbox" data-testid="rag-clear-first" checked={clearFirst}
+                onChange={(e) => setClearFirst(e.target.checked)} style={{ width: "auto" }} />
+              Limpar índice antes (reindexar do zero)
+            </label>
+          </div>
+
+          <h3 style={{ marginTop: 14, fontSize: 15 }}>Subir arquivo (.pdf/.txt/.md)</h3>
           <div className="row">
             <input type="file" data-testid="doc-file"
               onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
@@ -235,7 +273,23 @@ export default function AdminPage() {
               Enviar + indexar
             </button>
           </div>
-          <table style={{ marginTop: ".6rem" }}>
+
+          <h3 style={{ marginTop: 18, fontSize: 15 }}>Colar regras (texto)</h3>
+          <p className="muted" style={{ fontSize: 13, margin: "0 0 8px" }}>
+            Alimente o RAG sem subir arquivo — cole o texto das regras direto.
+          </p>
+          <input data-testid="rag-text-title" value={docTitle} placeholder="Título (opcional)"
+            onChange={(e) => setDocTitle(e.target.value)} style={{ marginBottom: 8 }} />
+          <textarea data-testid="rag-text" value={docText} placeholder="Cole aqui as regras…"
+            onChange={(e) => setDocText(e.target.value)} style={{ minHeight: "9rem" }} />
+          <div style={{ display: "flex", gap: 10, marginTop: 8, flexWrap: "wrap" }}>
+            <button data-testid="rag-text-index" onClick={uploadText} disabled={!docText.trim()}>Indexar texto</button>
+            <button className="danger" data-testid="rag-clear" onClick={clearIndex} style={{ marginLeft: "auto" }}>
+              Limpar índice do sistema
+            </button>
+          </div>
+
+          <table style={{ marginTop: "1rem" }}>
             <thead><tr><th>Documento</th><th>Status</th></tr></thead>
             <tbody data-testid="doc-list">
               {docs.map((d) => (

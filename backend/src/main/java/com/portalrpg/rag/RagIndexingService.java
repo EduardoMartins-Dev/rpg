@@ -43,7 +43,15 @@ public class RagIndexingService {
 
     @Transactional
     public void index(SystemDocument doc) {
-        String text = extractor.extract(doc.getFileUrl());
+        indexText(doc, extractor.extract(doc.getFileUrl()));
+    }
+
+    /** Indexa texto já extraído (ex.: "colar regras", ingestão por texto puro). */
+    @Transactional
+    public void indexText(SystemDocument doc, String text) {
+        if (text == null || text.isBlank()) {
+            throw ApiException.badRequest("no text to index");
+        }
         store.deleteByDocument(doc.getId());
         for (String chunk : chunk(text)) {
             store.insert(doc.getId(), doc.getSystemId(), chunk, embeddings.embed(chunk));

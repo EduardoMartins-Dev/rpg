@@ -47,4 +47,10 @@ public final class SystemDtos {
             String status,
             Instant createdAt) {
     }
+
+    /** Ingestão por texto puro ("colar regras") — alimenta o RAG sem subir arquivo. */
+    public record TextDocumentRequest(
+            @Size(max = 255) String title,
+            @NotBlank String text) {
+    }
 }

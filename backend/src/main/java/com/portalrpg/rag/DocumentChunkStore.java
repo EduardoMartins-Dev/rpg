@@ -28,6 +28,11 @@ public class DocumentChunkStore {
         jdbc.update("DELETE FROM document_chunks WHERE document_id = ?", documentId);
     }
 
+    /** Apaga todos os chunks de um sistema (usado no "limpar índice"/reindexar). */
+    public int deleteBySystem(UUID systemId) {
+        return jdbc.update("DELETE FROM document_chunks WHERE system_id = ?", systemId);
+    }
+
     public void insert(UUID documentId, UUID systemId, String content, float[] embedding) {
         jdbc.update(
                 "INSERT INTO document_chunks (document_id, system_id, content, embedding) "

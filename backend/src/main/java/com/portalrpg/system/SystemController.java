@@ -6,6 +6,7 @@ import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -23,6 +24,7 @@ import com.portalrpg.system.dto.SystemDtos.SheetSchemaRequest;
 import com.portalrpg.system.dto.SystemDtos.SheetSchemaResponse;
 import com.portalrpg.system.dto.SystemDtos.SystemRequest;
 import com.portalrpg.system.dto.SystemDtos.SystemResponse;
+import com.portalrpg.system.dto.SystemDtos.TextDocumentRequest;
 
 import jakarta.validation.Valid;
 
@@ -85,7 +87,24 @@ public class SystemController {
     @PreAuthorize("hasRole('ADMIN')")
     @ResponseStatus(HttpStatus.CREATED)
     public DocumentResponse uploadDocument(@PathVariable UUID id,
-            @RequestParam("file") MultipartFile file) {
-        return service.uploadDocument(id, file);
+            @RequestParam("file") MultipartFile file,
+            @RequestParam(value = "clear", defaultValue = "false") boolean clear) {
+        return service.uploadDocument(id, file, clear);
+    }
+
+    /** Ingestão por texto puro ("colar regras") — alimenta o RAG sem subir arquivo. */
+    @PostMapping("/{id}/documents/text")
+    @PreAuthorize("hasRole('ADMIN')")
+    @ResponseStatus(HttpStatus.CREATED)
+    public DocumentResponse uploadText(@PathVariable UUID id, @Valid @RequestBody TextDocumentRequest req,
+            @RequestParam(value = "clear", defaultValue = "false") boolean clear) {
+        return service.uploadText(id, req.title(), req.text(), clear);
+    }
+
+    /** Limpa o índice RAG do sistema (chunks + documentos) — reindexar do zero. */
+    @DeleteMapping("/{id}/index")
+    @PreAuthorize("hasRole('ADMIN')")
+    public java.util.Map<String, Integer> clearIndex(@PathVariable UUID id) {
+        return java.util.Map.of("removedChunks", service.clearIndex(id));
     }
 }

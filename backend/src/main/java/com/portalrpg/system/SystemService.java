@@ -12,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.portalrpg.common.ApiException;
+import com.portalrpg.rag.DocumentChunkStore;
 import com.portalrpg.rag.RagIndexingService;
 import com.portalrpg.system.dto.SystemDtos.DocumentResponse;
 import com.portalrpg.system.dto.SystemDtos.SheetSchemaRequest;
@@ -26,17 +27,20 @@ public class SystemService {
     private final SystemSheetSchemaRepository schemas;
     private final SystemDocumentRepository documents;
     private final RagIndexingService indexing;
+    private final DocumentChunkStore chunks;
     private final Path uploadDir;
 
     public SystemService(RpgSystemRepository systems,
             SystemSheetSchemaRepository schemas,
             SystemDocumentRepository documents,
             RagIndexingService indexing,
+            DocumentChunkStore chunks,
             @Value("${app.upload.dir:${java.io.tmpdir}/portalrpg-uploads}") String uploadDir) {
         this.systems = systems;
         this.schemas = schemas;
         this.documents = documents;
         this.indexing = indexing;
+        this.chunks = chunks;
         this.uploadDir = Path.of(uploadDir);
     }
 
@@ -98,10 +102,13 @@ public class SystemService {
      * (extrai→chunk→embedding→pgvector) e marca INDEXED. Síncrono p/ determinismo.
      */
     @Transactional
-    public DocumentResponse uploadDocument(UUID systemId, MultipartFile file) {
+    public DocumentResponse uploadDocument(UUID systemId, MultipartFile file, boolean clear) {
         require(systemId);
         if (file == null || file.isEmpty()) {
             throw ApiException.badRequest("file is required");
+        }
+        if (clear) {
+            clearIndex(systemId);
         }
         SystemDocument doc = new SystemDocument(systemId, "pending://" + file.getOriginalFilename());
         documents.save(doc); // get an id
@@ -119,6 +126,32 @@ public class SystemService {
         documents.saveAndFlush(doc);
         indexing.index(doc); // PENDING → INDEXED, popula document_chunks com system_id
         return toDocResponse(doc);
+    }
+
+    /** Ingestão por texto puro ("colar regras"): indexa sem subir arquivo. */
+    @Transactional
+    public DocumentResponse uploadText(UUID systemId, String title, String text, boolean clear) {
+        require(systemId);
+        if (text == null || text.isBlank()) {
+            throw ApiException.badRequest("text is required");
+        }
+        if (clear) {
+            clearIndex(systemId);
+        }
+        String label = (title == null || title.isBlank()) ? "texto-colado" : title.strip();
+        SystemDocument doc = new SystemDocument(systemId, "text://" + sanitize(label));
+        documents.saveAndFlush(doc); // FK dos chunks
+        indexing.indexText(doc, text);
+        return toDocResponse(doc);
+    }
+
+    /** Limpa o índice RAG do sistema: apaga chunks e documentos (reindexar do zero). */
+    @Transactional
+    public int clearIndex(UUID systemId) {
+        require(systemId);
+        int removed = chunks.deleteBySystem(systemId); // chunks 1º (FK p/ system_documents)
+        documents.deleteBySystemId(systemId);
+        return removed;
     }
 
     @Transactional(readOnly = true)
