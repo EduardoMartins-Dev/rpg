@@ -95,6 +95,13 @@
 			<scope>runtime</scope>
 		</dependency>
 
+		<!-- PDF text extraction for RAG indexing -->
+		<dependency>
+			<groupId>org.apache.pdfbox</groupId>
+			<artifactId>pdfbox</artifactId>
+			<version>3.0.3</version>
+		</dependency>
+
 		<!-- Test -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>

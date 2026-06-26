@@ -7,15 +7,17 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Locale;
 
+import org.apache.pdfbox.Loader;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.text.PDFTextStripper;
 import org.springframework.stereotype.Component;
 
 import com.portalrpg.common.ApiException;
 
 /**
- * Extrai texto do documento enviado. Texto puro (.txt/.md) é lido como UTF-8.
- * PDF é o formato de produção: a extração via Apache PDFBox entra aqui (ponto de
- * extensão) — mantida fora do build de teste para CI hermético; as fixtures de RAG
- * usam texto. O pipeline (chunk→embedding→pgvector→retrieval) é idêntico.
+ * Extrai texto do documento enviado. Texto puro (.txt/.md) é lido como UTF-8;
+ * PDF é extraído via Apache PDFBox. O pipeline seguinte
+ * (chunk→embedding→pgvector→retrieval) é idêntico para ambos.
  */
 @Component
 public class DocumentTextExtractor {
@@ -30,14 +32,23 @@ public class DocumentTextExtractor {
             throw new ApiException(org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR,
                     "failed to read document for indexing: " + e.getMessage());
         }
-        if (name.endsWith(".txt") || name.endsWith(".md") || name.endsWith(".text")) {
-            return new String(bytes, StandardCharsets.UTF_8);
-        }
         if (name.endsWith(".pdf")) {
-            throw ApiException.badRequest(
-                    "PDF extraction not enabled in this build; index a .txt fixture (PDFBox is the prod extractor)");
+            return extractPdf(bytes);
         }
-        // fallback: trata como UTF-8
+        // .txt/.md/.text e fallback: UTF-8
         return new String(bytes, StandardCharsets.UTF_8);
+    }
+
+    private String extractPdf(byte[] bytes) {
+        try (PDDocument doc = Loader.loadPDF(bytes)) {
+            String text = new PDFTextStripper().getText(doc);
+            if (text == null || text.isBlank()) {
+                throw ApiException.badRequest(
+                        "could not extract text from PDF (it may be scanned/image-only)");
+            }
+            return text;
+        } catch (IOException e) {
+            throw ApiException.badRequest("invalid or unreadable PDF: " + e.getMessage());
+        }
     }
 }
