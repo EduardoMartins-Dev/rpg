@@ -12,8 +12,10 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.portalrpg.common.ApiException;
+import com.portalrpg.rag.AsyncIndexer;
 import com.portalrpg.rag.DocumentChunkStore;
 import com.portalrpg.rag.RagIndexingService;
+import com.portalrpg.storage.StorageService;
 import com.portalrpg.system.dto.SystemDtos.DocumentResponse;
 import com.portalrpg.system.dto.SystemDtos.SheetSchemaRequest;
 import com.portalrpg.system.dto.SystemDtos.SheetSchemaResponse;
@@ -28,6 +30,8 @@ public class SystemService {
     private final SystemDocumentRepository documents;
     private final RagIndexingService indexing;
     private final DocumentChunkStore chunks;
+    private final StorageService storage;
+    private final AsyncIndexer asyncIndexer;
     private final Path uploadDir;
 
     public SystemService(RpgSystemRepository systems,
@@ -35,12 +39,16 @@ public class SystemService {
             SystemDocumentRepository documents,
             RagIndexingService indexing,
             DocumentChunkStore chunks,
+            StorageService storage,
+            AsyncIndexer asyncIndexer,
             @Value("${app.upload.dir:${java.io.tmpdir}/portalrpg-uploads}") String uploadDir) {
         this.systems = systems;
         this.schemas = schemas;
         this.documents = documents;
         this.indexing = indexing;
         this.chunks = chunks;
+        this.storage = storage;
+        this.asyncIndexer = asyncIndexer;
         this.uploadDir = Path.of(uploadDir);
     }
 
@@ -142,6 +150,40 @@ public class SystemService {
         SystemDocument doc = new SystemDocument(systemId, "text://" + sanitize(label));
         documents.saveAndFlush(doc); // FK dos chunks
         indexing.indexText(doc, text);
+        return toDocResponse(doc);
+    }
+
+    public boolean storageEnabled() {
+        return storage.enabled();
+    }
+
+    /**
+     * Gera uma signed upload URL pro navegador subir o livro DIRETO no Supabase
+     * Storage (não passa por Vercel/Render). Retorna a URL e o path do objeto.
+     */
+    @Transactional(readOnly = true)
+    public StorageService.SignedUpload createUploadUrl(UUID systemId, String filename) {
+        require(systemId);
+        String path = systemId + "/" + UUID.randomUUID() + "-" + sanitize(filename);
+        return storage.createSignedUpload(path);
+    }
+
+    /**
+     * Registra um livro já enviado ao Storage e dispara a indexação ASSÍNCRONA
+     * (download+extração+embeddings em background → PENDING → INDEXED/FAILED).
+     */
+    @Transactional
+    public DocumentResponse registerStorageDocument(UUID systemId, String path, boolean clear) {
+        require(systemId);
+        if (path == null || path.isBlank()) {
+            throw ApiException.badRequest("path is required");
+        }
+        if (clear) {
+            clearIndex(systemId);
+        }
+        SystemDocument doc = new SystemDocument(systemId, "supabase://" + storage.bucket() + "/" + path);
+        documents.saveAndFlush(doc);
+        asyncIndexer.indexStorageAsync(doc.getId(), path); // background
         return toDocResponse(doc);
     }
 

@@ -37,3 +37,13 @@ services:
         sync: false
       - key: ADMIN_PASSWORD
         sync: false
+      # --- Supabase Storage (upload direto do livro + indexação assíncrona) ---
+      # Crie um bucket PRIVADO (ex.: rag-books) e use a service_role key.
+      - key: STORAGE_PROVIDER
+        value: supabase
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_KEY
+        sync: false
+      - key: SUPABASE_BUCKET
+        value: rag-books

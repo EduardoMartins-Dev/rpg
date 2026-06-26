@@ -32,6 +32,12 @@ public class DocumentTextExtractor {
             throw new ApiException(org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR,
                     "failed to read document for indexing: " + e.getMessage());
         }
+        return extractBytes(bytes, name);
+    }
+
+    /** Extrai texto de bytes já em memória (ex.: objeto baixado do Storage). */
+    public String extractBytes(byte[] bytes, String filename) {
+        String name = filename == null ? "" : filename.toLowerCase(Locale.ROOT);
         if (name.endsWith(".pdf")) {
             return extractPdf(bytes);
         }

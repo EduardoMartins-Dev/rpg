@@ -53,4 +53,15 @@ public final class SystemDtos {
             @Size(max = 255) String title,
             @NotBlank String text) {
     }
+
+    /** Pedido de signed upload URL (upload direto pro Supabase Storage). */
+    public record UploadUrlRequest(@NotBlank @Size(max = 255) String filename) {
+    }
+
+    public record UploadUrlResponse(String uploadUrl, String path, String bucket) {
+    }
+
+    /** Registra um objeto já enviado ao Storage p/ indexação assíncrona. */
+    public record StorageDocumentRequest(@NotBlank String path) {
+    }
 }

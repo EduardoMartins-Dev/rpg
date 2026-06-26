@@ -19,7 +19,7 @@ import jakarta.persistence.Table;
 public class SystemDocument {
 
     public enum Status {
-        PENDING, INDEXED
+        PENDING, INDEXED, FAILED
     }
 
     @Id

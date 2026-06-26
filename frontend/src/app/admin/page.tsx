@@ -29,6 +29,9 @@ export default function AdminPage() {
   const [docText, setDocText] = useState("");
   const [docTitle, setDocTitle] = useState("");
   const [clearFirst, setClearFirst] = useState(false);
+  const [storageOn, setStorageOn] = useState(false);
+  const [storageFile, setStorageFile] = useState<File | null>(null);
+  const [upBusy, setUpBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<AdminTab>("systems");
@@ -44,6 +47,40 @@ export default function AdminPage() {
 
   useEffect(() => { if (user) loadSystems(); }, [user, loadSystems]);
   useEffect(() => { if (user && tab === "users") loadUsers(); }, [user, tab, loadUsers]);
+  useEffect(() => {
+    if (!user) return;
+    api.get<{ enabled: boolean }>("/systems/storage/enabled")
+      .then((r) => setStorageOn(r.enabled)).catch(() => setStorageOn(false));
+  }, [user]);
+
+  async function uploadViaStorage() {
+    if (!selected || !storageFile) return;
+    setUpBusy(true); setError(null); setMsg(null);
+    try {
+      const su = await api.post<{ uploadUrl: string; path: string; bucket: string }>(
+        `/systems/${selected}/documents/upload-url`, { filename: storageFile.name });
+      const put = await fetch(su.uploadUrl, {
+        method: "PUT",
+        headers: { "Content-Type": storageFile.type || "application/octet-stream", "x-upsert": "true" },
+        body: storageFile,
+      });
+      if (!put.ok) throw new Error(`falha no upload pro Storage (${put.status})`);
+      await api.post(`/systems/${selected}/documents/storage?clear=${clearFirst}`, { path: su.path });
+      setStorageFile(null);
+      setMsg("Livro enviado ao Storage. Indexando em background…");
+      // poll do status (PENDING → INDEXED/FAILED)
+      for (let i = 0; i < 12; i++) {
+        await new Promise((r) => setTimeout(r, 3000));
+        const d = await api.get<SystemDocument[]>(`/systems/${selected}/documents`);
+        setDocs(d);
+        if (!d.some((x) => x.status === "PENDING")) break;
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "erro no upload via Storage");
+    } finally {
+      setUpBusy(false);
+    }
+  }
 
   async function toggleAdmin(u: AdminUser) {
     setError(null); setMsg(null);
@@ -273,6 +310,30 @@ export default function AdminPage() {
               Enviar + indexar
             </button>
           </div>
+
+          <h3 style={{ marginTop: 18, fontSize: 15 }}>
+            Livro grande via Supabase Storage
+            <span className="badge" style={{ marginLeft: 8 }}>{storageOn ? "disponível" : "desativado"}</span>
+          </h3>
+          {storageOn ? (
+            <>
+              <p className="muted" style={{ fontSize: 13, margin: "0 0 8px" }}>
+                Sobe direto do navegador pro Supabase (não passa pela API) e indexa em background.
+              </p>
+              <div className="row">
+                <input type="file" accept=".pdf,.txt,.md" data-testid="storage-file"
+                  onChange={(e) => setStorageFile(e.target.files?.[0] ?? null)} />
+                <button data-testid="storage-upload" onClick={uploadViaStorage}
+                  disabled={!storageFile || upBusy} style={{ flex: "0 0 auto" }}>
+                  {upBusy && <span className="spinner" />}{upBusy ? "Enviando/indexando…" : "Enviar ao Storage + indexar"}
+                </button>
+              </div>
+            </>
+          ) : (
+            <p className="muted" style={{ fontSize: 13, margin: 0 }}>
+              Configure <code>STORAGE_PROVIDER=supabase</code> + <code>SUPABASE_URL</code>/<code>SUPABASE_SERVICE_KEY</code> no backend (e crie o bucket privado).
+            </p>
+          )}
 
           <h3 style={{ marginTop: 18, fontSize: 15 }}>Colar regras (texto)</h3>
           <p className="muted" style={{ fontSize: 13, margin: "0 0 8px" }}>

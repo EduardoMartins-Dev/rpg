@@ -22,9 +22,12 @@ import com.portalrpg.security.AppPrincipal;
 import com.portalrpg.system.dto.SystemDtos.DocumentResponse;
 import com.portalrpg.system.dto.SystemDtos.SheetSchemaRequest;
 import com.portalrpg.system.dto.SystemDtos.SheetSchemaResponse;
+import com.portalrpg.system.dto.SystemDtos.StorageDocumentRequest;
 import com.portalrpg.system.dto.SystemDtos.SystemRequest;
 import com.portalrpg.system.dto.SystemDtos.SystemResponse;
 import com.portalrpg.system.dto.SystemDtos.TextDocumentRequest;
+import com.portalrpg.system.dto.SystemDtos.UploadUrlRequest;
+import com.portalrpg.system.dto.SystemDtos.UploadUrlResponse;
 
 import jakarta.validation.Valid;
 
@@ -106,5 +109,30 @@ public class SystemController {
     @PreAuthorize("hasRole('ADMIN')")
     public java.util.Map<String, Integer> clearIndex(@PathVariable UUID id) {
         return java.util.Map.of("removedChunks", service.clearIndex(id));
+    }
+
+    // --- Supabase Storage: upload direto do navegador + indexação assíncrona ---
+
+    @GetMapping("/storage/enabled")
+    @PreAuthorize("hasRole('ADMIN')")
+    public java.util.Map<String, Boolean> storageEnabled() {
+        return java.util.Map.of("enabled", service.storageEnabled());
+    }
+
+    /** Gera signed upload URL — o navegador faz PUT direto no Supabase. */
+    @PostMapping("/{id}/documents/upload-url")
+    @PreAuthorize("hasRole('ADMIN')")
+    public UploadUrlResponse uploadUrl(@PathVariable UUID id, @Valid @RequestBody UploadUrlRequest req) {
+        var s = service.createUploadUrl(id, req.filename());
+        return new UploadUrlResponse(s.uploadUrl(), s.path(), s.bucket());
+    }
+
+    /** Registra o objeto enviado ao Storage e indexa em background (retorna PENDING). */
+    @PostMapping("/{id}/documents/storage")
+    @PreAuthorize("hasRole('ADMIN')")
+    @ResponseStatus(HttpStatus.ACCEPTED)
+    public DocumentResponse registerStorage(@PathVariable UUID id, @Valid @RequestBody StorageDocumentRequest req,
+            @RequestParam(value = "clear", defaultValue = "false") boolean clear) {
+        return service.registerStorageDocument(id, req.path(), clear);
     }
 }

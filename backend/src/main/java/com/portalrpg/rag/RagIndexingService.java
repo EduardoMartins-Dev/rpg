@@ -25,13 +25,25 @@ public class RagIndexingService {
     private final DocumentTextExtractor extractor;
     private final DocumentChunkStore store;
     private final EmbeddingModel embeddings;
+    private final com.portalrpg.storage.StorageService storage;
 
     public RagIndexingService(SystemDocumentRepository documents, DocumentTextExtractor extractor,
-            DocumentChunkStore store, EmbeddingModel embeddings) {
+            DocumentChunkStore store, EmbeddingModel embeddings,
+            com.portalrpg.storage.StorageService storage) {
         this.documents = documents;
         this.extractor = extractor;
         this.store = store;
         this.embeddings = embeddings;
+        this.storage = storage;
+    }
+
+    /** Baixa o objeto do Storage e indexa (usado pela indexação assíncrona). */
+    @Transactional
+    public void indexStorage(UUID documentId, String path) {
+        SystemDocument doc = documents.findById(documentId)
+                .orElseThrow(() -> ApiException.notFound("document not found"));
+        byte[] bytes = storage.download(path);
+        indexText(doc, extractor.extractBytes(bytes, path));
     }
 
     @Transactional
