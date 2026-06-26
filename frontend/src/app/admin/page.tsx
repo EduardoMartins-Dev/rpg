@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useRequireUser } from "@/lib/guard";
+import { AppShell } from "@/components/AppShell";
 import { api, uploadFile, type RpgSystem, type SheetSchema, type SystemDocument } from "@/lib/api";
 
 const DEFAULT_SCHEMA = JSON.stringify(
@@ -82,14 +83,28 @@ export default function AdminPage() {
     }
   }
 
-  if (!user) return <p className="muted">Carregando…</p>;
+  if (!user) return <p className="muted" style={{ padding: 38 }}>Carregando…</p>;
 
   return (
-    <div data-testid="admin-page">
-      <h1>Administração de sistemas</h1>
+    <AppShell user={user} active="admin">
+      <div className="page page-wide" data-testid="admin-page">
+      <div className="page-head">
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <h1>Painel de Admin</h1>
+          <span className="badge" style={{ color: "var(--info)", background: "rgba(91,141,239,.14)", border: "none" }}>Área restrita</span>
+        </div>
+      </div>
+      <p className="sub" style={{ marginTop: -18, marginBottom: 22, color: "var(--muted)" }}>Gerencie os sistemas de RPG, livros e schemas de ficha.</p>
+
+      <div className="metrics">
+        <div className="metric"><div className="v">{systems.length}</div><div className="l">Sistemas</div></div>
+        <div className="metric"><div className="v">{selected ? docs.length : "—"}</div><div className="l">Livros (sistema atual)</div></div>
+        <div className="metric"><div className="v">{selected ? docs.filter((d) => d.status === "INDEXED").length : "—"}</div><div className="l">Indexados</div></div>
+        <div className="metric"><div className="v mono">RAG</div><div className="l">Mestre de Regras</div></div>
+      </div>
 
       <div className="panel">
-        <h2>Novo sistema</h2>
+        <h2 style={{ fontSize: 18 }}>Novo sistema</h2>
         <form onSubmit={createSystem} className="row">
           <div>
             <label htmlFor="sys-name">Nome</label>
@@ -101,26 +116,30 @@ export default function AdminPage() {
             <input id="sys-slug" data-testid="system-slug" value={slug}
               onChange={(e) => setSlug(e.target.value)} placeholder="vampiro-v5" />
           </div>
-          <button type="submit" data-testid="system-create" style={{ flex: "0 0 auto" }}>Criar</button>
+          <button type="submit" data-testid="system-create" style={{ flex: "0 0 auto" }}>+ Criar</button>
         </form>
       </div>
 
-      <div className="panel">
-        <h2>Sistemas</h2>
+      <div className="panel" style={{ padding: 0 }}>
         <table>
-          <thead><tr><th>Nome</th><th>Slug</th><th></th></tr></thead>
+          <thead><tr><th style={{ paddingLeft: 20 }}>Sistema</th><th>Slug</th><th style={{ textAlign: "right", paddingRight: 20 }}></th></tr></thead>
           <tbody>
             {systems.map((s) => (
               <tr key={s.id} data-testid={`system-row-${s.slug}`}>
-                <td>{s.name}</td>
-                <td className="muted">{s.slug}</td>
-                <td style={{ textAlign: "right" }}>
+                <td style={{ paddingLeft: 20 }}>
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 12 }}>
+                    <span style={{ width: 34, height: 34, borderRadius: 9, background: "var(--elev)", display: "inline-flex", alignItems: "center", justifyContent: "center", color: "var(--accent)" }}>⬡</span>
+                    <strong>{s.name}</strong>
+                  </span>
+                </td>
+                <td className="mono muted">{s.slug}</td>
+                <td style={{ textAlign: "right", paddingRight: 20 }}>
                   <button className="secondary" data-testid={`system-manage-${s.slug}`}
-                    onClick={() => selectSystem(s.id)}>Gerenciar</button>
+                    onClick={() => selectSystem(s.id)} style={{ padding: "6px 12px", fontSize: 13 }}>Gerenciar</button>
                 </td>
               </tr>
             ))}
-            {systems.length === 0 && <tr><td colSpan={3} className="muted">Nenhum sistema ainda.</td></tr>}
+            {systems.length === 0 && <tr><td colSpan={3} className="muted" style={{ padding: 20 }}>Nenhum sistema ainda.</td></tr>}
           </tbody>
         </table>
       </div>
@@ -158,8 +177,9 @@ export default function AdminPage() {
         </div>
       )}
 
-      {msg && <p data-testid="admin-msg" style={{ color: "#8ae6a0" }}>{msg}</p>}
-      {error && <p className="error" data-testid="admin-error">{error}</p>}
-    </div>
+      {msg && <p className="ok-msg" data-testid="admin-msg">✓ {msg}</p>}
+      {error && <p className="error" data-testid="admin-error">⚠ {error}</p>}
+      </div>
+    </AppShell>
   );
 }

@@ -65,7 +65,7 @@ export async function uploadFile<T>(path: string, file: File): Promise<T> {
 
 // --- response shapes (mirror backend DTOs) ----------------------------------
 
-export interface User { id: string; email: string; displayName: string; isAdmin: boolean; }
+export interface User { id: string; email: string; displayName: string; isAdmin: boolean; avatarUrl?: string | null; }
 export interface TokenResponse { accessToken: string; refreshToken: string; tokenType: string; expiresIn: number; }
 export interface RpgSystem { id: string; name: string; slug: string; description: string | null; }
 export interface SheetSchema { systemId: string; schema: SchemaShape; }

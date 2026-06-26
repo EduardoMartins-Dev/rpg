@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useRequireUser } from "@/lib/guard";
+import { AppShell } from "@/components/AppShell";
 import { DynamicSheet } from "@/components/DynamicSheet";
 import {
   api, type Campaign, type Character, type SchemaShape, type SheetSchema,
@@ -66,32 +67,39 @@ export default function CharacterSheetPage() {
     }
   }
 
-  if (!user) return <p className="muted">Carregando…</p>;
+  if (!user) return <p className="muted" style={{ padding: 38 }}>Carregando…</p>;
 
   return (
-    <div data-testid="sheet-page">
-      <p><Link href={`/campaigns/${id}`}>← Campanha</Link></p>
-      <h1>Ficha</h1>
+    <AppShell user={user} active="campaigns">
+      <div className="page page-narrow" data-testid="sheet-page">
+        <p style={{ marginTop: 0 }}>
+          <Link href={`/campaigns/${id}`}>← Campanha</Link>
+        </p>
 
-      <div className="panel">
-        <label htmlFor="char-name">Nome do personagem</label>
-        <input id="char-name" data-testid="sheet-name" value={name}
-          onChange={(e) => setName(e.target.value)} />
-
-        {schema ? (
-          <div style={{ marginTop: "1rem" }}>
-            <DynamicSheet schema={schema} sheet={sheet} onChange={setSheet} catalog={catalog} />
+        <div style={{ display: "flex", alignItems: "center", gap: 18, marginBottom: 22 }}>
+          <span className="avatar lg" style={{ background: "linear-gradient(135deg,#2a2e38,#1a1d24)" }}>
+            {(name || "?").slice(0, 1).toUpperCase()}
+          </span>
+          <div style={{ flex: 1 }}>
+            <input data-testid="sheet-name" value={name} onChange={(e) => setName(e.target.value)}
+              placeholder="Nome do personagem"
+              style={{ background: "none", border: "none", padding: 0, fontFamily: "var(--serif)", fontSize: 26, fontWeight: 600, boxShadow: "none" }} />
+            <div className="mono" style={{ fontSize: 13, color: "var(--accent)" }}>Ficha dinâmica</div>
           </div>
-        ) : (
-          <p className="muted">Carregando schema…</p>
-        )}
-
-        <div style={{ marginTop: "1rem" }}>
           <button data-testid="sheet-save" onClick={save}>Salvar ficha</button>
         </div>
-        {msg && <p data-testid="sheet-msg" style={{ color: "#8ae6a0" }}>{msg}</p>}
-        {error && <p className="error" data-testid="sheet-error">{error}</p>}
+
+        <div className="panel">
+          {schema ? (
+            <DynamicSheet schema={schema} sheet={sheet} onChange={setSheet} catalog={catalog} />
+          ) : (
+            <p className="muted">Carregando schema…</p>
+          )}
+        </div>
+
+        {msg && <p className="ok-msg" data-testid="sheet-msg">✓ {msg}</p>}
+        {error && <p className="error" data-testid="sheet-error">⚠ {error}</p>}
       </div>
-    </div>
+    </AppShell>
   );
 }

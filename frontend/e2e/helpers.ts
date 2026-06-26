@@ -20,9 +20,9 @@ export async function logout(page: Page) {
   await expect(page.getByTestId("nav-login")).toBeVisible();
 }
 
-/** Abre uma campanha pela linha que contém o nome dado. */
+/** Abre uma campanha pelo card que contém o nome dado (o card inteiro é um link). */
 export async function openCampaign(page: Page, name: string) {
   const row = page.getByTestId("campaign-row").filter({ hasText: name });
-  await row.getByRole("link", { name: "Abrir" }).click();
+  await row.first().click();
   await expect(page.getByTestId("campaign-detail")).toBeVisible();
 }

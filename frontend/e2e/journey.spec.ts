@@ -54,10 +54,11 @@ test("jornada: admin → sistema → campanha → ficha dinâmica → IA", async
   await openCampaign(page, campName);
   await expect(page.getByTestId("my-role")).toHaveText("PLAYER");
 
+  // aba Fichas
+  await page.getByTestId("cam-tab-sheets").click();
   await page.getByTestId("char-name").fill("Lucian");
   await page.getByTestId("char-create").click();
-  await page.getByTestId("character-row").filter({ hasText: "Lucian" })
-    .getByRole("link", { name: "Abrir ficha" }).click();
+  await page.getByTestId("character-row").filter({ hasText: "Lucian" }).first().click();
 
   // wizard por etapas, dirigido pelo sheet-schema
   await expect(page.getByTestId("dynamic-sheet")).toBeVisible();
@@ -78,6 +79,7 @@ test("jornada: admin → sistema → campanha → ficha dinâmica → IA", async
   // --- IA escopada ao sistema da campanha ---
   await page.getByText("← Campanha").click();
   await expect(page.getByTestId("campaign-detail")).toBeVisible();
+  await page.getByTestId("cam-tab-ai").click();
   await page.getByTestId("ai-question").fill("Qual a formula da Vitalidade?");
   await page.getByTestId("ai-ask").click();
   await expect(page.getByTestId("ai-answer")).toContainText("Vigor");
@@ -86,5 +88,6 @@ test("jornada: admin → sistema → campanha → ficha dinâmica → IA", async
   // --- MESTRE enxerga a ficha do player (AUTHZ-01 pela UI) ---
   await login(page, "mestre@test");
   await openCampaign(page, campName);
+  await page.getByTestId("cam-tab-sheets").click();
   await expect(page.getByTestId("character-list")).toContainText("Lucian");
 });

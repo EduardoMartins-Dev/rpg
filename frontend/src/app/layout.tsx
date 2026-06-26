@@ -1,21 +1,17 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { AuthProvider } from "@/lib/auth";
-import { Nav } from "@/components/Nav";
 
 export const metadata: Metadata = {
-  title: "Portal de RPG",
-  description: "Mestres, jogadores, fichas e IA por sistema",
+  title: "Mesa Arcana — sua mesa, em qualquer sistema",
+  description: "Campanhas, fichas dinâmicas e regras com IA para qualquer sistema de RPG.",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="pt-BR">
       <body>
-        <AuthProvider>
-          <Nav />
-          <main>{children}</main>
-        </AuthProvider>
+        <AuthProvider>{children}</AuthProvider>
       </body>
     </html>
   );
