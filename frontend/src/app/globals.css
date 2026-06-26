@@ -68,3 +68,17 @@ th, td { text-align: left; padding: .4rem .5rem; border-bottom: 1px solid var(--
   background: #2c2440; border: 1px solid var(--border); color: var(--muted);
 }
 .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem 1rem; }
+
+.section-title { display: flex; align-items: center; gap: .5rem; margin: 1.6rem 0 .6rem; }
+.section-title h2 { margin: 0; font-size: 1.1rem; }
+.count { font-size: .8rem; color: var(--muted); }
+
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: .75rem; }
+.card {
+  background: var(--panel); border: 1px solid var(--border); border-radius: 8px;
+  padding: .8rem .9rem; display: flex; flex-direction: column; gap: .3rem;
+}
+.card .name { font-weight: 600; }
+.card .foot { display: flex; justify-content: space-between; align-items: center; margin-top: .4rem; }
+.empty { color: var(--muted); border: 1px dashed var(--border); border-radius: 8px; padding: .9rem; }
+.chips { display: flex; flex-wrap: wrap; gap: .35rem; }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRequireUser } from "@/lib/guard";
 import { api, type Campaign, type RpgSystem } from "@/lib/api";
@@ -22,6 +22,14 @@ export default function CampaignsPage() {
   }, [systemId]);
 
   useEffect(() => { if (user) load(); }, [user, load]);
+
+  const systemName = useCallback(
+    (id: string) => systems.find((s) => s.id === id)?.name ?? "—",
+    [systems],
+  );
+
+  const mastered = useMemo(() => campaigns.filter((c) => c.role === "MASTER"), [campaigns]);
+  const playing = useMemo(() => campaigns.filter((c) => c.role === "PLAYER"), [campaigns]);
 
   async function createCampaign(e: React.FormEvent) {
     e.preventDefault();
@@ -47,61 +55,114 @@ export default function CampaignsPage() {
     }
   }
 
+  function CampaignCard({ c }: { c: Campaign }) {
+    return (
+      <div className="card" data-testid="campaign-row">
+        <span className="name">{c.name}</span>
+        <span className="muted" style={{ fontSize: ".85rem" }}>Sistema: {systemName(c.systemId)}</span>
+        <div className="foot">
+          <span className="badge" data-testid="campaign-role">{c.role}</span>
+          <Link href={`/campaigns/${c.id}`} data-testid={`campaign-open-${c.id}`}>Abrir →</Link>
+        </div>
+      </div>
+    );
+  }
+
   if (!user) return <p className="muted">Carregando…</p>;
 
   return (
     <div data-testid="campaigns-page">
       <h1>Minhas campanhas</h1>
 
-      <div className="panel">
-        <h2>Criar campanha</h2>
-        <form onSubmit={createCampaign} className="row">
-          <div>
+      <div className="row" style={{ alignItems: "stretch" }}>
+        <div className="panel" style={{ margin: 0 }}>
+          <h2>Criar campanha</h2>
+          <form onSubmit={createCampaign}>
             <label htmlFor="camp-name">Nome</label>
             <input id="camp-name" data-testid="campaign-name" value={name}
               onChange={(e) => setName(e.target.value)} />
-          </div>
-          <div>
             <label htmlFor="camp-system">Sistema</label>
             <select id="camp-system" data-testid="campaign-system" value={systemId}
               onChange={(e) => setSystemId(e.target.value)}>
               {systems.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
             </select>
-          </div>
-          <button type="submit" data-testid="campaign-create" disabled={!systemId}
-            style={{ flex: "0 0 auto" }}>Criar (sou Mestre)</button>
-        </form>
-      </div>
+            <div style={{ marginTop: ".7rem" }}>
+              <button type="submit" data-testid="campaign-create" disabled={!systemId}>
+                Criar (sou Mestre)
+              </button>
+            </div>
+            {systems.length === 0 && (
+              <p className="muted" style={{ fontSize: ".85rem" }}>
+                Nenhum sistema cadastrado ainda{user.isAdmin ? " — crie um em Admin." : "."}
+              </p>
+            )}
+          </form>
+        </div>
 
-      <div className="panel">
-        <h2>Entrar por convite</h2>
-        <form onSubmit={join} className="row">
-          <input data-testid="join-code" value={invite} placeholder="código de convite"
-            onChange={(e) => setInvite(e.target.value)} />
-          <button type="submit" data-testid="join-submit" style={{ flex: "0 0 auto" }}>Entrar</button>
-        </form>
+        <div className="panel" style={{ margin: 0 }}>
+          <h2>Entrar por convite</h2>
+          <form onSubmit={join}>
+            <label htmlFor="join-code">Código de convite</label>
+            <input id="join-code" data-testid="join-code" value={invite}
+              placeholder="ex.: AB23CD45" onChange={(e) => setInvite(e.target.value)} />
+            <div style={{ marginTop: ".7rem" }}>
+              <button type="submit" data-testid="join-submit">Entrar como Player</button>
+            </div>
+          </form>
+        </div>
       </div>
 
       {error && <p className="error" data-testid="campaigns-error">{error}</p>}
 
-      <div className="panel">
-        <h2>Campanhas</h2>
-        <table>
-          <thead><tr><th>Nome</th><th>Papel</th><th></th></tr></thead>
-          <tbody data-testid="campaign-list">
-            {campaigns.map((c) => (
-              <tr key={c.id} data-testid="campaign-row">
-                <td>{c.name}</td>
-                <td><span className="badge" data-testid="campaign-role">{c.role}</span></td>
-                <td style={{ textAlign: "right" }}>
-                  <Link href={`/campaigns/${c.id}`} data-testid={`campaign-open-${c.id}`}>Abrir</Link>
-                </td>
-              </tr>
+      <section data-testid="campaign-list">
+        <div className="section-title">
+          <h2>🎲 Onde sou Mestre</h2>
+          <span className="count">{mastered.length}</span>
+        </div>
+        {mastered.length > 0 ? (
+          <div className="cards" data-testid="mastered-list">
+            {mastered.map((c) => <CampaignCard key={c.id} c={c} />)}
+          </div>
+        ) : (
+          <p className="empty" data-testid="mastered-empty">
+            Você ainda não mestra nenhuma campanha. Crie uma acima.
+          </p>
+        )}
+
+        <div className="section-title">
+          <h2>🩸 Onde sou Player</h2>
+          <span className="count">{playing.length}</span>
+        </div>
+        {playing.length > 0 ? (
+          <div className="cards" data-testid="playing-list">
+            {playing.map((c) => <CampaignCard key={c.id} c={c} />)}
+          </div>
+        ) : (
+          <p className="empty" data-testid="playing-empty">
+            Você ainda não joga em nenhuma campanha. Entre por um convite acima.
+          </p>
+        )}
+      </section>
+
+      <div className="section-title">
+        <h2>📚 Sistemas disponíveis</h2>
+        <span className="count">{systems.length}</span>
+      </div>
+      <div className="panel" style={{ marginTop: 0 }}>
+        {systems.length > 0 ? (
+          <div className="chips" data-testid="systems-list">
+            {systems.map((s) => (
+              <span key={s.id} className="badge" data-testid="system-chip">{s.name}</span>
             ))}
-            {campaigns.length === 0 &&
-              <tr><td colSpan={3} className="muted">Você ainda não participa de nenhuma campanha.</td></tr>}
-          </tbody>
-        </table>
+          </div>
+        ) : (
+          <p className="muted">Nenhum sistema cadastrado.</p>
+        )}
+        {user.isAdmin && (
+          <p style={{ marginTop: ".7rem" }}>
+            <Link href="/admin" data-testid="go-admin">Gerenciar sistemas e templates →</Link>
+          </p>
+        )}
       </div>
     </div>
   );
