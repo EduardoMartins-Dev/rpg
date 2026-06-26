@@ -5,9 +5,18 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useRequireUser } from "@/lib/guard";
 import { DynamicSheet } from "@/components/DynamicSheet";
-import { api, type Campaign, type Character, type SchemaShape, type SheetSchema } from "@/lib/api";
+import {
+  api, type Campaign, type Character, type SchemaShape, type SheetSchema,
+  type RpgSystem, type V5Catalog,
+} from "@/lib/api";
 
 type Sheet = Record<string, unknown>;
+
+// Sistemas que possuem catálogo de regras V5 (enriquece a ficha).
+function hasV5Catalog(slug: string | undefined): boolean {
+  const s = (slug ?? "").toLowerCase();
+  return s.includes("vampir") || s.includes("mascara") || s.includes("v5");
+}
 
 export default function CharacterSheetPage() {
   const { user } = useRequireUser();
@@ -15,6 +24,7 @@ export default function CharacterSheetPage() {
   const { id, charId } = params;
 
   const [schema, setSchema] = useState<SchemaShape | null>(null);
+  const [catalog, setCatalog] = useState<V5Catalog | null>(null);
   const [name, setName] = useState("");
   const [sheet, setSheet] = useState<Sheet>({});
   const [msg, setMsg] = useState<string | null>(null);
@@ -24,8 +34,15 @@ export default function CharacterSheetPage() {
     setError(null);
     try {
       const campaign = await api.get<Campaign>(`/campaigns/${id}`);
+      const system = await api.get<RpgSystem>(`/systems/${campaign.systemId}`);
       const sc = await api.get<SheetSchema>(`/systems/${campaign.systemId}/sheet-schema`);
       setSchema(sc.schema);
+      if (hasV5Catalog(system.slug)) {
+        try { setCatalog(await api.get<V5Catalog>("/rules/v5/catalog")); }
+        catch { setCatalog(null); }
+      } else {
+        setCatalog(null);
+      }
       const ch = await api.get<Character>(`/campaigns/${id}/characters/${charId}`);
       setName(ch.name);
       setSheet(ch.sheetData ?? {});
@@ -63,7 +80,7 @@ export default function CharacterSheetPage() {
 
         {schema ? (
           <div style={{ marginTop: "1rem" }}>
-            <DynamicSheet schema={schema} sheet={sheet} onChange={setSheet} />
+            <DynamicSheet schema={schema} sheet={sheet} onChange={setSheet} catalog={catalog} />
           </div>
         ) : (
           <p className="muted">Carregando schema…</p>

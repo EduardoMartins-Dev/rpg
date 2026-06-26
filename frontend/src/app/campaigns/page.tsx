@@ -116,7 +116,7 @@ export default function CampaignsPage() {
 
       <section data-testid="campaign-list">
         <div className="section-title">
-          <h2>🎲 Onde sou Mestre</h2>
+          <h2>👑 Onde sou Mestre</h2>
           <span className="count">{mastered.length}</span>
         </div>
         {mastered.length > 0 ? (
@@ -130,7 +130,7 @@ export default function CampaignsPage() {
         )}
 
         <div className="section-title">
-          <h2>🩸 Onde sou Player</h2>
+          <h2>🛡️ Onde sou Player</h2>
           <span className="count">{playing.length}</span>
         </div>
         {playing.length > 0 ? (

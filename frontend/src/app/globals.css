@@ -1,11 +1,12 @@
 :root {
-  --bg: #14121a;
-  --panel: #1f1b29;
-  --border: #392f4d;
-  --text: #ece8f5;
-  --muted: #a99fc4;
-  --accent: #b3123b;
-  --accent-text: #fff;
+  --bg: #0f1117;
+  --panel: #181b25;
+  --border: #2a2f3e;
+  --text: #e9ebf2;
+  --muted: #99a0b3;
+  --accent: #6d5ae6;
+  --accent-hover: #7e6df0;
+  --accent-text: #ffffff;
 }
 
 * { box-sizing: border-box; }
@@ -19,7 +20,7 @@ html, body {
   line-height: 1.5;
 }
 
-a { color: #d98aa3; text-decoration: none; }
+a { color: #9fa9ff; text-decoration: none; }
 a:hover { text-decoration: underline; }
 
 main { max-width: 920px; margin: 0 auto; padding: 1.5rem 1rem 4rem; }
@@ -49,10 +50,13 @@ input, textarea, select {
 textarea { min-height: 7rem; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
 
 button {
-  cursor: pointer; padding: .5rem .9rem; border-radius: 6px; border: 1px solid var(--border);
+  cursor: pointer; padding: .5rem .9rem; border-radius: 6px; border: 1px solid transparent;
   background: var(--accent); color: var(--accent-text); font: inherit; font-weight: 600;
+  transition: background .15s ease;
 }
-button.secondary { background: transparent; color: var(--text); }
+button:hover:not(:disabled) { background: var(--accent-hover); }
+button.secondary { background: transparent; color: var(--text); border-color: var(--border); }
+button.secondary:hover:not(:disabled) { background: #20242f; }
 button:disabled { opacity: .5; cursor: not-allowed; }
 
 .row { display: flex; gap: .5rem; flex-wrap: wrap; align-items: end; }
@@ -65,7 +69,7 @@ th, td { text-align: left; padding: .4rem .5rem; border-bottom: 1px solid var(--
 .muted { color: var(--muted); }
 .badge {
   display: inline-block; font-size: .72rem; padding: .1rem .45rem; border-radius: 999px;
-  background: #2c2440; border: 1px solid var(--border); color: var(--muted);
+  background: #242838; border: 1px solid var(--border); color: var(--muted);
 }
 .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem 1rem; }
 
@@ -82,3 +86,81 @@ th, td { text-align: left; padding: .4rem .5rem; border-bottom: 1px solid var(--
 .card .foot { display: flex; justify-content: space-between; align-items: center; margin-top: .4rem; }
 .empty { color: var(--muted); border: 1px dashed var(--border); border-radius: 8px; padding: .9rem; }
 .chips { display: flex; flex-wrap: wrap; gap: .35rem; }
+
+/* --- ficha (DynamicSheet) ------------------------------------------------- */
+.sheet-section { margin-top: 1.4rem; }
+.sheet-section > h3 { margin: 0 0 .6rem; font-size: 1.05rem; border-bottom: 1px solid var(--border); padding-bottom: .35rem; }
+.sheet-section > h4 { margin: 0 0 .3rem; }
+
+.trait-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; }
+.trait-col { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: .6rem .75rem; }
+.cat-head { font-size: .75rem; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin-bottom: .4rem; }
+
+.trait-row { display: flex; align-items: center; gap: .5rem; padding: .2rem 0; }
+.trait-name { flex: 1; font-size: .9rem; }
+.dots { display: inline-flex; gap: .2rem; }
+.dot {
+  width: 14px; height: 14px; padding: 0; border-radius: 50%;
+  border: 1px solid var(--accent); background: transparent; cursor: pointer;
+  transition: background .12s ease;
+}
+.dot.on { background: var(--accent); }
+.dot:hover { border-color: var(--accent-hover); }
+.num { width: 3.2rem; text-align: center; padding: .2rem .3rem; }
+
+/* clã */
+.clan-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: .5rem; }
+.clan-card {
+  display: flex; flex-direction: column; gap: .25rem; align-items: flex-start; text-align: left;
+  background: var(--panel); border: 1px solid var(--border); border-radius: 8px;
+  padding: .55rem .65rem; color: var(--text); font-weight: 500;
+}
+.clan-card:hover:not(:disabled) { border-color: var(--accent); background: #1d2130; }
+.clan-card.sel { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
+.clan-name { font-weight: 700; }
+.clan-disc { font-size: .72rem; color: var(--muted); }
+.clan-detail { margin-top: .75rem; background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: .8rem .9rem; }
+.kv-label { font-size: .72rem; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+.badge.buff { background: rgba(109, 90, 230, .18); border-color: var(--accent); color: #c9c2ff; }
+.badge.stat { font-size: 1.1rem; padding: .2rem .7rem; color: var(--text); font-weight: 700; }
+
+/* wizard / etapas */
+.stepper { list-style: none; display: flex; flex-wrap: wrap; gap: .4rem; padding: 0; margin: 0 0 1rem; }
+.step-tab {
+  display: inline-flex; align-items: center; gap: .4rem; background: transparent;
+  border: 1px solid var(--border); color: var(--muted); font-weight: 600; font-size: .85rem;
+  padding: .35rem .7rem; border-radius: 999px;
+}
+.step-tab .step-no {
+  display: inline-grid; place-items: center; width: 1.25rem; height: 1.25rem; border-radius: 50%;
+  background: var(--border); color: var(--text); font-size: .72rem;
+}
+.step-tab.on { border-color: var(--accent); color: var(--text); }
+.step-tab.on .step-no, .step-tab.done .step-no { background: var(--accent); color: var(--accent-text); }
+.step-tab.done { color: var(--text); }
+.step-body { min-height: 240px; }
+.step-body h3 { margin: 0 0 .7rem; }
+.step-nav { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-top: 1.2rem; }
+
+.attr-layout { display: grid; grid-template-columns: 1fr auto; gap: 1.2rem; align-items: start; }
+.review-grid { display: grid; grid-template-columns: 1fr auto; gap: 1rem; align-items: start; }
+@media (max-width: 720px) {
+  .attr-layout, .review-grid { grid-template-columns: 1fr; }
+}
+
+.sheet-foot {
+  display: flex; flex-wrap: wrap; align-items: center; gap: .5rem 1.2rem; margin-top: 1.2rem;
+  padding-top: .9rem; border-top: 1px solid var(--border);
+}
+.stat-pill { display: flex; flex-direction: column; gap: .15rem; }
+
+/* diagrama radial / pentagrama */
+.radial { display: block; }
+.radial-ring { fill: none; stroke: var(--border); stroke-width: 1; }
+.radial-axis { stroke: var(--border); stroke-width: 1; }
+.radial-star { fill: none; stroke: var(--accent); stroke-width: 1; opacity: .35; }
+.radial-val { fill: rgba(109, 90, 230, .35); stroke: var(--accent); stroke-width: 2; }
+.radial-label { fill: var(--muted); font-size: 10px; font-family: ui-monospace, monospace; }
+
+/* equipamento */
+.weapon-row { display: grid; grid-template-columns: 1fr 1fr auto; gap: .4rem; margin-bottom: .4rem; }

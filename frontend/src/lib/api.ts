@@ -84,3 +84,13 @@ export interface AskResponse {
   campaignId: string; systemId: string; question: string; answer: string;
   grounded: boolean; sources: { content: string; systemId: string }[];
 }
+
+// --- V5 reference catalog (enriquece a ficha; opcional por sistema) ----------
+export interface ClanView {
+  id: string; label: string; description: string;
+  disciplines: string[]; bane: string; compulsion: string;
+}
+export interface AbilityGroup { category: string; abilities: string[]; }
+export interface V5Catalog {
+  types: string[]; clans: ClanView[]; abilities: AbilityGroup[];
+}

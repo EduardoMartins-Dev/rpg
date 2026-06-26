@@ -21,45 +21,79 @@ public final class V5Catalog {
         CAITIFF, THIN_BLOOD, RAVNOS, SALUBRI, TZIMISCE
     }
 
-    /** disciplines: as 3 disciplinas de clã (vazia/Alquimia em casos especiais). */
-    public record ClanInfo(Clan clan, List<String> disciplines, String bane, String compulsion) {
+    /**
+     * disciplines: as 3 disciplinas de clã (= "buffs"; vazia/Alquimia em casos especiais).
+     * label: nome de exibição. description: arquétipo curto (síntese original, não texto do livro —
+     * o texto integral vem do PDF indexado em runtime).
+     */
+    public record ClanInfo(Clan clan, String label, String description,
+            List<String> disciplines, String bane, String compulsion) {
     }
 
     private static final Map<Clan, ClanInfo> CLANS = new LinkedHashMap<>();
 
-    private static void clan(Clan c, List<String> disc, String bane, String compulsion) {
-        CLANS.put(c, new ClanInfo(c, List.copyOf(disc), bane, compulsion));
+    private static void clan(Clan c, String label, String description,
+            List<String> disc, String bane, String compulsion) {
+        CLANS.put(c, new ClanInfo(c, label, description, List.copyOf(disc), bane, compulsion));
     }
 
     static {
-        clan(Clan.BRUJAH, List.of("Celeridade", "Potência", "Presença"),
+        clan(Clan.BRUJAH, "Brujah",
+                "Rebeldes apaixonados e guerreiros-filósofos, movidos por ideais e fúria.",
+                List.of("Celeridade", "Potência", "Presença"),
                 "penalidade vs frenesi de fúria", "Rebelião");
-        clan(Clan.GANGREL, List.of("Animalismo", "Fortitude", "Proteanismo"),
+        clan(Clan.GANGREL, "Gangrel",
+                "Nômades ferais, próximos das feras e da terra, sobreviventes solitários.",
+                List.of("Animalismo", "Fortitude", "Proteanismo"),
                 "traços animais em frenesi", "Impulsos Ferais");
-        clan(Clan.MALKAVIAN, List.of("Auspícios", "Dominação", "Ofuscação"),
+        clan(Clan.MALKAVIAN, "Malkavian",
+                "Oráculos lunáticos; a loucura lhes revela verdades ocultas.",
+                List.of("Auspícios", "Dominação", "Ofuscação"),
                 "perturbação mental", "Delírio");
-        clan(Clan.NOSFERATU, List.of("Animalismo", "Ofuscação", "Potência"),
+        clan(Clan.NOSFERATU, "Nosferatu",
+                "Monstros das sombras: espiões desfigurados que tudo veem e tudo sabem.",
+                List.of("Animalismo", "Ofuscação", "Potência"),
                 "Repulsivo; sem Aparência", "Criptofilia");
-        clan(Clan.TOREADOR, List.of("Auspícios", "Celeridade", "Presença"),
+        clan(Clan.TOREADOR, "Toreador",
+                "Estetas seduzidos pela beleza, pela arte e pela paixão.",
+                List.of("Auspícios", "Celeridade", "Presença"),
                 "perde dados sem beleza", "Obsessão");
-        clan(Clan.TREMERE, List.of("Auspícios", "Dominação", "Feitiçaria de Sangue"),
+        clan(Clan.TREMERE, "Tremere",
+                "Feiticeiros de sangue organizados em hierarquia rígida e ambiciosa.",
+                List.of("Auspícios", "Dominação", "Feitiçaria de Sangue"),
                 "Laço de Sangue alterado", "Perfeccionismo");
-        clan(Clan.VENTRUE, List.of("Dominação", "Fortitude", "Presença"),
+        clan(Clan.VENTRUE, "Ventrue",
+                "Aristocratas natos: líderes, governantes e o sangue azul da estirpe.",
+                List.of("Dominação", "Fortitude", "Presença"),
                 "só bebe de presa específica", "Arrogância");
-        clan(Clan.CAITIFF, List.of(),
+        clan(Clan.CAITIFF, "Caitiff",
+                "Sem clã: herança incerta, sem fraqueza fixa nem disciplinas próprias.",
+                List.of(),
                 "nenhuma", "Defeito Suspeito");
-        clan(Clan.THIN_BLOOD, List.of("Alquimia"),
+        clan(Clan.THIN_BLOOD, "Sangue Fraco",
+                "Geração distante, quase mortais; sobrevivem pela Alquimia.",
+                List.of("Alquimia"),
                 "sofre dano como mortal", "nenhuma");
         // Companion (§13.2)
-        clan(Clan.RAVNOS, List.of("Animalismo", "Ofuscação", "Presença"),
+        clan(Clan.RAVNOS, "Ravnos",
+                "Andarilhos ilusionistas, amaldiçoados a nunca repousar no mesmo lugar.",
+                List.of("Animalismo", "Ofuscação", "Presença"),
                 "queima ao dormir 2x no mesmo local em 7 noites (dano agravado por Gravidade da Perdição)",
                 "Destino Tentador");
-        clan(Clan.SALUBRI, List.of("Auspícios", "Dominação", "Fortitude"),
+        clan(Clan.SALUBRI, "Salubri",
+                "Curandeiros caçados, marcados pelo terceiro olho que chora sangue.",
+                List.of("Auspícios", "Dominação", "Fortitude"),
                 "caçados: quem bebe seu vitae testa frenesi p/ parar; 3º olho chora sangue ao usar disciplina",
                 "Empatia Afetiva");
-        clan(Clan.TZIMISCE, List.of("Animalismo", "Dominação", "Proteanismo"),
+        clan(Clan.TZIMISCE, "Tzimisce",
+                "Senhores territoriais que moldam carne e terra à própria vontade.",
+                List.of("Animalismo", "Dominação", "Proteanismo"),
                 "enraizado: dormir cercado da posse escolhida ou dano agravado à FdV",
                 "Cobiça");
+    }
+
+    public static List<ClanInfo> clans() {
+        return List.copyOf(CLANS.values());
     }
 
     public static ClanInfo clan(Clan clan) {

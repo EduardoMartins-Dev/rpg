@@ -10,7 +10,7 @@ export function Nav() {
 
   return (
     <nav className="nav" data-testid="nav">
-      <Link href="/" style={{ fontWeight: 700 }}>🩸 Portal de RPG</Link>
+      <Link href="/" style={{ fontWeight: 700 }}>🎲 Portal de RPG</Link>
       {user && <Link href="/campaigns" data-testid="nav-campaigns">Campanhas</Link>}
       {user?.isAdmin && <Link href="/admin" data-testid="nav-admin">Admin</Link>}
       <span className="spacer" />
