@@ -3,7 +3,9 @@
 import { useCallback, useEffect, useState } from "react";
 import { useRequireUser } from "@/lib/guard";
 import { AppShell } from "@/components/AppShell";
-import { api, uploadFile, type RpgSystem, type SheetSchema, type SystemDocument } from "@/lib/api";
+import { api, uploadFile, type AdminUser, type RpgSystem, type SheetSchema, type SystemDocument } from "@/lib/api";
+
+type AdminTab = "systems" | "users";
 
 const DEFAULT_SCHEMA = JSON.stringify(
   {
@@ -26,12 +28,42 @@ export default function AdminPage() {
   const [file, setFile] = useState<File | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [tab, setTab] = useState<AdminTab>("systems");
+  const [users, setUsers] = useState<AdminUser[]>([]);
 
   const loadSystems = useCallback(async () => {
     setSystems(await api.get<RpgSystem[]>("/systems"));
   }, []);
 
+  const loadUsers = useCallback(async () => {
+    try { setUsers(await api.get<AdminUser[]>("/admin/users")); } catch { setUsers([]); }
+  }, []);
+
   useEffect(() => { if (user) loadSystems(); }, [user, loadSystems]);
+  useEffect(() => { if (user && tab === "users") loadUsers(); }, [user, tab, loadUsers]);
+
+  async function toggleAdmin(u: AdminUser) {
+    setError(null); setMsg(null);
+    try {
+      await api.put(`/admin/users/${u.id}/admin`, { admin: !u.admin });
+      await loadUsers();
+      setMsg(`Papel de ${u.displayName} atualizado.`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "erro ao atualizar papel");
+    }
+  }
+
+  async function deleteUser(u: AdminUser) {
+    setError(null); setMsg(null);
+    if (!confirm(`Excluir a conta de ${u.displayName} (${u.email})? Ação permanente.`)) return;
+    try {
+      await api.del(`/admin/users/${u.id}`);
+      await loadUsers();
+      setMsg(`Conta de ${u.displayName} excluída.`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "erro ao excluir conta");
+    }
+  }
 
   async function createSystem(e: React.FormEvent) {
     e.preventDefault();
@@ -94,8 +126,49 @@ export default function AdminPage() {
           <span className="badge" style={{ color: "var(--info)", background: "rgba(91,141,239,.14)", border: "none" }}>Área restrita</span>
         </div>
       </div>
-      <p className="sub" style={{ marginTop: -18, marginBottom: 22, color: "var(--muted)" }}>Gerencie os sistemas de RPG, livros e schemas de ficha.</p>
+      <p className="sub" style={{ marginTop: -18, marginBottom: 22, color: "var(--muted)" }}>Gerencie os sistemas de RPG, livros, schemas de ficha e usuários.</p>
 
+      <div className="cam-tabs" style={{ padding: 0, marginBottom: 22 }}>
+        <button className={`tab${tab === "systems" ? " on" : ""}`} data-testid="admin-tab-systems" onClick={() => setTab("systems")}>Sistemas</button>
+        <button className={`tab${tab === "users" ? " on" : ""}`} data-testid="admin-tab-users" onClick={() => setTab("users")}>Usuários</button>
+      </div>
+
+      {tab === "users" && (
+        <div className="panel" style={{ padding: 0 }} data-testid="admin-users">
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 20px", borderBottom: "1px solid var(--border)" }}>
+            <strong>Usuários ({users.length})</strong>
+            <button className="secondary" onClick={loadUsers} style={{ padding: "6px 12px", fontSize: 13 }}>Atualizar</button>
+          </div>
+          <table>
+            <thead><tr><th style={{ paddingLeft: 20 }}>Usuário</th><th>E-mail</th><th>Papel</th><th style={{ textAlign: "right", paddingRight: 20 }}>Ações</th></tr></thead>
+            <tbody>
+              {users.map((u) => (
+                <tr key={u.id} data-testid="user-row">
+                  <td style={{ paddingLeft: 20 }}>
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: 12 }}>
+                      <span className="avatar">{(u.displayName || u.email).slice(0, 2).toUpperCase()}</span>
+                      <strong>{u.displayName}</strong>
+                    </span>
+                  </td>
+                  <td className="muted">{u.email}</td>
+                  <td><span className={`badge ${u.admin ? "role-MASTER" : ""}`}>{u.admin ? "Admin" : "Usuário"}</span></td>
+                  <td style={{ textAlign: "right", paddingRight: 20, whiteSpace: "nowrap" }}>
+                    <button className="secondary" data-testid={`user-toggle-admin-${u.id}`} onClick={() => toggleAdmin(u)}
+                      style={{ padding: "6px 10px", fontSize: 13, marginRight: 8 }}>
+                      {u.admin ? "Rebaixar" : "Tornar admin"}
+                    </button>
+                    <button className="danger" data-testid={`user-delete-${u.id}`} onClick={() => deleteUser(u)}
+                      style={{ padding: "6px 10px", fontSize: 13 }}>Excluir</button>
+                  </td>
+                </tr>
+              ))}
+              {users.length === 0 && <tr><td colSpan={4} className="muted" style={{ padding: 20 }}>Nenhum usuário.</td></tr>}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {tab === "systems" && (<>
       <div className="metrics">
         <div className="metric"><div className="v">{systems.length}</div><div className="l">Sistemas</div></div>
         <div className="metric"><div className="v">{selected ? docs.length : "—"}</div><div className="l">Livros (sistema atual)</div></div>
@@ -176,6 +249,7 @@ export default function AdminPage() {
           </table>
         </div>
       )}
+      </>)}
 
       {msg && <p className="ok-msg" data-testid="admin-msg">✓ {msg}</p>}
       {error && <p className="error" data-testid="admin-error">⚠ {error}</p>}

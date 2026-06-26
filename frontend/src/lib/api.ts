@@ -94,3 +94,8 @@ export interface AbilityGroup { category: string; abilities: string[]; }
 export interface V5Catalog {
   types: string[]; clans: ClanView[]; abilities: AbilityGroup[];
 }
+
+// --- admin: gestão de usuários ----------------------------------------------
+export interface AdminUser {
+  id: string; email: string; displayName: string; admin: boolean; createdAt: string | null;
+}
