@@ -31,6 +31,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => { loadMe(); }, [loadMe]);
 
+  // Acorda o backend (Render free dorme após inatividade) já no load da página,
+  // pra que o login não bata num cold start de ~50s. Fire-and-forget.
+  useEffect(() => {
+    fetch("/api/ping", { cache: "no-store" }).catch(() => { /* ok */ });
+  }, []);
+
   const login = useCallback(async (email: string, password: string) => {
     const t = await api.post<TokenResponse>("/auth/login", { email, password });
     setToken(t.accessToken);
