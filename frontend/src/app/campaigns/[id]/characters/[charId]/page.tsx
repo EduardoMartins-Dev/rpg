@@ -13,10 +13,11 @@ import {
 
 type Sheet = Record<string, unknown>;
 
-// Sistemas que possuem catálogo de regras V5 (enriquece a ficha).
-function hasV5Catalog(slug: string | undefined): boolean {
-  const s = (slug ?? "").toLowerCase();
-  return s.includes("vampir") || s.includes("mascara") || s.includes("v5");
+// Sistemas que possuem catálogo de regras V5 (enriquece a ficha). Checa slug E nome
+// (o slug pode ser "vtm"/"v5" enquanto o nome é "Vampiro: A Máscara").
+function hasV5Catalog(system: { slug?: string; name?: string } | null | undefined): boolean {
+  const s = `${system?.slug ?? ""} ${system?.name ?? ""}`.toLowerCase();
+  return ["vampir", "mascar", "masquerade", "v5", "vtm"].some((t) => s.includes(t));
 }
 
 export default function CharacterSheetPage() {
@@ -38,7 +39,7 @@ export default function CharacterSheetPage() {
       const system = await api.get<RpgSystem>(`/systems/${campaign.systemId}`);
       const sc = await api.get<SheetSchema>(`/systems/${campaign.systemId}/sheet-schema`);
       setSchema(sc.schema);
-      if (hasV5Catalog(system.slug)) {
+      if (hasV5Catalog(system)) {
         try { setCatalog(await api.get<V5Catalog>("/rules/v5/catalog")); }
         catch { setCatalog(null); }
       } else {

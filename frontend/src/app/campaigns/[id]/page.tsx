@@ -110,7 +110,7 @@ export default function CampaignDetailPage() {
     { k: "overview", label: "Visão geral" },
     { k: "members", label: "Membros" },
     { k: "sheets", label: "Fichas" },
-    { k: "ai", label: "Mestre de Regras" },
+    { k: "ai", label: "Chat (IA)" },
   ];
 
   return (
