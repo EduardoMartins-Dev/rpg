@@ -23,8 +23,31 @@ const XP_COSTS: [string, string][] = [
 type Sheet = Record<string, unknown>;
 type Weapon = { name: string; damage: string };
 type Item = { name: string; qty: number; category: string; desc: string; equipped: boolean };
-type Discipline = { name: string; level: number; powers: string };
+type Power = { name: string; level: number };
+type Discipline = { name: string; level: number; powers: Power[] };
 type Advantage = { name: string; dots: number; note: string };
+
+// Aceita dados antigos: powers como string ("A · B") vira lista de poderes.
+function normPowers(p: unknown): Power[] {
+  if (Array.isArray(p)) {
+    return p.map((x) => (typeof x === "string"
+      ? { name: x, level: 0 }
+      : { name: String((x as Power)?.name ?? ""), level: Number((x as Power)?.level ?? 0) }))
+      .filter((x) => x.name.trim() !== "" || x.level > 0);
+  }
+  if (typeof p === "string" && p.trim()) {
+    return p.split(/[·,;]+/).map((s) => ({ name: s.trim(), level: 0 })).filter((x) => x.name);
+  }
+  return [];
+}
+function normDisciplines(raw: unknown): Discipline[] {
+  const list = Array.isArray(raw) ? raw : [];
+  return list.map((d) => ({
+    name: String((d as Discipline)?.name ?? ""),
+    level: Number((d as Discipline)?.level ?? 0),
+    powers: normPowers((d as { powers?: unknown })?.powers),
+  }));
+}
 
 const ITEM_CATEGORIES = ["Arma", "Armadura", "Consumível", "Equipamento", "Tesouro", "Documento", "Outro"];
 
@@ -56,7 +79,7 @@ export function DynamicSheet({
   const clanDisc = (sheet.clanDisciplines as string[]) ?? [];
   const weapons = (sheet.weapons as Weapon[]) ?? [];
   const inventory = (sheet.inventory as Item[]) ?? [];
-  const disciplines = (sheet.disciplines as Discipline[]) ?? [];
+  const disciplines = normDisciplines(sheet.disciplines);
   const advantages = (sheet.advantages as Advantage[]) ?? [];
   const flaws = (sheet.flaws as Advantage[]) ?? [];
   const convictions = (sheet.convictions as string[]) ?? [];
@@ -111,8 +134,33 @@ export function DynamicSheet({
     const existing = new Set(disciplines.map((d) => norm(d.name)));
     const add = selectedClan.disciplines
       .filter((d) => !existing.has(norm(d)))
-      .map((d) => ({ name: d, level: 0, powers: "" }));
+      .map((d) => ({ name: d, level: 0, powers: [] as Power[] }));
     set("disciplines", [...disciplines, ...add]);
+  }
+
+  // --- edição de disciplinas/poderes ---
+  const setDisc = (next: Discipline[]) => set("disciplines", next);
+  const updDisc = (i: number, patch: Partial<Discipline>) =>
+    setDisc(disciplines.map((d, j) => (j === i ? { ...d, ...patch } : d)));
+  const addPower = (i: number) =>
+    setDisc(disciplines.map((d, j) => (j === i ? { ...d, powers: [...d.powers, { name: "", level: d.level || 1 }] } : d)));
+  const updPower = (i: number, pi: number, patch: Partial<Power>) =>
+    setDisc(disciplines.map((d, j) => (j === i ? { ...d, powers: d.powers.map((p, k) => (k === pi ? { ...p, ...patch } : p)) } : d)));
+  const delPower = (i: number, pi: number) =>
+    setDisc(disciplines.map((d, j) => (j === i ? { ...d, powers: d.powers.filter((_, k) => k !== pi) } : d)));
+
+  // Adiciona um poder específico do catálogo à disciplina (cria a disciplina se não existir).
+  function addCatalogPower(discName: string, powerName: string, level: number) {
+    const idx = disciplines.findIndex((d) => norm(d.name) === norm(discName));
+    if (idx === -1) {
+      setDisc([...disciplines, { name: discName, level: Math.max(level, 1), powers: [{ name: powerName, level }] }]);
+      return;
+    }
+    const d = disciplines[idx];
+    if (d.powers.some((p) => norm(p.name) === norm(powerName))) return;
+    setDisc(disciplines.map((x, j) => (j === idx
+      ? { ...x, level: Math.max(x.level, level), powers: [...x.powers, { name: powerName, level }] }
+      : x)));
   }
 
   return (
@@ -352,29 +400,48 @@ export function DynamicSheet({
             {!canHaveClan && <p className="muted">Mortais não têm disciplinas.</p>}
             {canHaveClan && (
               <>
-                <p className="muted" style={{ fontSize: 13 }}>Na criação: 2 disciplinas do clã (2 pontos numa, 1 noutra). O texto dos poderes vem do livro (Chat IA).</p>
-                <div data-testid="disciplines-list">
+                <p className="muted" style={{ fontSize: 13 }}>Na criação: 2 disciplinas do clã (2 pontos numa, 1 noutra). Cada disciplina pode ter vários poderes (um por nível). Adicione quantos quiser.</p>
+                <div data-testid="disciplines-list" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                   {disciplines.map((d, i) => (
-                    <div key={i} className="disc-row" data-testid="discipline-row">
-                      <input aria-label="disciplina" placeholder="Disciplina" value={d.name}
-                        onChange={(e) => set("disciplines", disciplines.map((x, j) => j === i ? { ...x, name: e.target.value } : x))} />
-                      <DotsOnly value={d.level} max={5} onChange={(lv) => set("disciplines", disciplines.map((x, j) => j === i ? { ...x, level: lv } : x))} />
-                      <input aria-label="poderes" placeholder="Poderes (ex.: Sentir o Inimigo…)" value={d.powers}
-                        onChange={(e) => set("disciplines", disciplines.map((x, j) => j === i ? { ...x, powers: e.target.value } : x))} />
-                      <button type="button" className="secondary" onClick={() => set("disciplines", disciplines.filter((_, j) => j !== i))}>✕</button>
+                    <div key={i} className="disc-block" data-testid="discipline-row">
+                      <div className="disc-head-row">
+                        <input aria-label="disciplina" placeholder="Disciplina" value={d.name}
+                          onChange={(e) => updDisc(i, { name: e.target.value })} />
+                        <DotsOnly value={d.level} max={5} onChange={(lv) => updDisc(i, { level: lv })} />
+                        <button type="button" className="secondary" aria-label="remover disciplina"
+                          onClick={() => setDisc(disciplines.filter((_, j) => j !== i))}>✕</button>
+                      </div>
+                      <div className="disc-powers">
+                        {d.powers.length === 0 && <p className="muted" style={{ fontSize: 12, margin: "0 0 6px" }}>Sem poderes. Adicione abaixo ou pelo catálogo.</p>}
+                        {d.powers.map((p, pi) => (
+                          <div key={pi} className="power-row" data-testid="power-row">
+                            <select aria-label="nível do poder" value={p.level}
+                              onChange={(e) => updPower(i, pi, { level: Number(e.target.value) })}>
+                              {[1, 2, 3, 4, 5].map((lv) => <option key={lv} value={lv}>•{lv}</option>)}
+                            </select>
+                            <input aria-label="poder" placeholder="Nome do poder (ex.: Sentir o Inimigo)" value={p.name}
+                              onChange={(e) => updPower(i, pi, { name: e.target.value })} />
+                            <button type="button" className="secondary" aria-label="remover poder"
+                              onClick={() => delPower(i, pi)}>✕</button>
+                          </div>
+                        ))}
+                        <button type="button" className="ghost" style={{ padding: "2px 8px", marginTop: 4 }}
+                          onClick={() => addPower(i)}>+ Poder</button>
+                      </div>
                     </div>
                   ))}
                 </div>
-                <button type="button" className="secondary" style={{ marginTop: 8 }}
-                  onClick={() => set("disciplines", [...disciplines, { name: "", level: 1, powers: "" }])}>+ Disciplina</button>
+                <button type="button" className="secondary" style={{ marginTop: 10 }}
+                  onClick={() => setDisc([...disciplines, { name: "", level: 1, powers: [] }])}>+ Disciplina</button>
 
                 {catalog?.disciplines && catalog.disciplines.length > 0 && (
                   <DisciplineCatalog
                     list={catalog.disciplines}
                     onAdd={(name) => {
                       if (disciplines.some((d) => norm(d.name) === norm(name))) return;
-                      set("disciplines", [...disciplines, { name, level: 1, powers: "" }]);
-                    }} />
+                      setDisc([...disciplines, { name, level: 1, powers: [] }]);
+                    }}
+                    onAddPower={addCatalogPower} />
                 )}
               </>
             )}
@@ -518,9 +585,13 @@ export function DynamicSheet({
               <div className="panel" style={{ marginTop: 14 }}>
                 <span className="kv-label">Disciplinas</span>
                 {disciplines.map((d, i) => (
-                  <div key={i} style={{ display: "flex", justifyContent: "space-between", gap: 10, padding: "3px 0" }}>
-                    <span>{d.name || "—"} {"●".repeat(d.level)}</span>
-                    <span className="muted" style={{ fontSize: 13 }}>{d.powers}</span>
+                  <div key={i} style={{ padding: "4px 0", borderBottom: "1px solid var(--border)" }}>
+                    <div style={{ fontWeight: 600 }}>{d.name || "—"} <span style={{ color: "var(--accent)" }}>{"●".repeat(d.level)}</span></div>
+                    {d.powers.length > 0 && (
+                      <div className="muted" style={{ fontSize: 13, marginTop: 2 }}>
+                        {d.powers.map((p) => `${p.level ? `•${p.level} ` : ""}${p.name}`).join(" · ")}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -585,8 +656,9 @@ export function DynamicSheet({
 
 // --- subcomponentes ----------------------------------------------------------
 
-function DisciplineCatalog({ list, onAdd }: {
+function DisciplineCatalog({ list, onAdd, onAddPower }: {
   list: NonNullable<V5Catalog["disciplines"]>; onAdd: (name: string) => void;
+  onAddPower: (discipline: string, power: string, level: number) => void;
 }) {
   const [open, setOpen] = useState<string | null>(null);
   return (
@@ -607,16 +679,22 @@ function DisciplineCatalog({ list, onAdd }: {
                 <div className="disc-detail">
                   <p className="muted" style={{ margin: "0 0 8px" }}>{d.summary}</p>
                   {Object.entries(byLevel).sort((a, b) => Number(a[0]) - Number(b[0])).map(([lvl, powers]) => (
-                    <div key={lvl} style={{ display: "flex", gap: 8, padding: "2px 0" }}>
+                    <div key={lvl} style={{ display: "flex", gap: 8, padding: "3px 0", alignItems: "flex-start" }}>
                       <span className="badge" style={{ minWidth: 28, justifyContent: "center" }}>•{lvl}</span>
-                      <span style={{ fontSize: 14 }}>{powers.map((p) => p.name).join(" · ")}</span>
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: 6, flex: 1 }}>
+                        {powers.map((p) => (
+                          <button key={p.name} type="button" className="badge" style={{ cursor: "pointer" }}
+                            title="Adicionar este poder à ficha"
+                            onClick={() => onAddPower(d.name, p.name, Number(lvl))}>+ {p.name}</button>
+                        ))}
+                      </div>
                     </div>
                   ))}
                   <p className="muted" style={{ fontSize: 12, margin: "8px 0 0" }}>
-                    Texto completo de cada poder: pergunte no <b>Chat (IA)</b> da campanha.
+                    Clique num poder para adicioná-lo à ficha. Texto completo: pergunte no <b>Chat (IA)</b> da campanha.
                   </p>
                   <button type="button" className="secondary" style={{ marginTop: 8 }}
-                    onClick={() => onAdd(d.name)}>+ Adicionar à ficha</button>
+                    onClick={() => onAdd(d.name)}>+ Adicionar disciplina (vazia)</button>
                 </div>
               )}
             </div>

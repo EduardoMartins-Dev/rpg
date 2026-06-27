@@ -8,7 +8,14 @@ type Sheet = Record<string, unknown>;
 type Dmg = { sup: number; agg: number };
 type Weapon = { name: string; damage: string };
 type Item = { name: string; qty: number; category: string; desc: string; equipped: boolean };
-type Discipline = { name: string; level: number; powers: string };
+type Power = { name: string; level: number };
+type Discipline = { name: string; level: number; powers: Power[] | string };
+
+function powerList(p: Power[] | string | undefined): Power[] {
+  if (Array.isArray(p)) return p.map((x) => ({ name: String(x?.name ?? ""), level: Number(x?.level ?? 0) })).filter((x) => x.name);
+  if (typeof p === "string" && p.trim()) return p.split(/[·,;]+/).map((s) => ({ name: s.trim(), level: 0 })).filter((x) => x.name);
+  return [];
+}
 type Advantage = { name: string; dots: number; note: string };
 
 const CAT_LABEL: Record<string, string> = { FISICAS: "Físicas", SOCIAIS: "Sociais", MENTAIS: "Mentais" };
@@ -171,12 +178,19 @@ export function SheetView({ schema, sheet, catalog }: {
       {disciplines.length > 0 && (
         <div className="panel" style={{ marginTop: 14 }}>
           <span className="kv-label">Disciplinas</span>
-          {disciplines.map((d, i) => (
-            <div key={i} style={{ display: "flex", justifyContent: "space-between", gap: 10, padding: "3px 0" }}>
-              <span><b>{d.name || "—"}</b> <span style={{ color: "var(--accent)" }}>{dots(d.level, 5)}</span></span>
-              <span className="muted" style={{ fontSize: 13 }}>{d.powers}</span>
-            </div>
-          ))}
+          {disciplines.map((d, i) => {
+            const powers = powerList(d.powers);
+            return (
+              <div key={i} style={{ padding: "5px 0", borderBottom: "1px solid var(--border)" }}>
+                <div><b>{d.name || "—"}</b> <span style={{ color: "var(--accent)" }}>{dots(d.level, 5)}</span></div>
+                {powers.length > 0 && (
+                  <ul style={{ margin: "4px 0 0", paddingLeft: 18, fontSize: 13 }} className="muted">
+                    {powers.map((p, k) => <li key={k}>{p.level ? `•${p.level} ` : ""}{p.name}</li>)}
+                  </ul>
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
 

@@ -272,6 +272,10 @@ th { font-size: .72rem; text-transform: uppercase; letter-spacing: .5px; color: 
 .kv-label { font: 600 .72rem var(--mono); text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
 .weapon-row { display: grid; grid-template-columns: 1fr 1fr auto; gap: .4rem; margin-bottom: .4rem; }
 .disc-row { display: grid; grid-template-columns: 1.2fr auto 1.5fr auto; gap: .4rem; align-items: center; margin-bottom: .4rem; }
+.disc-block { border: 1px solid var(--border); border-radius: 12px; padding: .7rem .85rem; background: var(--surface); }
+.disc-head-row { display: grid; grid-template-columns: 1fr auto auto; gap: .5rem; align-items: center; }
+.disc-powers { margin-top: .6rem; padding-left: .2rem; border-left: 2px solid var(--accent-tint); padding-left: .7rem; }
+.power-row { display: grid; grid-template-columns: 72px 1fr auto; gap: .4rem; align-items: center; margin-bottom: .35rem; }
 .inv-row { display: grid; grid-template-columns: 1.4fr 64px 130px 1.6fr auto auto; gap: .4rem; align-items: center; margin-bottom: .4rem; }
 .inv-row .inv-eq { display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--muted); white-space: nowrap; }
 .inv-row .inv-eq input { width: auto; }
