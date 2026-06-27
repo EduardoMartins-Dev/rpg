@@ -132,6 +132,12 @@ export interface AskResponse {
   grounded: boolean; sources: { content: string; systemId: string }[];
 }
 
+// --- mural da campanha (cards livres do mestre) ------------------------------
+export interface BoardItem {
+  id: string; campaignId: string; title: string | null; body: string | null;
+  imageUrl: string | null; sortOrder: number; createdAt: string | null; updatedAt: string | null;
+}
+
 // --- V5 reference catalog (enriquece a ficha; opcional por sistema) ----------
 export interface ClanView {
   id: string; label: string; description: string;

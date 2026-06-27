@@ -188,6 +188,9 @@ th { font-size: .72rem; text-transform: uppercase; letter-spacing: .5px; color: 
 /* --- dashboard (campaigns) ------------------------------------------------- */
 .camp-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px; }
 @media (max-width: 860px) { .camp-grid { grid-template-columns: 1fr; } }
+.board-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 18px; align-items: start; }
+.board-card { transition: border-color .15s; }
+.board-card:hover { border-color: var(--accent); }
 .camp-card { border: 1px solid var(--border); border-radius: 14px; overflow: hidden; background: var(--surface); cursor: pointer; transition: border-color .15s, transform .1s; }
 .camp-card:hover { border-color: var(--accent); transform: translateY(-2px); }
 .camp-cover { height: 104px; position: relative; display: flex; align-items: flex-end; padding: 14px; }
