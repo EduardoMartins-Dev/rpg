@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState, useCallback } from "react";
-import { api, getToken, setToken, type TokenResponse, type User } from "./api";
+import { api, getToken, setToken, setRefreshToken, type TokenResponse, type User } from "./api";
 
 interface AuthState {
   user: User | null;
@@ -40,6 +40,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = useCallback(async (email: string, password: string) => {
     const t = await api.post<TokenResponse>("/auth/login", { email, password });
     setToken(t.accessToken);
+    setRefreshToken(t.refreshToken);
     setUser(await api.get<User>("/me"));
   }, []);
 
@@ -48,7 +49,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await login(email, password);
   }, [login]);
 
-  const logout = useCallback(() => { setToken(null); setUser(null); }, []);
+  const logout = useCallback(() => { setToken(null); setRefreshToken(null); setUser(null); }, []);
 
   return (
     <AuthContext.Provider value={{ user, loading, login, register, logout }}>

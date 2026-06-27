@@ -3,6 +3,7 @@
 // server-side per request — the token only carries user_id + is_admin.
 
 const TOKEN_KEY = "portalrpg.accessToken";
+const REFRESH_KEY = "portalrpg.refreshToken";
 
 export function getToken(): string | null {
   if (typeof window === "undefined") return null;
@@ -15,6 +16,41 @@ export function setToken(token: string | null) {
   else window.localStorage.removeItem(TOKEN_KEY);
 }
 
+export function getRefreshToken(): string | null {
+  if (typeof window === "undefined") return null;
+  return window.localStorage.getItem(REFRESH_KEY);
+}
+
+export function setRefreshToken(token: string | null) {
+  if (typeof window === "undefined") return;
+  if (token) window.localStorage.setItem(REFRESH_KEY, token);
+  else window.localStorage.removeItem(REFRESH_KEY);
+}
+
+// Troca o refresh token por um novo access token. Evita relogin a cada 15 min.
+let refreshing: Promise<boolean> | null = null;
+async function tryRefresh(): Promise<boolean> {
+  const rt = getRefreshToken();
+  if (!rt) return false;
+  if (!refreshing) {
+    refreshing = (async () => {
+      try {
+        const res = await fetch(`/api/auth/refresh`, {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ refreshToken: rt }),
+        });
+        if (!res.ok) { setToken(null); setRefreshToken(null); return false; }
+        const data = await res.json();
+        setToken(data.accessToken);
+        if (data.refreshToken) setRefreshToken(data.refreshToken);
+        return true;
+      } catch { return false; }
+      finally { refreshing = null; }
+    })();
+  }
+  return refreshing;
+}
+
 export class ApiError extends Error {
   status: number;
   constructor(status: number, message: string) {
@@ -23,7 +59,7 @@ export class ApiError extends Error {
   }
 }
 
-async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
+async function request<T>(method: string, path: string, body?: unknown, retry = true): Promise<T> {
   const headers: Record<string, string> = {};
   const token = getToken();
   if (token) headers["Authorization"] = `Bearer ${token}`;
@@ -33,6 +69,10 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
     init = { ...init, body: JSON.stringify(body) };
   }
   const res = await fetch(`/api${path}`, init);
+  // Token expirou → tenta refresh uma vez e repete (exceto nos próprios endpoints de auth).
+  if (res.status === 401 && retry && !path.startsWith("/auth/") && await tryRefresh()) {
+    return request<T>(method, path, body, false);
+  }
   const text = await res.text();
   const data = text ? JSON.parse(text) : null;
   if (!res.ok) {
@@ -50,13 +90,16 @@ export const api = {
 };
 
 // Multipart upload (document indexing). Kept separate — no JSON content-type.
-export async function uploadFile<T>(path: string, file: File): Promise<T> {
+export async function uploadFile<T>(path: string, file: File, retry = true): Promise<T> {
   const headers: Record<string, string> = {};
   const token = getToken();
   if (token) headers["Authorization"] = `Bearer ${token}`;
   const form = new FormData();
   form.append("file", file);
   const res = await fetch(`/api${path}`, { method: "POST", headers, body: form });
+  if (res.status === 401 && retry && await tryRefresh()) {
+    return uploadFile<T>(path, file, false);
+  }
   const text = await res.text();
   const data = text ? JSON.parse(text) : null;
   if (!res.ok) throw new ApiError(res.status, data?.message ?? `upload failed (${res.status})`);
