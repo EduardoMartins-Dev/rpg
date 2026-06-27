@@ -67,7 +67,9 @@ export default function CampaignsPage() {
     return (
       <Link href={`/campaigns/${c.id}`} data-testid={`campaign-open-${c.id}`} style={{ color: "inherit" }}>
         <div className="camp-card" data-testid="campaign-row">
-          <div className="camp-cover" style={{ background: cover(c.name) }}>
+          <div className="camp-cover" style={c.bannerUrl
+            ? { background: `linear-gradient(rgba(13,14,18,0.35), rgba(13,14,18,0.65)), url(${JSON.stringify(c.bannerUrl)}) center/cover no-repeat` }
+            : { background: cover(c.name) }}>
             <span className={`badge role-${c.role} role`} data-testid="campaign-role">
               {c.role === "MASTER" ? "Mestre" : "Jogador"}
             </span>
