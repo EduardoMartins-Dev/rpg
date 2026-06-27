@@ -145,10 +145,12 @@ export interface BloodPotencyView {
 export interface PowerView { level: number; name: string; }
 export interface DisciplineView { name: string; summary: string; powers: PowerView[]; }
 export interface PredatorView { name: string; summary: string; disciplines: string[]; }
+export interface ResonanceView { name: string; emotion: string; disciplines: string[]; }
+export interface CoterieView { name: string; summary: string; }
 export interface V5Catalog {
   types: string[]; clans: ClanView[]; abilities: AbilityGroup[];
   bloodPotency?: BloodPotencyView[]; disciplines?: DisciplineView[]; predatorTypes?: PredatorView[];
-  advantages?: string[]; flaws?: string[];
+  advantages?: string[]; flaws?: string[]; resonances?: ResonanceView[]; coterieTypes?: CoterieView[];
 }
 
 // --- admin: gestão de usuários ----------------------------------------------

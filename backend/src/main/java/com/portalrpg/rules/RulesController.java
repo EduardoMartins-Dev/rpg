@@ -42,6 +42,12 @@ public class RulesController {
     public record PredatorView(String name, String summary, List<String> disciplines) {
     }
 
+    public record ResonanceView(String name, String emotion, List<String> disciplines) {
+    }
+
+    public record CoterieView(String name, String summary) {
+    }
+
     public record V5CatalogView(
             List<String> types,
             List<ClanView> clans,
@@ -50,7 +56,9 @@ public class RulesController {
             List<DisciplineView> disciplines,
             List<PredatorView> predatorTypes,
             List<String> advantages,
-            List<String> flaws) {
+            List<String> flaws,
+            List<ResonanceView> resonances,
+            List<CoterieView> coterieTypes) {
     }
 
     @GetMapping("/v5/catalog")
@@ -86,8 +94,15 @@ public class RulesController {
                 .map(pt -> new PredatorView(pt.name(), pt.summary(), pt.disciplines()))
                 .toList();
 
+        List<ResonanceView> resonances = V5Catalog.resonances().stream()
+                .map(r -> new ResonanceView(r.name(), r.emotion(), r.disciplines()))
+                .toList();
+        List<CoterieView> coteries = V5Catalog.coterieTypes().stream()
+                .map(c -> new CoterieView(c.name(), c.summary()))
+                .toList();
+
         return new V5CatalogView(types, clans, abilities, bloodPotency, disciplines, predators,
-                V5Catalog.advantages(), V5Catalog.flaws());
+                V5Catalog.advantages(), V5Catalog.flaws(), resonances, coteries);
     }
 
     private ClanView toClanView(ClanInfo c) {

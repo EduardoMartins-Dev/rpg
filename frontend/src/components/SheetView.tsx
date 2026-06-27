@@ -49,10 +49,13 @@ export function SheetView({ schema, sheet, catalog }: {
           <Kv k="Senhor" v={str(sheet.sire) || "—"} />
           <Kv k="Geração / P. Sangue" v={`${str(sheet.generation) || "—"} / ${str(sheet.bloodPotency) || "—"}`} />
           <Kv k="Predador" v={str(sheet.predatorType) || "—"} />
+          <Kv k="Coterie" v={str(sheet.coterie) || "—"} />
+          <Kv k="Ressonância" v={str(sheet.resonance) || "—"} />
           <Kv k="Ambição" v={str(sheet.ambition) || "—"} />
           <Kv k="Desejo" v={str(sheet.desire) || "—"} />
           <Kv k="Humanidade" v={String((sheet.humanity as number) ?? 7)} />
           <Kv k="Fome" v={String((sheet.hunger as number) ?? 0)} />
+          <Kv k="XP disponível" v={xpAvail(sheet)} />
         </div>
         <div className="panel accent-box" style={{ margin: 0 }}>
           <div className="kv-label">Recursos</div>
@@ -228,6 +231,12 @@ function Stat({ k, v }: { k: string; v: number | string }) {
   );
 }
 
+function xpAvail(sheet: Sheet): string {
+  const xp = sheet.xp as { total?: number; entries?: { cost: number }[] } | undefined;
+  if (!xp) return "—";
+  const spent = (xp.entries ?? []).reduce((a, e) => a + (e.cost || 0), 0);
+  return `${(xp.total ?? 0) - spent} / ${xp.total ?? 0}`;
+}
 function dots(n: number, max: number): string { const v = Math.max(0, Math.min(max, n || 0)); return "●".repeat(v) + "○".repeat(max - v); }
 function str(v: unknown): string { return v == null ? "" : String(v); }
 function groupBy<T>(items: T[], key: (t: T) => string): Record<string, T[]> {

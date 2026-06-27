@@ -5,6 +5,19 @@ import type { SchemaShape, V5Catalog, ClanView } from "@/lib/api";
 import { DamageTrack } from "@/components/DamageTrack";
 
 type Dmg = { sup: number; agg: number };
+type Xp = { total: number; entries: { desc: string; cost: number }[] };
+
+const XP_COSTS: [string, string][] = [
+  ["Aumento de Atributo", "novo nível × 5"],
+  ["Aumento de Habilidade", "novo nível × 3"],
+  ["Nova Especialização", "3"],
+  ["Disciplina de Clã", "novo nível × 5"],
+  ["Outra Disciplina", "novo nível × 7"],
+  ["Disciplina Caitiff", "novo nível × 6"],
+  ["Ritual / Fórmula", "nível × 3"],
+  ["Vantagem", "3 por ponto"],
+  ["Potência de Sangue", "novo nível × 10"],
+];
 
 type Sheet = Record<string, unknown>;
 type Weapon = { name: string; damage: string };
@@ -213,6 +226,19 @@ export function DynamicSheet({
             )}
             <BloodPotencyEffects catalog={catalog} potency={Number(sheet.bloodPotency)} />
 
+            {(catalog?.coterieTypes || catalog?.resonances) && (
+              <div className="grid2" style={{ marginTop: 12 }}>
+                {catalog?.coterieTypes && (
+                  <CatalogSelect label="Coterie" value={str(sheet.coterie)} onChange={(v) => set("coterie", v || undefined)}
+                    options={catalog.coterieTypes.map((c) => ({ name: c.name, detail: c.summary }))} />
+                )}
+                {catalog?.resonances && (
+                  <CatalogSelect label="Ressonância do sangue" value={str(sheet.resonance)} onChange={(v) => set("resonance", v || undefined)}
+                    options={catalog.resonances.map((r) => ({ name: r.name, detail: `${r.emotion} · ${r.disciplines.join(", ")}` }))} />
+                )}
+              </div>
+            )}
+
             <h3 style={{ marginTop: "1.1rem" }}>Motivação</h3>
             <div className="grid2">
               <Field label="Ambição" v={str(sheet.ambition)} on={(v) => set("ambition", v)} ph="objetivo de longo prazo" />
@@ -393,6 +419,8 @@ export function DynamicSheet({
                   onChange={(e) => setTop("humanity", Number(e.target.value))} />
               </div>
             </div>
+
+            <XpPanel xp={(sheet.xp as Xp) ?? { total: 0, entries: [] }} onChange={(v) => setTop("xp", v)} />
           </section>
         )}
 
@@ -604,6 +632,66 @@ function AttrBudget({ attributes, attrs }: { attributes: string[]; attrs: Record
         return <span key={v} className={`budget ${ok ? "ok" : "warn"}`} style={{ padding: "3px 8px", border: "1px solid var(--border)", borderRadius: 999 }}>
           {have[v]}/{target[v]} com {v} {ok ? "✓" : "⚠"}</span>;
       })}
+    </div>
+  );
+}
+
+function CatalogSelect({ label, value, onChange, options }: {
+  label: string; value: string; onChange: (v: string) => void; options: { name: string; detail: string }[];
+}) {
+  const sel = options.find((o) => o.name === value);
+  return (
+    <div>
+      <label>{label}</label>
+      <select value={value} onChange={(e) => onChange(e.target.value)} style={{ marginTop: 7 }}>
+        <option value="">—</option>
+        {options.map((o) => <option key={o.name} value={o.name}>{o.name}</option>)}
+      </select>
+      {sel && <div className="muted" style={{ fontSize: 12, marginTop: 6 }}>{sel.detail}</div>}
+    </div>
+  );
+}
+
+function XpPanel({ xp, onChange }: { xp: Xp; onChange: (v: Xp) => void }) {
+  const entries = xp.entries ?? [];
+  const spent = entries.reduce((a, e) => a + (e.cost || 0), 0);
+  const available = (xp.total || 0) - spent;
+  return (
+    <div className="sheet-section" data-testid="xp-panel">
+      <h3 style={{ fontSize: "1rem" }}>Experiência (XP)</h3>
+      <div className="row" style={{ alignItems: "center", maxWidth: 520 }}>
+        <div style={{ maxWidth: 140 }}>
+          <label>Total ganho</label>
+          <input type="number" min={0} value={xp.total || 0}
+            onChange={(e) => onChange({ ...xp, total: Number(e.target.value) })} />
+        </div>
+        <span className="badge" style={{ alignSelf: "center" }}>Gasto: {spent}</span>
+        <span className={`budget ${available < 0 ? "warn" : "ok"}`} style={{ alignSelf: "center", padding: "5px 10px", border: "1px solid var(--border)", borderRadius: 999 }}>
+          Disponível: {available}
+        </span>
+      </div>
+
+      <div style={{ marginTop: 10 }}>
+        {entries.map((e, i) => (
+          <div key={i} style={{ display: "grid", gridTemplateColumns: "1fr 80px auto", gap: 8, marginBottom: 6 }}>
+            <input value={e.desc} placeholder="ex.: Potência 2" onChange={(ev) => onChange({ ...xp, entries: entries.map((x, j) => j === i ? { ...x, desc: ev.target.value } : x) })} />
+            <input type="number" value={e.cost} placeholder="custo" onChange={(ev) => onChange({ ...xp, entries: entries.map((x, j) => j === i ? { ...x, cost: Number(ev.target.value) } : x) })} />
+            <button type="button" className="secondary" onClick={() => onChange({ ...xp, entries: entries.filter((_, j) => j !== i) })}>✕</button>
+          </div>
+        ))}
+        <button type="button" className="secondary" onClick={() => onChange({ ...xp, entries: [...entries, { desc: "", cost: 0 }] })}>+ Gasto de XP</button>
+      </div>
+
+      <details style={{ marginTop: 10 }}>
+        <summary className="muted" style={{ fontSize: 13, cursor: "pointer" }}>Tabela de custos (livro)</summary>
+        <div style={{ marginTop: 8 }}>
+          {XP_COSTS.map(([k, v]) => (
+            <div key={k} style={{ display: "flex", justifyContent: "space-between", fontSize: 13, padding: "2px 0", borderBottom: "1px solid var(--border)" }}>
+              <span>{k}</span><span className="mono muted">{v}</span>
+            </div>
+          ))}
+        </div>
+      </details>
     </div>
   );
 }

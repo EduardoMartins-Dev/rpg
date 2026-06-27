@@ -309,6 +309,37 @@ public final class V5Catalog {
         return FLAWS;
     }
 
+    // --- Ressonâncias do sangue + Tipos de Coterie ------------------------
+
+    public record Resonance(String name, String emotion, List<String> disciplines) {
+    }
+
+    private static final List<Resonance> RESONANCES = List.of(
+            new Resonance("Colérico", "raiva, violência", List.of("Celeridade", "Potência")),
+            new Resonance("Melancólico", "tristeza, medo", List.of("Fortitude", "Ofuscação")),
+            new Resonance("Fleumático", "calma, preguiça, controle", List.of("Auspícios", "Dominação")),
+            new Resonance("Sanguíneo", "alegria, desejo, paixão", List.of("Feitiçaria de Sangue", "Presença")),
+            new Resonance("Animal", "sangue de animais", List.of("Animalismo", "Proteanismo")));
+
+    public static List<Resonance> resonances() {
+        return RESONANCES;
+    }
+
+    public record CoterieType(String name, String summary) {
+    }
+
+    private static final List<CoterieType> COTERIES = List.of(
+            new CoterieType("Grupo de Caça", "Captura presas para terceiros ou para a própria mesa."),
+            new CoterieType("Guarda Diurna", "Protege os não-vivos enquanto dormem durante o dia."),
+            new CoterieType("Nômades", "Viaja de um lugar a outro, sem refúgio fixo."),
+            new CoterieType("Questári", "Busca realizar um grande empreendimento ou objetivo."),
+            new CoterieType("Recência", "Administra os negócios até que um ancião retorne."),
+            new CoterieType("Coterie Social", "Reúne-se por status, prazer e influência."));
+
+    public static List<CoterieType> coterieTypes() {
+        return COTERIES;
+    }
+
     // --- Tabela de Potência de Sangue 0–6 (errata Companion §13.6) ---------
 
     /**
