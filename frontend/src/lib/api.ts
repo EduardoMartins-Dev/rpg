@@ -133,6 +133,12 @@ export interface AskResponse {
   grounded: boolean; sources: { content: string; systemId: string }[];
 }
 
+// --- anotações da campanha (player escreve; mestre vê todas) -----------------
+export interface CampaignNote {
+  id: string; authorId: string; authorName: string; title: string | null;
+  body: string; canEdit: boolean; createdAt: string | null; updatedAt: string | null;
+}
+
 // --- mural da campanha (cards livres do mestre) ------------------------------
 export interface BoardItem {
   id: string; campaignId: string; title: string | null; body: string | null;

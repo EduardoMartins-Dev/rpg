@@ -7,11 +7,12 @@ import { useRequireUser } from "@/lib/guard";
 import { AppShell } from "@/components/AppShell";
 import { V5Roller } from "@/components/V5Roller";
 import { CampaignBoard } from "@/components/CampaignBoard";
+import { CampaignNotes } from "@/components/CampaignNotes";
 import {
   api, type AskResponse, type Campaign, type Character, type Member, type RpgSystem, type V5Catalog,
 } from "@/lib/api";
 
-type Tab = "overview" | "board" | "members" | "sheets" | "ai";
+type Tab = "overview" | "board" | "notes" | "members" | "sheets" | "ai";
 
 function gradient(seed: string): string {
   let h = 0;
@@ -212,6 +213,7 @@ export default function CampaignDetailPage() {
   const tabs: { k: Tab; label: string }[] = [
     { k: "overview", label: "Visão geral" },
     { k: "board", label: "Mural" },
+    { k: "notes", label: "Anotações" },
     { k: "members", label: "Membros" },
     { k: "sheets", label: "Fichas" },
     { k: "ai", label: "Chat (IA)" },
@@ -356,6 +358,9 @@ export default function CampaignDetailPage() {
 
           {/* MURAL */}
           {tab === "board" && <CampaignBoard campaignId={id} isMaster={isMaster} />}
+
+          {/* ANOTAÇÕES */}
+          {tab === "notes" && <CampaignNotes campaignId={id} isMaster={isMaster} />}
 
           {/* MEMBERS */}
           {tab === "members" && (
