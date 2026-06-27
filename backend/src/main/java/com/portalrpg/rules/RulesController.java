@@ -48,7 +48,9 @@ public class RulesController {
             List<AbilityGroup> abilities,
             List<BloodPotencyView> bloodPotency,
             List<DisciplineView> disciplines,
-            List<PredatorView> predatorTypes) {
+            List<PredatorView> predatorTypes,
+            List<String> advantages,
+            List<String> flaws) {
     }
 
     @GetMapping("/v5/catalog")
@@ -84,7 +86,8 @@ public class RulesController {
                 .map(pt -> new PredatorView(pt.name(), pt.summary(), pt.disciplines()))
                 .toList();
 
-        return new V5CatalogView(types, clans, abilities, bloodPotency, disciplines, predators);
+        return new V5CatalogView(types, clans, abilities, bloodPotency, disciplines, predators,
+                V5Catalog.advantages(), V5Catalog.flaws());
     }
 
     private ClanView toClanView(ClanInfo c) {

@@ -290,6 +290,25 @@ public final class V5Catalog {
         return PREDATORS;
     }
 
+    // --- Antecedentes/Vantagens e Defeitos (nomes do livro p/ sugestão) ----
+
+    private static final List<String> ADVANTAGES = List.of(
+            "Aliados", "Contatos", "Influência", "Mentor", "Recursos", "Refúgio",
+            "Rebanho", "Status", "Fama", "Lacaios", "Máscara", "Aclamação",
+            "Criado", "Herança", "Território", "Sangue Resiliente");
+
+    private static final List<String> FLAWS = List.of(
+            "Inimigo", "Caçado", "Adversário", "Suspeito", "Notório", "Dívida",
+            "Folclore Sombrio", "Repugnante", "Presa Restrita", "Conhecido");
+
+    public static List<String> advantages() {
+        return ADVANTAGES;
+    }
+
+    public static List<String> flaws() {
+        return FLAWS;
+    }
+
     // --- Tabela de Potência de Sangue 0–6 (errata Companion §13.6) ---------
 
     /**

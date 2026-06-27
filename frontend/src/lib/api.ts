@@ -148,6 +148,7 @@ export interface PredatorView { name: string; summary: string; disciplines: stri
 export interface V5Catalog {
   types: string[]; clans: ClanView[]; abilities: AbilityGroup[];
   bloodPotency?: BloodPotencyView[]; disciplines?: DisciplineView[]; predatorTypes?: PredatorView[];
+  advantages?: string[]; flaws?: string[];
 }
 
 // --- admin: gestão de usuários ----------------------------------------------

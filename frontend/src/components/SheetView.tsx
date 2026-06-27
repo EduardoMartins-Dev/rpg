@@ -115,6 +115,18 @@ export function SheetView({ schema, sheet, catalog }: {
           groupOf={(n) => skillMeta.get(norm(n))?.category ?? "Outras"} />
       </div>
 
+      {/* Especializações */}
+      {Object.entries((sheet.specialties as Record<string, string>) ?? {}).filter(([, v]) => v).length > 0 && (
+        <div className="panel" style={{ marginTop: 14 }}>
+          <span className="kv-label">Especializações</span>
+          <div className="chips" style={{ marginTop: 6 }}>
+            {Object.entries((sheet.specialties as Record<string, string>) ?? {}).filter(([, v]) => v).map(([k, v]) => (
+              <span key={k} className="badge">{skillMeta.get(norm(k))?.label ?? titleCase(k)}: <b>{v}</b></span>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Disciplinas do personagem */}
       {disciplines.length > 0 && (
         <div className="panel" style={{ marginTop: 14 }}>

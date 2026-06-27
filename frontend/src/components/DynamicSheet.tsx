@@ -205,6 +205,12 @@ export function DynamicSheet({
                 onChange={(v) => set("predatorType", v || undefined)} />
               <Field label="Idade aparente" v={str(sheet.apparentAge)} on={(v) => set("apparentAge", v)} />
             </div>
+            {sheet.generation != null && sheet.generation !== "" && (
+              <button type="button" className="secondary" style={{ marginTop: 8 }}
+                onClick={() => set("bloodPotency", genToBloodPotency(Number(sheet.generation)))}>
+                Calcular Potência de Sangue pela Geração ({genToBloodPotency(Number(sheet.generation))})
+              </button>
+            )}
             <BloodPotencyEffects catalog={catalog} potency={Number(sheet.bloodPotency)} />
 
             <h3 style={{ marginTop: "1.1rem" }}>Motivação</h3>
@@ -267,6 +273,24 @@ export function DynamicSheet({
                 </div>
               ))}
             </div>
+
+            {/* Especializações (perícias com pontos) */}
+            <div className="sheet-section">
+              <h3 style={{ fontSize: "1rem" }}>Especializações <span className="muted" style={{ fontSize: ".8rem" }}>(foco dentro da perícia)</span></h3>
+              {skills.filter((n) => (skillVals[n] ?? 0) > 0).length === 0 && (
+                <p className="muted" style={{ fontSize: 13 }}>Suba alguma perícia para adicionar especializações.</p>
+              )}
+              {skills.filter((n) => (skillVals[n] ?? 0) > 0).map((n) => {
+                const specialties = (sheet.specialties as Record<string, string>) ?? {};
+                return (
+                  <div key={n} style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
+                    <span style={{ flex: "0 0 130px", fontSize: 14 }}>{skillMeta.get(norm(n))?.label ?? titleCase(n)}</span>
+                    <input value={specialties[n] ?? ""} placeholder="ex.: Facas, Mentir, Pistolas…"
+                      onChange={(e) => setTop("specialties", { ...specialties, [n]: e.target.value })} />
+                  </div>
+                );
+              })}
+            </div>
           </section>
         )}
 
@@ -315,9 +339,11 @@ export function DynamicSheet({
         {cur === "vantagens" && (
           <section>
             <h3>Vantagens & Antecedentes <Budget used={sumDots(advantages)} max={7} /></h3>
-            <AdvantageEditor items={advantages} testid="advantages" onChange={(v) => set("advantages", v)} ph="ex.: Refúgio, Aliados, Recursos, Mentor…" />
+            <AdvantageEditor items={advantages} testid="advantages" onChange={(v) => set("advantages", v)}
+              ph="ex.: Refúgio, Aliados, Recursos, Mentor…" options={catalog?.advantages} />
             <h3 style={{ marginTop: "1.1rem" }}>Defeitos <Budget used={sumDots(flaws)} max={2} /> <span className="muted" style={{ fontSize: ".8rem" }}>(+ os do predador)</span></h3>
-            <AdvantageEditor items={flaws} testid="flaws" onChange={(v) => set("flaws", v)} ph="ex.: Inimigo, Caçado, Suspeito…" />
+            <AdvantageEditor items={flaws} testid="flaws" onChange={(v) => set("flaws", v)}
+              ph="ex.: Inimigo, Caçado, Suspeito…" options={catalog?.flaws} />
           </section>
         )}
 
@@ -550,6 +576,17 @@ function sumDots(items: { dots: number }[]): number {
   return items.reduce((a, b) => a + (b.dots || 0), 0);
 }
 
+// Geração → Potência de Sangue inicial (tabela por geração do livro).
+function genToBloodPotency(gen: number): number {
+  if (!gen || gen >= 14) return 0;
+  if (gen >= 12) return 1;
+  if (gen >= 10) return 2;
+  if (gen >= 8) return 3;
+  if (gen >= 6) return 4;
+  if (gen >= 4) return 5;
+  return 6;
+}
+
 function Budget({ used, max }: { used: number; max: number }) {
   const ok = used === max;
   return <span className={`budget ${ok ? "ok" : "warn"}`}>{used}/{max} pts {ok ? "✓" : ""}</span>;
@@ -646,14 +683,26 @@ function DotsOnly({ value, max, onChange }: { value: number; max: number; onChan
   );
 }
 
-function AdvantageEditor({ items, onChange, ph, testid }: {
-  items: Advantage[]; onChange: (v: Advantage[]) => void; ph?: string; testid: string;
+function AdvantageEditor({ items, onChange, ph, testid, options }: {
+  items: Advantage[]; onChange: (v: Advantage[]) => void; ph?: string; testid: string; options?: string[];
 }) {
+  const listId = `${testid}-opts`;
   return (
     <div data-testid={testid}>
+      {options && options.length > 0 && (
+        <>
+          <datalist id={listId}>{options.map((o) => <option key={o} value={o} />)}</datalist>
+          <div className="chips" style={{ marginBottom: 8 }}>
+            {options.map((o) => (
+              <button key={o} type="button" className="badge" style={{ cursor: "pointer" }}
+                onClick={() => onChange([...items, { name: o, dots: 1, note: "" }])}>+ {o}</button>
+            ))}
+          </div>
+        </>
+      )}
       {items.map((a, i) => (
         <div key={i} className="disc-row">
-          <input aria-label="nome" placeholder={ph} value={a.name}
+          <input aria-label="nome" placeholder={ph} value={a.name} list={listId}
             onChange={(e) => onChange(items.map((x, j) => j === i ? { ...x, name: e.target.value } : x))} />
           <DotsOnly value={a.dots} max={5} onChange={(d) => onChange(items.map((x, j) => j === i ? { ...x, dots: d } : x))} />
           <input aria-label="nota" placeholder="nota" value={a.note}
