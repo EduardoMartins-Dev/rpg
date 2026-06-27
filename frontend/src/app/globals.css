@@ -217,6 +217,10 @@ th { font-size: .72rem; text-transform: uppercase; letter-spacing: .5px; color: 
 .dice-widget { border: 1px solid var(--border); border-radius: 13px; padding: 20px; background: var(--surface); height: fit-content; }
 .die { width: 34px; height: 34px; border-radius: 8px; border: 1px solid var(--accent); background: var(--accent-tint); display: flex; align-items: center; justify-content: center; color: var(--accent); font: 600 13px var(--mono); }
 .die.res { background: var(--elev); border-color: var(--border); color: var(--text); font-size: 14px; animation: dieRoll .5s ease; }
+.die.res.ten { border-color: var(--accent); color: var(--accent); background: var(--accent-tint); }
+.die.res.hunger { border-color: var(--err); }
+.die.res.hunger.ten { border-color: var(--accent); }
+.die.res.bestial { background: rgba(217,72,59,.18); color: #ff9a8e; }
 .member-row { display: flex; align-items: center; gap: 14px; padding: 14px 18px; border-bottom: 1px solid var(--border); }
 .member-row:last-child { border-bottom: none; }
 .sheet-card { border: 1px solid var(--border); border-radius: 13px; padding: 18px; background: var(--surface); cursor: pointer; transition: border-color .15s; }

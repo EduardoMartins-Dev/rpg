@@ -5,8 +5,9 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useRequireUser } from "@/lib/guard";
 import { AppShell } from "@/components/AppShell";
+import { V5Roller } from "@/components/V5Roller";
 import {
-  api, type AskResponse, type Campaign, type Character, type Member, type RpgSystem,
+  api, type AskResponse, type Campaign, type Character, type Member, type RpgSystem, type V5Catalog,
 } from "@/lib/api";
 
 type Tab = "overview" | "members" | "sheets" | "ai";
@@ -26,6 +27,7 @@ export default function CampaignDetailPage() {
 
   const [campaign, setCampaign] = useState<Campaign | null>(null);
   const [system, setSystem] = useState<RpgSystem | null>(null);
+  const [catalog, setCatalog] = useState<V5Catalog | null>(null);
   const [members, setMembers] = useState<Member[]>([]);
   const [characters, setCharacters] = useState<Character[]>([]);
   const [charName, setCharName] = useState("");
@@ -46,7 +48,13 @@ export default function CampaignDetailPage() {
       setCampaign(c);
       setMembers(await api.get<Member[]>(`/campaigns/${id}/members`));
       setCharacters(await api.get<Character[]>(`/campaigns/${id}/characters`));
-      try { setSystem(await api.get<RpgSystem>(`/systems/${c.systemId}`)); } catch { /* opcional */ }
+      try {
+        const sys = await api.get<RpgSystem>(`/systems/${c.systemId}`);
+        setSystem(sys);
+        if ((sys.ruleset ?? "v5") === "v5") {
+          try { setCatalog(await api.get<V5Catalog>("/rules/v5/catalog")); } catch { setCatalog(null); }
+        }
+      } catch { /* opcional */ }
     } catch (err) {
       setError(err instanceof Error ? err.message : "erro ao carregar campanha");
     }
@@ -190,33 +198,37 @@ export default function CampaignDetailPage() {
                 )}
               </div>
 
-              {/* dice widget */}
-              <div className="dice-widget">
-                <h3 style={{ fontSize: 17, marginTop: 0 }}>Rolagem de dados</h3>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
-                  <span className="muted" style={{ fontSize: 13 }}>Pool de dados</span>
-                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                    <button className="secondary" onClick={() => setPool((p) => Math.max(1, p - 1))} style={{ padding: "4px 10px" }}>−</button>
-                    <span className="mono" style={{ fontWeight: 600, minWidth: 18, textAlign: "center" }}>{pool}</span>
-                    <button className="secondary" onClick={() => setPool((p) => Math.min(12, p + 1))} style={{ padding: "4px 10px" }}>+</button>
-                  </div>
-                </div>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 8, minHeight: 44, marginBottom: 14 }}>
-                  {Array.from({ length: pool }).map((_, i) => <span key={i} className="die">d6</span>)}
-                </div>
-                <button onClick={doRoll} style={{ width: "100%", marginBottom: 14 }}>Rolar dados</button>
-                {roll && (
-                  <div style={{ borderTop: "1px solid var(--border)", paddingTop: 14, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                    <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                      {roll.map((x, i) => <span key={i} className="die res">{x}</span>)}
-                    </div>
-                    <div style={{ textAlign: "right" }}>
-                      <div className="kv-label">Soma</div>
-                      <div className="mono" style={{ fontWeight: 600, fontSize: 22, color: "var(--accent)" }}>{roll.reduce((a, b) => a + b, 0)}</div>
+              {/* rolador: V5 quando ruleset=v5, senão d6 genérico */}
+              {(system?.ruleset ?? "v5") === "v5" ? (
+                <V5Roller bloodPotency={catalog?.bloodPotency} />
+              ) : (
+                <div className="dice-widget">
+                  <h3 style={{ fontSize: 17, marginTop: 0 }}>Rolagem de dados</h3>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+                    <span className="muted" style={{ fontSize: 13 }}>Pool de dados</span>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                      <button className="secondary" onClick={() => setPool((p) => Math.max(1, p - 1))} style={{ padding: "4px 10px" }}>−</button>
+                      <span className="mono" style={{ fontWeight: 600, minWidth: 18, textAlign: "center" }}>{pool}</span>
+                      <button className="secondary" onClick={() => setPool((p) => Math.min(12, p + 1))} style={{ padding: "4px 10px" }}>+</button>
                     </div>
                   </div>
-                )}
-              </div>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8, minHeight: 44, marginBottom: 14 }}>
+                    {Array.from({ length: pool }).map((_, i) => <span key={i} className="die">d6</span>)}
+                  </div>
+                  <button onClick={doRoll} style={{ width: "100%", marginBottom: 14 }}>Rolar dados</button>
+                  {roll && (
+                    <div style={{ borderTop: "1px solid var(--border)", paddingTop: 14, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                        {roll.map((x, i) => <span key={i} className="die res">{x}</span>)}
+                      </div>
+                      <div style={{ textAlign: "right" }}>
+                        <div className="kv-label">Soma</div>
+                        <div className="mono" style={{ fontWeight: 600, fontSize: 22, color: "var(--accent)" }}>{roll.reduce((a, b) => a + b, 0)}</div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
 
