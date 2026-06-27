@@ -68,6 +68,7 @@ public class SystemService {
             throw ApiException.conflict("slug already in use");
         }
         RpgSystem s = new RpgSystem(req.name(), req.slug(), req.description(), creator);
+        s.setRuleset(req.ruleset() == null ? "v5" : req.ruleset());
         systems.save(s);
         return toResponse(s);
     }
@@ -81,6 +82,9 @@ public class SystemService {
         s.setName(req.name());
         s.setSlug(req.slug());
         s.setDescription(req.description());
+        if (req.ruleset() != null) {
+            s.setRuleset(req.ruleset());
+        }
         return toResponse(s);
     }
 
@@ -218,7 +222,7 @@ public class SystemService {
 
     private SystemResponse toResponse(RpgSystem s) {
         return new SystemResponse(s.getId(), s.getName(), s.getSlug(), s.getDescription(),
-                s.getCreatedBy(), s.getCreatedAt());
+                s.getRuleset(), s.getCreatedBy(), s.getCreatedAt());
     }
 
     private DocumentResponse toDocResponse(SystemDocument d) {

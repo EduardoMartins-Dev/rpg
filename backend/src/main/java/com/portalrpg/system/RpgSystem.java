@@ -30,6 +30,9 @@ public class RpgSystem {
     @Column(name = "description")
     private String description;
 
+    @Column(name = "ruleset", nullable = false)
+    private String ruleset = "v5";
+
     @Column(name = "created_by")
     private UUID createdBy;
 
@@ -73,6 +76,14 @@ public class RpgSystem {
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public String getRuleset() {
+        return ruleset;
+    }
+
+    public void setRuleset(String ruleset) {
+        this.ruleset = (ruleset == null || ruleset.isBlank()) ? "generic" : ruleset.trim().toLowerCase();
     }
 
     public UUID getCreatedBy() {

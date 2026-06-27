@@ -188,6 +188,7 @@ export function DynamicSheet({
               <Field label="Tipo de Predador" v={str(sheet.predatorType)} on={(v) => set("predatorType", v || undefined)} disabled={!canHaveClan} ph="ex.: Alcateia, Sedutor…" />
               <Field label="Idade aparente" v={str(sheet.apparentAge)} on={(v) => set("apparentAge", v)} />
             </div>
+            <BloodPotencyEffects catalog={catalog} potency={Number(sheet.bloodPotency)} />
 
             <h3 style={{ marginTop: "1.1rem" }}>Motivação</h3>
             <div className="grid2">
@@ -422,6 +423,28 @@ export function DynamicSheet({
 }
 
 // --- subcomponentes ----------------------------------------------------------
+
+function BloodPotencyEffects({ catalog, potency }: { catalog?: V5Catalog | null; potency: number }) {
+  const bp = catalog?.bloodPotency?.find((b) => b.potency === potency);
+  if (!bp || Number.isNaN(potency)) return null;
+  const items: [string, string][] = [
+    ["Surto de Sangue", `+${bp.bloodSurge}`],
+    ["Bônus de Disciplina", `+${bp.disciplineBonus}`],
+    ["Rerrolar Rouse até", bp.rouseReroll > 0 ? `nível ${bp.rouseReroll}` : "—"],
+    ["Gravidade da Perdição", String(bp.baneSeverity)],
+    ["Cura por Rouse", String(bp.mendingRouse)],
+  ];
+  return (
+    <div className="panel" style={{ margin: "10px 0 0" }} data-testid="blood-potency-effects">
+      <span className="kv-label">Potência de Sangue {potency} · efeitos</span>
+      <div className="chips" style={{ marginTop: 8 }}>
+        {items.map(([k, v]) => (
+          <span key={k} className="badge" style={{ gap: 6 }}>{k}: <b style={{ color: "var(--accent)" }}>{v}</b></span>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 function Field({ label, v, on, ph, type = "text", disabled }: {
   label: string; v: string; on: (v: string) => void; ph?: string; type?: string; disabled?: boolean;

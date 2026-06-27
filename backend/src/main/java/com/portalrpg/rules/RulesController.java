@@ -29,10 +29,15 @@ public class RulesController {
     public record AbilityGroup(String category, List<String> abilities) {
     }
 
+    public record BloodPotencyView(int potency, int bloodSurge, int rouseReroll,
+            int disciplineBonus, int baneSeverity, int mendingRouse) {
+    }
+
     public record V5CatalogView(
             List<String> types,
             List<ClanView> clans,
-            List<AbilityGroup> abilities) {
+            List<AbilityGroup> abilities,
+            List<BloodPotencyView> bloodPotency) {
     }
 
     @GetMapping("/v5/catalog")
@@ -53,7 +58,13 @@ public class RulesController {
                 V5Catalog.CharacterType.MORTAL.name(),
                 V5Catalog.CharacterType.CARNICAL.name());
 
-        return new V5CatalogView(types, clans, abilities);
+        List<BloodPotencyView> bloodPotency = java.util.stream.IntStream.rangeClosed(0, 6)
+                .mapToObj(V5Catalog::bloodPotency)
+                .map(t -> new BloodPotencyView(t.potency(), t.bloodSurge(), t.rouseReroll(),
+                        t.disciplineBonus(), t.baneSeverity(), t.mendingRouse()))
+                .toList();
+
+        return new V5CatalogView(types, clans, abilities, bloodPotency);
     }
 
     private ClanView toClanView(ClanInfo c) {

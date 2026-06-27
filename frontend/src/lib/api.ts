@@ -67,7 +67,7 @@ export async function uploadFile<T>(path: string, file: File): Promise<T> {
 
 export interface User { id: string; email: string; displayName: string; isAdmin: boolean; avatarUrl?: string | null; }
 export interface TokenResponse { accessToken: string; refreshToken: string; tokenType: string; expiresIn: number; }
-export interface RpgSystem { id: string; name: string; slug: string; description: string | null; }
+export interface RpgSystem { id: string; name: string; slug: string; description: string | null; ruleset?: string; }
 export interface SheetSchema { systemId: string; schema: SchemaShape; }
 export interface SchemaShape { attributes?: string[]; skills?: string[]; [k: string]: unknown; }
 export interface SystemDocument { id: string; systemId: string; fileUrl: string; status: string; }
@@ -91,8 +91,12 @@ export interface ClanView {
   disciplines: string[]; bane: string; compulsion: string;
 }
 export interface AbilityGroup { category: string; abilities: string[]; }
+export interface BloodPotencyView {
+  potency: number; bloodSurge: number; rouseReroll: number;
+  disciplineBonus: number; baneSeverity: number; mendingRouse: number;
+}
 export interface V5Catalog {
-  types: string[]; clans: ClanView[]; abilities: AbilityGroup[];
+  types: string[]; clans: ClanView[]; abilities: AbilityGroup[]; bloodPotency?: BloodPotencyView[];
 }
 
 // --- admin: gestão de usuários ----------------------------------------------

@@ -32,6 +32,7 @@ export default function AdminPage() {
   const [systems, setSystems] = useState<RpgSystem[]>([]);
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
+  const [ruleset, setRuleset] = useState("v5");
   const [selected, setSelected] = useState<string | null>(null);
   const [schemaText, setSchemaText] = useState(DEFAULT_SCHEMA);
   const [docs, setDocs] = useState<SystemDocument[]>([]);
@@ -122,12 +123,23 @@ export default function AdminPage() {
     e.preventDefault();
     setError(null); setMsg(null);
     try {
-      const s = await api.post<RpgSystem>("/systems", { name, slug, description: "" });
+      const s = await api.post<RpgSystem>("/systems", { name, slug, description: "", ruleset });
       setName(""); setSlug("");
       await loadSystems();
       setMsg(`Sistema "${s.name}" criado.`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "erro");
+    }
+  }
+
+  async function changeRuleset(s: RpgSystem, value: string) {
+    setError(null); setMsg(null);
+    try {
+      await api.put(`/systems/${s.id}`, { name: s.name, slug: s.slug, description: s.description ?? "", ruleset: value });
+      await loadSystems();
+      setMsg(`Ruleset de "${s.name}" → ${value}.`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "erro ao mudar ruleset");
     }
   }
 
@@ -268,13 +280,21 @@ export default function AdminPage() {
             <input id="sys-slug" data-testid="system-slug" value={slug}
               onChange={(e) => setSlug(e.target.value)} placeholder="vampiro-v5" />
           </div>
+          <div style={{ flex: "0 0 auto" }}>
+            <label htmlFor="sys-ruleset">Ruleset</label>
+            <select id="sys-ruleset" data-testid="system-ruleset" value={ruleset}
+              onChange={(e) => setRuleset(e.target.value)}>
+              <option value="v5">Vampiro V5</option>
+              <option value="generic">Genérico</option>
+            </select>
+          </div>
           <button type="submit" data-testid="system-create" style={{ flex: "0 0 auto" }}>+ Criar</button>
         </form>
       </div>
 
       <div className="panel" style={{ padding: 0 }}>
         <table>
-          <thead><tr><th style={{ paddingLeft: 20 }}>Sistema</th><th>Slug</th><th style={{ textAlign: "right", paddingRight: 20 }}></th></tr></thead>
+          <thead><tr><th style={{ paddingLeft: 20 }}>Sistema</th><th>Slug</th><th>Ruleset</th><th style={{ textAlign: "right", paddingRight: 20 }}></th></tr></thead>
           <tbody>
             {systems.map((s) => (
               <tr key={s.id} data-testid={`system-row-${s.slug}`}>
@@ -285,13 +305,20 @@ export default function AdminPage() {
                   </span>
                 </td>
                 <td className="mono muted">{s.slug}</td>
+                <td>
+                  <select data-testid={`system-ruleset-${s.slug}`} value={s.ruleset ?? "v5"}
+                    onChange={(e) => changeRuleset(s, e.target.value)} style={{ width: "auto", padding: "5px 8px", fontSize: 13 }}>
+                    <option value="v5">Vampiro V5</option>
+                    <option value="generic">Genérico</option>
+                  </select>
+                </td>
                 <td style={{ textAlign: "right", paddingRight: 20 }}>
                   <button className="secondary" data-testid={`system-manage-${s.slug}`}
                     onClick={() => selectSystem(s.id)} style={{ padding: "6px 12px", fontSize: 13 }}>Gerenciar</button>
                 </td>
               </tr>
             ))}
-            {systems.length === 0 && <tr><td colSpan={3} className="muted" style={{ padding: 20 }}>Nenhum sistema ainda.</td></tr>}
+            {systems.length === 0 && <tr><td colSpan={4} className="muted" style={{ padding: 20 }}>Nenhum sistema ainda.</td></tr>}
           </tbody>
         </table>
       </div>

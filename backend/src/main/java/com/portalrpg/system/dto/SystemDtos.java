@@ -19,7 +19,8 @@ public final class SystemDtos {
             @NotBlank @Size(max = 255) String name,
             @NotBlank @Size(max = 255) @Pattern(regexp = "^[a-z0-9-]+$",
                     message = "slug must be lowercase alphanumeric with hyphens") String slug,
-            String description) {
+            String description,
+            @Pattern(regexp = "v5|generic", message = "ruleset must be 'v5' or 'generic'") String ruleset) {
     }
 
     public record SystemResponse(
@@ -27,6 +28,7 @@ public final class SystemDtos {
             String name,
             String slug,
             String description,
+            String ruleset,
             UUID createdBy,
             Instant createdAt) {
     }

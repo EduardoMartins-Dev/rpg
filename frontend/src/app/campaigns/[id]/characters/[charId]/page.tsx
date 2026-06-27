@@ -8,7 +8,7 @@ import { AppShell } from "@/components/AppShell";
 import { DynamicSheet } from "@/components/DynamicSheet";
 import {
   api, type Campaign, type Character, type SchemaShape, type SheetSchema,
-  type V5Catalog,
+  type RpgSystem, type V5Catalog,
 } from "@/lib/api";
 
 type Sheet = Record<string, unknown>;
@@ -29,11 +29,16 @@ export default function CharacterSheetPage() {
     setError(null);
     try {
       const campaign = await api.get<Campaign>(`/campaigns/${id}`);
+      const system = await api.get<RpgSystem>(`/systems/${campaign.systemId}`);
       const sc = await api.get<SheetSchema>(`/systems/${campaign.systemId}/sheet-schema`);
       setSchema(sc.schema);
-      // Catálogo V5 (clãs, perícias). Carrega sempre; se o backend não tiver, cai no genérico.
-      try { setCatalog(await api.get<V5Catalog>("/rules/v5/catalog")); }
-      catch { setCatalog(null); }
+      // Catálogo V5 só quando o sistema usa o ruleset v5 (admin define). Senão, ficha genérica.
+      if ((system.ruleset ?? "v5") === "v5") {
+        try { setCatalog(await api.get<V5Catalog>("/rules/v5/catalog")); }
+        catch { setCatalog(null); }
+      } else {
+        setCatalog(null);
+      }
       const ch = await api.get<Character>(`/campaigns/${id}/characters/${charId}`);
       setName(ch.name);
       setSheet(ch.sheetData ?? {});
