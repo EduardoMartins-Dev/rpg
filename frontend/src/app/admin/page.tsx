@@ -132,6 +132,19 @@ export default function AdminPage() {
     }
   }
 
+  async function deleteSystem(s: RpgSystem) {
+    if (!confirm(`Excluir o sistema "${s.name}"? Apaga schema, livros e índice RAG. Permanente.`)) return;
+    setError(null); setMsg(null);
+    try {
+      await api.del(`/systems/${s.id}`);
+      if (selected === s.id) setSelected(null);
+      await loadSystems();
+      setMsg(`Sistema "${s.name}" excluído.`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "erro ao excluir sistema");
+    }
+  }
+
   async function changeRuleset(s: RpgSystem, value: string) {
     setError(null); setMsg(null);
     try {
@@ -312,9 +325,11 @@ export default function AdminPage() {
                     <option value="generic">Genérico</option>
                   </select>
                 </td>
-                <td style={{ textAlign: "right", paddingRight: 20 }}>
+                <td style={{ textAlign: "right", paddingRight: 20, whiteSpace: "nowrap" }}>
                   <button className="secondary" data-testid={`system-manage-${s.slug}`}
-                    onClick={() => selectSystem(s.id)} style={{ padding: "6px 12px", fontSize: 13 }}>Gerenciar</button>
+                    onClick={() => selectSystem(s.id)} style={{ padding: "6px 12px", fontSize: 13, marginRight: 8 }}>Gerenciar</button>
+                  <button className="danger" data-testid={`system-delete-${s.slug}`}
+                    onClick={() => deleteSystem(s)} style={{ padding: "6px 12px", fontSize: 13 }}>Excluir</button>
                 </td>
               </tr>
             ))}

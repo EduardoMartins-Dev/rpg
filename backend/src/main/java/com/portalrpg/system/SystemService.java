@@ -191,6 +191,19 @@ public class SystemService {
         return toDocResponse(doc);
     }
 
+    /** Exclui o sistema (schema, documentos e chunks caem por cascade). Bloqueia se houver campanhas. */
+    @Transactional
+    public void deleteSystem(UUID id) {
+        require(id);
+        chunks.deleteBySystem(id); // chunks têm FK p/ system_documents; remove antes
+        try {
+            systems.deleteById(id);
+            systems.flush();
+        } catch (org.springframework.dao.DataIntegrityViolationException e) {
+            throw ApiException.conflict("system has campaigns; delete those campaigns first");
+        }
+    }
+
     /** Limpa o índice RAG do sistema: apaga chunks e documentos (reindexar do zero). */
     @Transactional
     public int clearIndex(UUID systemId) {

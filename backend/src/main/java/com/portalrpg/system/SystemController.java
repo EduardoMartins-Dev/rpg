@@ -80,6 +80,13 @@ public class SystemController {
         return service.update(id, req);
     }
 
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void delete(@PathVariable UUID id) {
+        service.deleteSystem(id);
+    }
+
     @PutMapping("/{id}/sheet-schema")
     @PreAuthorize("hasRole('ADMIN')")
     public SheetSchemaResponse putSchema(@PathVariable UUID id, @Valid @RequestBody SheetSchemaRequest req) {
