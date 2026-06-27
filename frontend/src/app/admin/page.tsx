@@ -34,6 +34,9 @@ export default function AdminPage() {
   const [slug, setSlug] = useState("");
   const [ruleset, setRuleset] = useState("v5");
   const [selected, setSelected] = useState<string | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editSlug, setEditSlug] = useState("");
+  const [editDesc, setEditDesc] = useState("");
   const [schemaText, setSchemaText] = useState(DEFAULT_SCHEMA);
   const [docs, setDocs] = useState<SystemDocument[]>([]);
   const [file, setFile] = useState<File | null>(null);
@@ -156,16 +159,29 @@ export default function AdminPage() {
     }
   }
 
-  const selectSystem = useCallback(async (id: string) => {
-    setSelected(id); setError(null); setMsg(null);
+  const selectSystem = useCallback(async (s: RpgSystem) => {
+    setSelected(s.id); setError(null); setMsg(null);
+    setEditName(s.name); setEditSlug(s.slug); setEditDesc(s.description ?? "");
     try {
-      const sc = await api.get<SheetSchema>(`/systems/${id}/sheet-schema`);
+      const sc = await api.get<SheetSchema>(`/systems/${s.id}/sheet-schema`);
       setSchemaText(JSON.stringify(sc.schema, null, 2));
     } catch {
       setSchemaText(DEFAULT_SCHEMA);
     }
-    try { setDocs(await api.get<SystemDocument[]>(`/systems/${id}/documents`)); } catch { setDocs([]); }
+    try { setDocs(await api.get<SystemDocument[]>(`/systems/${s.id}/documents`)); } catch { setDocs([]); }
   }, []);
+
+  async function saveSystemData() {
+    if (!selected) return;
+    setError(null); setMsg(null);
+    try {
+      await api.put(`/systems/${selected}`, { name: editName, slug: editSlug, description: editDesc });
+      await loadSystems();
+      setMsg("Dados do sistema salvos.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "erro ao salvar dados do sistema");
+    }
+  }
 
   async function saveSchema() {
     if (!selected) return;
@@ -327,7 +343,7 @@ export default function AdminPage() {
                 </td>
                 <td style={{ textAlign: "right", paddingRight: 20, whiteSpace: "nowrap" }}>
                   <button className="secondary" data-testid={`system-manage-${s.slug}`}
-                    onClick={() => selectSystem(s.id)} style={{ padding: "6px 12px", fontSize: 13, marginRight: 8 }}>Gerenciar</button>
+                    onClick={() => selectSystem(s)} style={{ padding: "6px 12px", fontSize: 13, marginRight: 8 }}>Gerenciar</button>
                   <button className="danger" data-testid={`system-delete-${s.slug}`}
                     onClick={() => deleteSystem(s)} style={{ padding: "6px 12px", fontSize: 13 }}>Excluir</button>
                 </td>
@@ -340,7 +356,27 @@ export default function AdminPage() {
 
       {selected && (
         <div className="panel" data-testid="system-detail">
-          <h2>Sheet-schema (template da ficha)</h2>
+          <h2 style={{ fontSize: 18 }}>Dados do sistema</h2>
+          <div className="row" style={{ marginBottom: 12 }}>
+            <div>
+              <label htmlFor="edit-name">Nome</label>
+              <input id="edit-name" data-testid="system-edit-name" value={editName}
+                onChange={(e) => setEditName(e.target.value)} />
+            </div>
+            <div>
+              <label htmlFor="edit-slug">Slug</label>
+              <input id="edit-slug" data-testid="system-edit-slug" value={editSlug}
+                onChange={(e) => setEditSlug(e.target.value)} placeholder="vampiro-v5" />
+            </div>
+          </div>
+          <label htmlFor="edit-desc">Descrição</label>
+          <input id="edit-desc" data-testid="system-edit-desc" value={editDesc}
+            onChange={(e) => setEditDesc(e.target.value)} />
+          <div style={{ marginTop: 10 }}>
+            <button data-testid="system-save-data" onClick={saveSystemData}>Salvar dados</button>
+          </div>
+
+          <h2 style={{ fontSize: 18, marginTop: "1.5rem" }}>Sheet-schema (template da ficha)</h2>
           <p className="muted">A ficha é renderizada dinamicamente a partir deste JSON — sem hardcode por sistema.</p>
           <textarea data-testid="schema-text" value={schemaText}
             onChange={(e) => setSchemaText(e.target.value)} style={{ minHeight: "12rem" }} />
