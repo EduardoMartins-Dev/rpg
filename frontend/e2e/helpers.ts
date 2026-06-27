@@ -17,7 +17,8 @@ export async function login(page: Page, email: string, password: string = PASSWO
 
 export async function logout(page: Page) {
   await page.getByTestId("logout").click();
-  await expect(page.getByTestId("nav-login")).toBeVisible();
+  // O guard de rota redireciona para /login ao perder a sessão (não para a landing).
+  await expect(page.getByTestId("login-email")).toBeVisible();
 }
 
 /** Abre uma campanha pelo card que contém o nome dado (o card inteiro é um link). */

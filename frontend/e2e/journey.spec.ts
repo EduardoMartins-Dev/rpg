@@ -58,7 +58,8 @@ test("jornada: admin → sistema → campanha → ficha dinâmica → IA", async
   await page.getByTestId("cam-tab-sheets").click();
   await page.getByTestId("char-name").fill("Lucian");
   await page.getByTestId("char-create").click();
-  await page.getByTestId("character-row").filter({ hasText: "Lucian" }).first().click();
+  // jogador vê a ficha direto na aba; abre o editor pelo botão "Editar ficha"
+  await page.getByRole("link", { name: /Editar ficha/ }).first().click();
 
   // wizard por etapas (clã primeiro), dirigido pelo sheet-schema
   await expect(page.getByTestId("dynamic-sheet")).toBeVisible();
