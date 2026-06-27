@@ -8,8 +8,10 @@ import { AppShell } from "@/components/AppShell";
 import { V5Roller } from "@/components/V5Roller";
 import { CampaignBoard } from "@/components/CampaignBoard";
 import { CampaignNotes } from "@/components/CampaignNotes";
+import { SheetView } from "@/components/SheetView";
 import {
-  api, type AskResponse, type Campaign, type Character, type Member, type RpgSystem, type V5Catalog,
+  api, type AskResponse, type Campaign, type Character, type Member, type RpgSystem,
+  type SchemaShape, type SheetSchema, type V5Catalog,
 } from "@/lib/api";
 
 type Tab = "overview" | "board" | "notes" | "members" | "sheets" | "ai";
@@ -68,6 +70,7 @@ export default function CampaignDetailPage() {
   const [campaign, setCampaign] = useState<Campaign | null>(null);
   const [system, setSystem] = useState<RpgSystem | null>(null);
   const [catalog, setCatalog] = useState<V5Catalog | null>(null);
+  const [schema, setSchema] = useState<SchemaShape | null>(null);
   const [members, setMembers] = useState<Member[]>([]);
   const [characters, setCharacters] = useState<Character[]>([]);
   const [charName, setCharName] = useState("");
@@ -101,6 +104,8 @@ export default function CampaignDetailPage() {
         if ((sys.ruleset ?? "v5") === "v5") {
           try { setCatalog(await api.get<V5Catalog>("/rules/v5/catalog")); } catch { setCatalog(null); }
         }
+        try { setSchema((await api.get<SheetSchema>(`/systems/${c.systemId}/sheet-schema`)).schema); }
+        catch { setSchema(null); }
       } catch { /* opcional */ }
     } catch (err) {
       setError(err instanceof Error ? err.message : "erro ao carregar campanha");
@@ -394,7 +399,7 @@ export default function CampaignDetailPage() {
             <div>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16, flexWrap: "wrap", gap: 10 }}>
                 <span className="muted" style={{ fontSize: 14 }}>
-                  {isMaster ? "Você é Mestre — vê todas as fichas." : "Você vê apenas as suas fichas."}
+                  {isMaster ? "Você é Mestre — vê todas as fichas." : "Sua ficha nesta campanha."}
                 </span>
                 <form onSubmit={createCharacter} style={{ display: "flex", gap: 8 }}>
                   <input data-testid="char-name" value={charName} placeholder="nome do personagem"
@@ -402,28 +407,58 @@ export default function CampaignDetailPage() {
                   <button type="submit" data-testid="char-create">+ Nova ficha</button>
                 </form>
               </div>
-              <div className="camp-grid" data-testid="character-list">
-                {characters.map((c) => (
-                  <Link key={c.id} href={`/campaigns/${id}/characters/${c.id}`}
-                    data-testid={`character-open-${c.id}`} style={{ color: "inherit" }}>
-                    <div className="sheet-card" data-testid="character-row" style={{ position: "relative" }}>
-                      {(isMaster || c.playerId === user.id) && (
-                        <button className="ghost" title="Excluir ficha" data-testid={`character-delete-${c.id}`}
-                          style={{ position: "absolute", top: 8, right: 8, padding: "2px 8px", color: "var(--err)" }}
-                          onClick={(e) => { e.preventDefault(); e.stopPropagation(); deleteCharacter(c); }}>✕</button>
-                      )}
-                      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                        <span className="avatar" style={{ borderRadius: 10 }}>{initials(c.name)}</span>
-                        <div>
-                          <div style={{ fontFamily: "var(--serif)", fontWeight: 600, fontSize: 16 }}>{c.name}</div>
-                          <div className="muted" style={{ fontSize: 12 }}>Abrir ficha →</div>
+
+              {/* Mestre: lista de cards (clica para abrir). Jogador: ficha direto. */}
+              {isMaster ? (
+                <>
+                  <div className="camp-grid" data-testid="character-list">
+                    {characters.map((c) => (
+                      <Link key={c.id} href={`/campaigns/${id}/characters/${c.id}`}
+                        data-testid={`character-open-${c.id}`} style={{ color: "inherit" }}>
+                        <div className="sheet-card" data-testid="character-row" style={{ position: "relative" }}>
+                          <button className="ghost" title="Excluir ficha" data-testid={`character-delete-${c.id}`}
+                            style={{ position: "absolute", top: 8, right: 8, padding: "2px 8px", color: "var(--err)" }}
+                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); deleteCharacter(c); }}>✕</button>
+                          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                            <span className="avatar" style={{ borderRadius: 10 }}>{initials(c.name)}</span>
+                            <div>
+                              <div style={{ fontFamily: "var(--serif)", fontWeight: 600, fontSize: 16 }}>{c.name}</div>
+                              <div className="muted" style={{ fontSize: 12 }}>Abrir ficha →</div>
+                            </div>
+                          </div>
                         </div>
+                      </Link>
+                    ))}
+                  </div>
+                  {characters.length === 0 && <p className="empty" style={{ marginTop: 12 }}>Nenhuma ficha ainda.</p>}
+                </>
+              ) : (
+                <div data-testid="player-sheets" style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+                  {characters.map((c) => (
+                    <div key={c.id} className="panel" data-testid={`character-row`} style={{ margin: 0 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14, flexWrap: "wrap" }}>
+                        <span className="avatar" style={{ borderRadius: 10 }}>{initials(c.name)}</span>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontFamily: "var(--serif)", fontWeight: 600, fontSize: 18 }}>{c.name}</div>
+                          <div className="muted" style={{ fontSize: 12 }}>Sua ficha</div>
+                        </div>
+                        <Link href={`/campaigns/${id}/characters/${c.id}`} data-testid={`character-open-${c.id}`}>
+                          <button>Editar ficha →</button>
+                        </Link>
+                        <button className="ghost" title="Excluir ficha" data-testid={`character-delete-${c.id}`}
+                          style={{ padding: "2px 8px", color: "var(--err)" }}
+                          onClick={() => deleteCharacter(c)}>✕</button>
                       </div>
+                      {schema
+                        ? <SheetView schema={schema} sheet={c.sheetData ?? {}} catalog={catalog} />
+                        : <p className="muted">Carregando ficha…</p>}
                     </div>
-                  </Link>
-                ))}
-              </div>
-              {characters.length === 0 && <p className="empty" style={{ marginTop: 12 }}>Nenhuma ficha ainda.</p>}
+                  ))}
+                  {characters.length === 0 && (
+                    <p className="empty" style={{ marginTop: 12 }}>Você ainda não tem ficha. Crie acima com <b>+ Nova ficha</b>.</p>
+                  )}
+                </div>
+              )}
             </div>
           )}
 
