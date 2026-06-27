@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Logo } from "@/components/Logo";
 import { useAuth } from "@/lib/auth";
+import { api } from "@/lib/api";
 
 /** Tela de autenticação em duas colunas (aside de marca + formulário com abas). */
 export function AuthScreen({ mode }: { mode: "login" | "signup" }) {
@@ -17,6 +18,12 @@ export function AuthScreen({ mode }: { mode: "login" | "signup" }) {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [regOn, setRegOn] = useState(true);
+
+  useEffect(() => {
+    api.get<{ registrationEnabled: boolean }>("/auth/config")
+      .then((c) => setRegOn(c.registrationEnabled)).catch(() => setRegOn(false));
+  }, []);
 
   const tid = (s: string) => `${isSignup ? "register" : "login"}-${s}`;
 
@@ -48,10 +55,21 @@ export function AuthScreen({ mode }: { mode: "login" | "signup" }) {
 
       <main className="auth-main">
         <div className="auth-card fade-up">
-          <div className="auth-tabs">
-            <Link href="/login" className={!isSignup ? "on" : ""}>Entrar</Link>
-            <Link href="/register" className={isSignup ? "on" : ""}>Criar conta</Link>
-          </div>
+          {regOn && (
+            <div className="auth-tabs">
+              <Link href="/login" className={!isSignup ? "on" : ""}>Entrar</Link>
+              <Link href="/register" className={isSignup ? "on" : ""}>Criar conta</Link>
+            </div>
+          )}
+
+          {isSignup && !regOn ? (
+            <>
+              <h3>Cadastro fechado</h3>
+              <p className="sub">Novas contas estão desativadas. Apenas usuários existentes podem entrar.</p>
+              <Link href="/login"><button style={{ width: "100%", marginTop: 8 }}>Ir para o login</button></Link>
+            </>
+          ) : (
+          <>
           <h3>{isSignup ? "Criar conta" : "Bem-vindo de volta"}</h3>
           <p className="sub">{isSignup ? "Monte seu perfil e comece a jogar." : "Entre para acessar suas campanhas."}</p>
 
@@ -79,12 +97,16 @@ export function AuthScreen({ mode }: { mode: "login" | "signup" }) {
             </button>
           </form>
 
-          <p className="sub" style={{ textAlign: "center", marginTop: 24 }}>
-            {isSignup ? "Já tem conta? " : "Não tem conta? "}
-            <Link href={isSignup ? "/login" : "/register"} style={{ fontWeight: 500 }}>
-              {isSignup ? "Entrar" : "Criar conta"}
-            </Link>
-          </p>
+          {(isSignup || regOn) && (
+            <p className="sub" style={{ textAlign: "center", marginTop: 24 }}>
+              {isSignup ? "Já tem conta? " : "Não tem conta? "}
+              <Link href={isSignup ? "/login" : "/register"} style={{ fontWeight: 500 }}>
+                {isSignup ? "Entrar" : "Criar conta"}
+              </Link>
+            </p>
+          )}
+          </>
+          )}
         </div>
       </main>
     </div>

@@ -1,8 +1,10 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Logo } from "@/components/Logo";
 import { useAuth } from "@/lib/auth";
+import { api } from "@/lib/api";
 
 const FEATURES = [
   { icon: "📜", title: "Multi-sistema", body: "Agnóstico de regras — cada sistema traz seu próprio schema de ficha." },
@@ -13,6 +15,12 @@ const FEATURES = [
 
 export default function Home() {
   const { user } = useAuth();
+  const [regOn, setRegOn] = useState(false);
+
+  useEffect(() => {
+    api.get<{ registrationEnabled: boolean }>("/auth/config")
+      .then((c) => setRegOn(c.registrationEnabled)).catch(() => setRegOn(false));
+  }, []);
 
   return (
     <div className="landing">
@@ -24,9 +32,9 @@ export default function Home() {
           ) : (
             <>
               <Link href="/login" data-testid="nav-login">
-                <button className="ghost">Entrar</button>
+                <button className={regOn ? "ghost" : ""}>Entrar</button>
               </Link>
-              <Link href="/register" data-testid="nav-register"><button>Criar conta</button></Link>
+              {regOn && <Link href="/register" data-testid="nav-register"><button>Criar conta</button></Link>}
             </>
           )}
         </nav>
@@ -37,8 +45,8 @@ export default function Home() {
         <h1>Crie campanhas, gerencie fichas e consulte as regras com <span className="accent">IA</span> — para qualquer sistema de RPG.</h1>
         <p>Uma mesa digital sóbria e poderosa. Você escolhe o sistema, convida os jogadores e a plataforma cuida do resto — fichas dinâmicas, convites e um mestre de regras sempre à mão.</p>
         <div className="cta-row">
-          <Link href="/register"><button style={{ padding: "15px 28px", fontSize: 16 }}>Criar conta grátis</button></Link>
-          <Link href="/login"><button className="secondary" style={{ padding: "15px 28px", fontSize: 16 }}>Já tenho conta</button></Link>
+          {regOn && <Link href="/register"><button style={{ padding: "15px 28px", fontSize: 16 }}>Criar conta grátis</button></Link>}
+          <Link href="/login"><button className={regOn ? "secondary" : ""} style={{ padding: "15px 28px", fontSize: 16 }}>Entrar</button></Link>
         </div>
       </section>
 

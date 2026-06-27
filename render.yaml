@@ -32,6 +32,9 @@ services:
         sync: false
       - key: GROQ_MODEL
         value: llama-3.3-70b-versatile
+      # --- cadastro fechado: só usuários existentes logam ---
+      - key: REGISTRATION_ENABLED
+        value: "false"
       # --- bootstrap do admin inicial (ProdSeeder, idempotente) ---
       - key: ADMIN_EMAIL
         sync: false

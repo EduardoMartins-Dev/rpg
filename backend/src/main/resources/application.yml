@@ -37,6 +37,9 @@ management:
         enabled: true
 
 app:
+  auth:
+    # false bloqueia novos cadastros (só usuários existentes logam)
+    registration-enabled: ${REGISTRATION_ENABLED:true}
   jwt:
     # override in every real env via env var; dev default below is non-secret
     secret: ${JWT_SECRET:dev-only-insecure-secret-change-me-0123456789-abcdef-0123456789}
