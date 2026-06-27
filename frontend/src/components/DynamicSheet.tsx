@@ -129,8 +129,8 @@ export function DynamicSheet({
                     <div key={c.id} role="button" tabIndex={0}
                       className={`clan-card${c.id === clanId ? " sel" : ""}`}
                       data-testid={`clan-${c.id}`}
-                      onClick={() => setTop("clan", c.id)}
-                      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") setTop("clan", c.id); }}>
+                      onClick={() => { setTop("clan", c.id); setInfoClan(null); }}
+                      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { setTop("clan", c.id); setInfoClan(null); } }}>
                       <span className="clan-name">
                         {c.label}
                         <span className={`clan-i${infoClan === c.id ? " on" : ""}`} role="button" tabIndex={0}
