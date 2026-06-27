@@ -21,8 +21,11 @@ const XP_COSTS: [string, string][] = [
 
 type Sheet = Record<string, unknown>;
 type Weapon = { name: string; damage: string };
+type Item = { name: string; qty: number; category: string; desc: string; equipped: boolean };
 type Discipline = { name: string; level: number; powers: string };
 type Advantage = { name: string; dots: number; note: string };
+
+const ITEM_CATEGORIES = ["Arma", "Armadura", "Consumível", "Equipamento", "Tesouro", "Documento", "Outro"];
 
 /**
  * Ficha V5 em ETAPAS (estilo C.R.I.S). Ordem do livro: Clã → Conceito/Lore →
@@ -51,6 +54,7 @@ export function DynamicSheet({
   const derived = (sheet.derived as Record<string, number>) ?? {};
   const clanDisc = (sheet.clanDisciplines as string[]) ?? [];
   const weapons = (sheet.weapons as Weapon[]) ?? [];
+  const inventory = (sheet.inventory as Item[]) ?? [];
   const disciplines = (sheet.disciplines as Discipline[]) ?? [];
   const advantages = (sheet.advantages as Advantage[]) ?? [];
   const flaws = (sheet.flaws as Advantage[]) ?? [];
@@ -456,6 +460,9 @@ export function DynamicSheet({
             </div>
             <button type="button" className="secondary" style={{ marginTop: 8 }}
               onClick={() => set("weapons", [...weapons, { name: "", damage: "" }])}>+ Adicionar arma/item</button>
+
+            <h3 style={{ marginTop: "1.4rem" }}>Inventário <span className="muted" style={{ fontSize: ".8rem" }}>(itens que o personagem carrega)</span></h3>
+            <InventoryEditor items={inventory} onChange={(v) => set("inventory", v)} />
           </section>
         )}
 
@@ -531,6 +538,18 @@ export function DynamicSheet({
                   <ul style={{ margin: ".3rem 0 0", paddingLeft: 18 }}>{convictions.map((c, i) => <li key={i}>{c}</li>)}</ul></div>
                 <div className="panel" style={{ margin: 0 }}><span className="kv-label">Pilares</span>
                   <ul style={{ margin: ".3rem 0 0", paddingLeft: 18 }}>{touchstones.map((t, i) => <li key={i}>{t}</li>)}</ul></div>
+              </div>
+            )}
+
+            {inventory.length > 0 && (
+              <div className="panel" style={{ marginTop: 14 }}>
+                <span className="kv-label">Inventário</span>
+                {inventory.map((it, i) => (
+                  <div key={i} style={{ display: "flex", justifyContent: "space-between", gap: 10, padding: "3px 0" }}>
+                    <span>{it.qty > 1 ? `${it.qty}× ` : ""}{it.name || "—"} {it.equipped ? <span className="badge buff" style={{ fontSize: 11 }}>equip.</span> : null}</span>
+                    <span className="muted" style={{ fontSize: 13 }}>{it.category}{it.desc ? ` · ${it.desc}` : ""}</span>
+                  </div>
+                ))}
               </div>
             )}
 
@@ -829,6 +848,38 @@ function AdvantageEditor({ items, onChange, ph, testid, options }: {
       ))}
       <button type="button" className="secondary" style={{ marginTop: 8 }}
         onClick={() => onChange([...items, { name: "", dots: 1, note: "" }])}>+ Adicionar</button>
+    </div>
+  );
+}
+
+function InventoryEditor({ items, onChange }: { items: Item[]; onChange: (v: Item[]) => void }) {
+  const upd = (i: number, patch: Partial<Item>) => onChange(items.map((x, j) => (j === i ? { ...x, ...patch } : x)));
+  return (
+    <div data-testid="inventory-list">
+      {items.length === 0 && <p className="muted" style={{ fontSize: 13 }}>Nenhum item ainda. Adicione abaixo.</p>}
+      {items.map((it, i) => (
+        <div key={i} className="inv-row" data-testid="inventory-row">
+          <input aria-label="item" placeholder="Item" value={it.name}
+            onChange={(e) => upd(i, { name: e.target.value })} />
+          <input aria-label="quantidade" type="number" min={1} value={it.qty || 1}
+            onChange={(e) => upd(i, { qty: Math.max(1, Number(e.target.value) || 1) })} />
+          <select aria-label="categoria" value={it.category || "Equipamento"}
+            onChange={(e) => upd(i, { category: e.target.value })}>
+            {ITEM_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+          </select>
+          <input aria-label="descrição" placeholder="notas / efeito" value={it.desc}
+            onChange={(e) => upd(i, { desc: e.target.value })} />
+          <label className="inv-eq" title="Item equipado / em uso">
+            <input type="checkbox" checked={!!it.equipped} onChange={(e) => upd(i, { equipped: e.target.checked })} /> equip.
+          </label>
+          <button type="button" className="secondary" aria-label="remover item"
+            onClick={() => onChange(items.filter((_, j) => j !== i))}>✕</button>
+        </div>
+      ))}
+      <button type="button" className="secondary" style={{ marginTop: 8 }}
+        onClick={() => onChange([...items, { name: "", qty: 1, category: "Equipamento", desc: "", equipped: false }])}>
+        + Adicionar item
+      </button>
     </div>
   );
 }

@@ -6,6 +6,7 @@ import { DamageTrack } from "@/components/DamageTrack";
 type Sheet = Record<string, unknown>;
 type Dmg = { sup: number; agg: number };
 type Weapon = { name: string; damage: string };
+type Item = { name: string; qty: number; category: string; desc: string; equipped: boolean };
 type Discipline = { name: string; level: number; powers: string };
 type Advantage = { name: string; dots: number; note: string };
 
@@ -29,6 +30,7 @@ export function SheetView({ schema, sheet, catalog }: {
   const convictions = (sheet.convictions as string[]) ?? [];
   const touchstones = (sheet.touchstones as string[]) ?? [];
   const weapons = (sheet.weapons as Weapon[]) ?? [];
+  const inventory = (sheet.inventory as Item[]) ?? [];
   const healthDmg = (sheet.healthDmg as Dmg) ?? { sup: 0, agg: 0 };
   const wpDmg = (sheet.wpDmg as Dmg) ?? { sup: 0, agg: 0 };
   const type = (sheet.type as string) ?? "VAMPIRO";
@@ -193,6 +195,19 @@ export function SheetView({ schema, sheet, catalog }: {
           {weapons.map((w, i) => (
             <div key={i} style={{ display: "flex", justifyContent: "space-between", gap: 10, padding: "3px 0" }}>
               <span>{w.name || "—"}</span><span className="muted" style={{ fontSize: 13 }}>{w.damage}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Inventário */}
+      {inventory.length > 0 && (
+        <div className="panel" style={{ marginTop: 14 }} data-testid="view-inventory">
+          <span className="kv-label">Inventário</span>
+          {inventory.map((it, i) => (
+            <div key={i} style={{ display: "flex", justifyContent: "space-between", gap: 10, padding: "3px 0" }}>
+              <span>{it.qty > 1 ? `${it.qty}× ` : ""}{it.name || "—"} {it.equipped ? <span className="badge buff" style={{ fontSize: 11 }}>equip.</span> : null}</span>
+              <span className="muted" style={{ fontSize: 13 }}>{it.category}{it.desc ? ` · ${it.desc}` : ""}</span>
             </div>
           ))}
         </div>
