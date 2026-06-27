@@ -6,7 +6,7 @@ import { Logo } from "@/components/Logo";
 import { useAuth } from "@/lib/auth";
 import type { User } from "@/lib/api";
 
-type NavKey = "campaigns" | "admin" | "settings";
+type NavKey = "campaigns" | "characters" | "admin" | "settings";
 
 /** Casca autenticada: sidebar fixa (navegação + perfil + sair) + área de conteúdo. */
 export function AppShell({ user, active, children }: {
@@ -32,6 +32,10 @@ export function AppShell({ user, active, children }: {
         <Link href="/campaigns" data-testid="nav-campaigns"
           className={`side-link${active === "campaigns" ? " on" : ""}`}>
           <span className="ic">📚</span>Campanhas
+        </Link>
+        <Link href="/characters" data-testid="nav-characters"
+          className={`side-link${active === "characters" ? " on" : ""}`}>
+          <span className="ic">🎭</span>Personagens
         </Link>
         {user.isAdmin && (
           <Link href="/admin" data-testid="nav-admin"

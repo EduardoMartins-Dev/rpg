@@ -76,6 +76,10 @@ export interface Campaign {
   masterId: string; inviteCode: string; role: "MASTER" | "PLAYER" | null;
 }
 export interface Member { userId: string; email: string; displayName: string; role: string; }
+export interface MyCharacter {
+  id: string; name: string; campaignId: string; campaignName: string;
+  systemId: string | null; systemName: string;
+}
 export interface Character {
   id: string; campaignId: string; playerId: string; name: string;
   sheetData: Record<string, unknown>;

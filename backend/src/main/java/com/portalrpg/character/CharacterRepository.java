@@ -10,4 +10,6 @@ public interface CharacterRepository extends JpaRepository<Character, UUID> {
     List<Character> findByCampaignIdOrderByCreatedAtAsc(UUID campaignId);
 
     List<Character> findByCampaignIdAndPlayerIdOrderByCreatedAtAsc(UUID campaignId, UUID playerId);
+
+    List<Character> findByPlayerIdOrderByCreatedAtAsc(UUID playerId);
 }
