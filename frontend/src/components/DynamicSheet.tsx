@@ -60,7 +60,10 @@ export function DynamicSheet({
     { key: "revisao", label: "Revisão" },
   ];
   const [step, setStep] = useState(0);
+  const [infoClan, setInfoClan] = useState<string | null>(null);
   const cur = steps[step].key;
+  // detalhe exibido: o clã que está com o (i) aberto, senão o selecionado
+  const detailClan: ClanView | undefined = catalog?.clans.find((c) => c.id === (infoClan ?? clanId));
 
   function setTop(key: string, value: unknown) { onChange({ ...sheet, [key]: value }); }
   function setNumGroup(group: "attributes" | "skills", key: string, raw: string) {
@@ -120,33 +123,51 @@ export function DynamicSheet({
 
             {catalog && canHaveClan && (
               <>
-                <h3>Escolha o clã</h3>
+                <h3>Escolha o clã <span className="muted" style={{ fontSize: ".8rem" }}>(clique pra selecionar · ⓘ pra ver as regras)</span></h3>
                 <div className="clan-grid" data-testid="clan-grid">
                   {catalog.clans.map((c) => (
-                    <button key={c.id} type="button"
+                    <div key={c.id} role="button" tabIndex={0}
                       className={`clan-card${c.id === clanId ? " sel" : ""}`}
-                      data-testid={`clan-${c.id}`} onClick={() => setTop("clan", c.id)}>
-                      <span className="clan-name">{c.label}</span>
+                      data-testid={`clan-${c.id}`}
+                      onClick={() => setTop("clan", c.id)}
+                      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") setTop("clan", c.id); }}>
+                      <span className="clan-name">
+                        {c.label}
+                        <span className={`clan-i${infoClan === c.id ? " on" : ""}`} role="button" tabIndex={0}
+                          aria-label={`Informações de ${c.label}`} title="Ver informações"
+                          data-testid={`clan-info-${c.id}`}
+                          onClick={(e) => { e.stopPropagation(); setInfoClan(infoClan === c.id ? null : c.id); }}
+                          onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.stopPropagation(); setInfoClan(infoClan === c.id ? null : c.id); } }}>
+                          ⓘ
+                        </span>
+                      </span>
                       <span className="clan-disc">{c.disciplines.length ? c.disciplines.join(" · ") : "sem disciplinas fixas"}</span>
-                    </button>
+                    </div>
                   ))}
                 </div>
-                {selectedClan && (
+                {detailClan && (
                   <div className="clan-detail" data-testid="clan-detail">
-                    <h4>{selectedClan.label}</h4>
-                    <p className="muted">{selectedClan.description}</p>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
+                      <h4 style={{ margin: 0 }}>{detailClan.label}</h4>
+                      {detailClan.id !== clanId && (
+                        <button type="button" className="secondary" style={{ padding: "6px 12px", fontSize: 13 }}
+                          onClick={() => { setTop("clan", detailClan.id); setInfoClan(null); }}>Selecionar este clã</button>
+                      )}
+                      {detailClan.id === clanId && <span className="badge role-MASTER">selecionado</span>}
+                    </div>
+                    <p className="muted">{detailClan.description}</p>
                     <div className="grid2">
                       <div>
                         <span className="kv-label">Disciplinas (buffs)</span>
                         <div className="chips">
-                          {selectedClan.disciplines.length
-                            ? selectedClan.disciplines.map((d) => <span key={d} className="badge buff">{d}</span>)
+                          {detailClan.disciplines.length
+                            ? detailClan.disciplines.map((d) => <span key={d} className="badge buff">{d}</span>)
                             : <span className="muted">nenhuma</span>}
                         </div>
                       </div>
-                      <div><span className="kv-label">Compulsão</span><p style={{ margin: ".2rem 0 0" }}>{selectedClan.compulsion}</p></div>
+                      <div><span className="kv-label">Compulsão</span><p style={{ margin: ".2rem 0 0" }}>{detailClan.compulsion}</p></div>
                     </div>
-                    <div style={{ marginTop: ".5rem" }}><span className="kv-label">Maldição (bane)</span><p style={{ margin: ".2rem 0 0" }}>{selectedClan.bane}</p></div>
+                    <div style={{ marginTop: ".5rem" }}><span className="kv-label">Maldição (bane)</span><p style={{ margin: ".2rem 0 0" }}>{detailClan.bane}</p></div>
                   </div>
                 )}
               </>

@@ -8,17 +8,10 @@ import { AppShell } from "@/components/AppShell";
 import { DynamicSheet } from "@/components/DynamicSheet";
 import {
   api, type Campaign, type Character, type SchemaShape, type SheetSchema,
-  type RpgSystem, type V5Catalog,
+  type V5Catalog,
 } from "@/lib/api";
 
 type Sheet = Record<string, unknown>;
-
-// Sistemas que possuem catálogo de regras V5 (enriquece a ficha). Checa slug E nome
-// (o slug pode ser "vtm"/"v5" enquanto o nome é "Vampiro: A Máscara").
-function hasV5Catalog(system: { slug?: string; name?: string } | null | undefined): boolean {
-  const s = `${system?.slug ?? ""} ${system?.name ?? ""}`.toLowerCase();
-  return ["vampir", "mascar", "masquerade", "v5", "vtm"].some((t) => s.includes(t));
-}
 
 export default function CharacterSheetPage() {
   const { user } = useRequireUser();
@@ -36,15 +29,11 @@ export default function CharacterSheetPage() {
     setError(null);
     try {
       const campaign = await api.get<Campaign>(`/campaigns/${id}`);
-      const system = await api.get<RpgSystem>(`/systems/${campaign.systemId}`);
       const sc = await api.get<SheetSchema>(`/systems/${campaign.systemId}/sheet-schema`);
       setSchema(sc.schema);
-      if (hasV5Catalog(system)) {
-        try { setCatalog(await api.get<V5Catalog>("/rules/v5/catalog")); }
-        catch { setCatalog(null); }
-      } else {
-        setCatalog(null);
-      }
+      // Catálogo V5 (clãs, perícias). Carrega sempre; se o backend não tiver, cai no genérico.
+      try { setCatalog(await api.get<V5Catalog>("/rules/v5/catalog")); }
+      catch { setCatalog(null); }
       const ch = await api.get<Character>(`/campaigns/${id}/characters/${charId}`);
       setName(ch.name);
       setSheet(ch.sheetData ?? {});

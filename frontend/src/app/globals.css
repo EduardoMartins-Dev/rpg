@@ -254,7 +254,9 @@ th { font-size: .72rem; text-transform: uppercase; letter-spacing: .5px; color: 
 .clan-card { display: flex; flex-direction: column; gap: .25rem; align-items: flex-start; text-align: left; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: .6rem .7rem; color: var(--text); font-weight: 500; }
 .clan-card:hover:not(:disabled) { border-color: var(--accent); background: var(--elev); }
 .clan-card.sel { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
-.clan-name { font: 600 .95rem var(--serif); }
+.clan-name { font: 600 .95rem var(--serif); display: flex; align-items: center; justify-content: space-between; gap: .4rem; width: 100%; }
+.clan-i { cursor: pointer; color: var(--muted); font-size: .9rem; line-height: 1; flex: 0 0 auto; padding: 2px; border-radius: 50%; }
+.clan-i:hover, .clan-i.on { color: var(--accent); }
 .clan-disc { font-size: .72rem; color: var(--muted); }
 .clan-detail { margin-top: .75rem; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: .9rem; }
 .kv-label { font: 600 .72rem var(--mono); text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
