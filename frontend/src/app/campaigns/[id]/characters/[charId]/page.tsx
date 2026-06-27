@@ -6,6 +6,7 @@ import { useParams } from "next/navigation";
 import { useRequireUser } from "@/lib/guard";
 import { AppShell } from "@/components/AppShell";
 import { DynamicSheet } from "@/components/DynamicSheet";
+import { SheetView } from "@/components/SheetView";
 import {
   api, type Campaign, type Character, type SchemaShape, type SheetSchema,
   type RpgSystem, type V5Catalog,
@@ -22,6 +23,7 @@ export default function CharacterSheetPage() {
   const [catalog, setCatalog] = useState<V5Catalog | null>(null);
   const [name, setName] = useState("");
   const [sheet, setSheet] = useState<Sheet>({});
+  const [viewMode, setViewMode] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -81,14 +83,20 @@ export default function CharacterSheetPage() {
               style={{ background: "none", border: "none", padding: 0, fontFamily: "var(--serif)", fontSize: 26, fontWeight: 600, boxShadow: "none" }} />
             <div className="mono" style={{ fontSize: 13, color: "var(--accent)" }}>Ficha dinâmica</div>
           </div>
-          <button data-testid="sheet-save" onClick={save}>Salvar ficha</button>
+          <div className="seg" data-testid="sheet-mode">
+            <button className={!viewMode ? "on" : ""} data-testid="mode-edit" onClick={() => setViewMode(false)}>Editar</button>
+            <button className={viewMode ? "on" : ""} data-testid="mode-view" onClick={() => setViewMode(true)}>Visualizar</button>
+          </div>
+          {!viewMode && <button data-testid="sheet-save" onClick={save}>Salvar ficha</button>}
         </div>
 
         <div className="panel">
-          {schema ? (
-            <DynamicSheet schema={schema} sheet={sheet} onChange={setSheet} catalog={catalog} />
-          ) : (
+          {!schema ? (
             <p className="muted">Carregando schema…</p>
+          ) : viewMode ? (
+            <SheetView schema={schema} sheet={sheet} catalog={catalog} />
+          ) : (
+            <DynamicSheet schema={schema} sheet={sheet} onChange={setSheet} catalog={catalog} />
           )}
         </div>
 

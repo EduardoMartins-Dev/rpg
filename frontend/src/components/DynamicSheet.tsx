@@ -167,7 +167,13 @@ export function DynamicSheet({
                       </div>
                       <div><span className="kv-label">Compulsão</span><p style={{ margin: ".2rem 0 0" }}>{detailClan.compulsion}</p></div>
                     </div>
-                    <div style={{ marginTop: ".5rem" }}><span className="kv-label">Maldição (bane)</span><p style={{ margin: ".2rem 0 0" }}>{detailClan.bane}</p></div>
+                    <div style={{ marginTop: ".5rem" }}>
+                      <span className="kv-label">Maldição (fraqueza do clã)</span>
+                      <p style={{ margin: ".2rem 0 0" }}>{detailClan.bane}</p>
+                      <p className="muted" style={{ fontSize: 12, margin: "6px 0 0" }}>
+                        Fraqueza inata do clã. A severidade segue a <b>Gravidade da Perdição</b> (vem da Potência de Sangue) — quanto maior a potência, mais forte.
+                      </p>
+                    </div>
                   </div>
                 )}
               </>

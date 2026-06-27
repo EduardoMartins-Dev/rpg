@@ -272,6 +272,7 @@ th { font-size: .72rem; text-transform: uppercase; letter-spacing: .5px; color: 
 .disc-head { width: 100%; display: flex; align-items: center; justify-content: space-between; background: transparent; color: var(--text); border: none; border-radius: 0; padding: 12px 14px; font: 600 .95rem var(--serif); }
 .disc-head:hover { background: var(--elev); }
 .disc-detail { padding: 0 14px 14px; }
+.accent-box { border-color: var(--accent) !important; background: var(--accent-tint) !important; }
 @media (max-width: 640px) { .disc-row { grid-template-columns: 1fr auto auto; } }
 .review .panel p { margin: .2rem 0 .6rem; }
 .card-menu { position: absolute; top: 34px; right: 8px; z-index: 30; background: var(--elev); border: 1px solid var(--border); border-radius: 9px; padding: 4px; min-width: 130px; box-shadow: 0 10px 30px rgba(0,0,0,.45); }
