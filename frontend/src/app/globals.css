@@ -283,6 +283,12 @@ th { font-size: .72rem; text-transform: uppercase; letter-spacing: .5px; color: 
 .disc-head:hover { background: var(--elev); }
 .disc-detail { padding: 0 14px 14px; }
 .accent-box { border-color: var(--accent) !important; background: var(--accent-tint) !important; }
+/* visualização da ficha (read-only) — coluna central, mais vertical */
+.sheet-view { max-width: 1040px; margin: 0 auto; }
+.sv-top { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 14px; align-items: start; }
+@media (max-width: 760px) { .sv-top { grid-template-columns: 1fr; } }
+.sv-trait { display: flex; justify-content: space-between; align-items: center; padding: 3px 0; }
+.sv-dots { color: var(--accent); letter-spacing: 1.5px; font-size: 13px; white-space: nowrap; }
 
 /* trilhas de dano */
 .track { margin-bottom: 14px; }

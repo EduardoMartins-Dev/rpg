@@ -2,6 +2,7 @@
 
 import type { SchemaShape, V5Catalog, ClanView } from "@/lib/api";
 import { DamageTrack } from "@/components/DamageTrack";
+import { AttributeRadial } from "@/components/AttributeRadial";
 
 type Sheet = Record<string, unknown>;
 type Dmg = { sup: number; agg: number };
@@ -44,19 +45,22 @@ export function SheetView({ schema, sheet, catalog }: {
   const journal = (sheet.journal as string[]) ?? [];
   const avatarUrl = str(sheet.avatarUrl);
 
+  const attrNames = schema.attributes ?? [];
+
   return (
-    <div data-testid="sheet-view">
+    <div data-testid="sheet-view" className="sheet-view">
       {avatarUrl && (
-        <div style={{ marginBottom: 14 }}>
+        <div style={{ marginBottom: 14, display: "flex", justifyContent: "center" }}>
           <span className="portrait lg" data-testid="view-portrait">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={avatarUrl} alt="retrato" />
           </span>
         </div>
       )}
-      {/* Identidade */}
-      <div className="review-grid">
+      {/* Identidade + Recursos */}
+      <div className="sv-top">
         <div className="panel" style={{ margin: 0 }}>
+          <div className="kv-label" style={{ marginBottom: 8 }}>Identidade</div>
           <Kv k="Tipo" v={titleCase(type)} />
           <Kv k="Clã" v={clan?.label || clanId || "—"} />
           <Kv k="Conceito" v={str(sheet.concept) || "—"} />
@@ -123,10 +127,29 @@ export function SheetView({ schema, sheet, catalog }: {
         </div>
       )}
 
-      {/* Atributos / Perícias */}
-      <div className="review-grid" style={{ marginTop: 14 }}>
-        <TraitBlock title="Atributos" names={schema.attributes ?? []} values={attrs}
-          label={titleCase} groupOf={(n) => ATTR_CATEGORY[n] ?? "Atributos"} />
+      {/* Atributos — mesmo formato da criação (radial + bolinhas, todos os atributos) */}
+      <div className="panel" style={{ marginTop: 14 }}>
+        <span className="kv-label">Atributos</span>
+        <div className="attr-layout" style={{ marginTop: 10 }}>
+          <div className="trait-cols">
+            {Object.entries(groupBy(attrNames, (n) => ATTR_CATEGORY[n] ?? "Atributos")).map(([cat, names]) => (
+              <div key={cat} className="trait-col">
+                <div className="cat-head">{cat}</div>
+                {names.map((n) => (
+                  <div key={n} className="sv-trait">
+                    <span>{titleCase(n)}</span>
+                    <span className="sv-dots">{dots(attrs[n] ?? 0, 5)}</span>
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
+          {attrNames.length >= 3 && <AttributeRadial names={attrNames} values={attrs} pentagram={!!catalog} />}
+        </div>
+      </div>
+
+      {/* Perícias */}
+      <div style={{ marginTop: 14 }}>
         <TraitBlock title="Perícias" names={schema.skills ?? []} values={skillVals}
           label={(n) => skillMeta.get(norm(n))?.label ?? titleCase(n)}
           groupOf={(n) => skillMeta.get(norm(n))?.category ?? "Outras"} />
