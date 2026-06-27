@@ -1,8 +1,10 @@
 "use client";
 
 import type { SchemaShape, V5Catalog, ClanView } from "@/lib/api";
+import { DamageTrack } from "@/components/DamageTrack";
 
 type Sheet = Record<string, unknown>;
+type Dmg = { sup: number; agg: number };
 type Weapon = { name: string; damage: string };
 type Discipline = { name: string; level: number; powers: string };
 type Advantage = { name: string; dots: number; note: string };
@@ -27,6 +29,8 @@ export function SheetView({ schema, sheet, catalog }: {
   const convictions = (sheet.convictions as string[]) ?? [];
   const touchstones = (sheet.touchstones as string[]) ?? [];
   const weapons = (sheet.weapons as Weapon[]) ?? [];
+  const healthDmg = (sheet.healthDmg as Dmg) ?? { sup: 0, agg: 0 };
+  const wpDmg = (sheet.wpDmg as Dmg) ?? { sup: 0, agg: 0 };
   const type = (sheet.type as string) ?? "VAMPIRO";
   const clanId = (sheet.clan as string) ?? "";
   const bp = Number(sheet.bloodPotency);
@@ -54,6 +58,12 @@ export function SheetView({ schema, sheet, catalog }: {
           <div className="kv-label">Recursos</div>
           <Stat k="Vitalidade" v={derived.vitality ?? "—"} />
           <Stat k="Força de Vontade" v={derived.willpower ?? "—"} />
+          <div style={{ marginTop: 8 }}>
+            <DamageTrack label="Trilha de Vitalidade" max={derived.vitality ?? 0}
+              sup={healthDmg.sup} agg={healthDmg.agg} readOnly />
+            <DamageTrack label="Trilha de FdV" max={derived.willpower ?? 0}
+              sup={wpDmg.sup} agg={wpDmg.agg} readOnly />
+          </div>
           {bpRow && (
             <div style={{ marginTop: 8, fontSize: 13 }} className="muted">
               Surto +{bpRow.bloodSurge} · Disciplina +{bpRow.disciplineBonus} · Gravidade da Perdição {bpRow.baneSeverity} · Cura {bpRow.mendingRouse}

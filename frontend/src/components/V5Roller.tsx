@@ -38,6 +38,12 @@ export function V5Roller({ bloodPotency }: { bloodPotency?: BloodPotencyView[] }
   const [surge, setSurge] = useState(false);
   const [discipline, setDiscipline] = useState(false);
   const [res, setRes] = useState<Result | null>(null);
+  const [rouse, setRouse] = useState<{ v: number; ok: boolean } | null>(null);
+
+  function doRouse() {
+    const v = d10();
+    setRouse({ v, ok: v >= 6 }); // 6+ = sucesso (não sobe Fome); 1–5 = falha (sobe 1 de Fome)
+  }
 
   const eff = bpEffects(bloodPotency, bp);
   const bonus = (surge ? eff.surge : 0) + (discipline ? eff.disc : 0);
@@ -104,7 +110,20 @@ export function V5Roller({ bloodPotency }: { bloodPotency?: BloodPotencyView[] }
         {bonus > 0 && ` (${pool} + ${bonus} da potência)`} · {Math.min(hunger, total)} de Fome
       </div>
 
-      <button onClick={roll} data-testid="roll-go" style={{ width: "100%", marginBottom: 12 }}>Rolar</button>
+      <button onClick={roll} data-testid="roll-go" style={{ width: "100%", marginBottom: 10 }}>Rolar</button>
+
+      {/* Rouse check: gastar Vitae */}
+      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+        <button className="secondary" onClick={doRouse} data-testid="rouse-go" style={{ flex: "0 0 auto" }}>Rouse check</button>
+        {rouse && (
+          <span style={{ fontSize: 13 }} data-testid="rouse-result">
+            <span className={`die res${rouse.v === 10 ? " ten" : ""}`} style={{ marginRight: 6 }}>{rouse.v}</span>
+            {rouse.ok
+              ? <span style={{ color: "var(--ok)" }}>sucesso — Fome não sobe</span>
+              : <span style={{ color: "var(--err)" }}>falha — <b>Fome +1</b></span>}
+          </span>
+        )}
+      </div>
 
       {res && (
         <div data-testid="roll-result" style={{ borderTop: "1px solid var(--border)", paddingTop: 12 }}>

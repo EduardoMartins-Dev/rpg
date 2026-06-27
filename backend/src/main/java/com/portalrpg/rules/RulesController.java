@@ -39,12 +39,16 @@ public class RulesController {
     public record DisciplineView(String name, String summary, List<PowerView> powers) {
     }
 
+    public record PredatorView(String name, String summary, List<String> disciplines) {
+    }
+
     public record V5CatalogView(
             List<String> types,
             List<ClanView> clans,
             List<AbilityGroup> abilities,
             List<BloodPotencyView> bloodPotency,
-            List<DisciplineView> disciplines) {
+            List<DisciplineView> disciplines,
+            List<PredatorView> predatorTypes) {
     }
 
     @GetMapping("/v5/catalog")
@@ -76,7 +80,11 @@ public class RulesController {
                         d.powers().stream().map(p -> new PowerView(p.level(), p.name())).toList()))
                 .toList();
 
-        return new V5CatalogView(types, clans, abilities, bloodPotency, disciplines);
+        List<PredatorView> predators = V5Catalog.predatorTypes().stream()
+                .map(pt -> new PredatorView(pt.name(), pt.summary(), pt.disciplines()))
+                .toList();
+
+        return new V5CatalogView(types, clans, abilities, bloodPotency, disciplines, predators);
     }
 
     private ClanView toClanView(ClanInfo c) {

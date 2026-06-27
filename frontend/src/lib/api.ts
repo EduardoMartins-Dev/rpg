@@ -144,9 +144,10 @@ export interface BloodPotencyView {
 }
 export interface PowerView { level: number; name: string; }
 export interface DisciplineView { name: string; summary: string; powers: PowerView[]; }
+export interface PredatorView { name: string; summary: string; disciplines: string[]; }
 export interface V5Catalog {
   types: string[]; clans: ClanView[]; abilities: AbilityGroup[];
-  bloodPotency?: BloodPotencyView[]; disciplines?: DisciplineView[];
+  bloodPotency?: BloodPotencyView[]; disciplines?: DisciplineView[]; predatorTypes?: PredatorView[];
 }
 
 // --- admin: gestão de usuários ----------------------------------------------

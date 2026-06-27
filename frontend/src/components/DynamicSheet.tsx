@@ -2,6 +2,9 @@
 
 import { useMemo, useState } from "react";
 import type { SchemaShape, V5Catalog, ClanView } from "@/lib/api";
+import { DamageTrack } from "@/components/DamageTrack";
+
+type Dmg = { sup: number; agg: number };
 
 type Sheet = Record<string, unknown>;
 type Weapon = { name: string; damage: string };
@@ -48,6 +51,12 @@ export function DynamicSheet({
   const canHaveClan = type !== "MORTAL";
   const skillMeta = useMemo(() => buildSkillMeta(catalog), [catalog]);
 
+  const healthDmg = (sheet.healthDmg as Dmg) ?? { sup: 0, agg: 0 };
+  const wpDmg = (sheet.wpDmg as Dmg) ?? { sup: 0, agg: 0 };
+  // máximos (usa o derivado do servidor; fallback calculado p/ funcionar antes de salvar)
+  const vitMax = derived.vitality ?? ((attrs.vigor ?? 0) + 3);
+  const wpMax = derived.willpower ?? ((attrs.autocontrole ?? 0) + (attrs.determinacao ?? 0));
+
   const steps: { key: string; label: string }[] = [
     { key: "cla", label: "Clã" },
     { key: "conceito", label: "Conceito & Lore" },
@@ -56,6 +65,7 @@ export function DynamicSheet({
     { key: "disciplinas", label: "Disciplinas" },
     { key: "vantagens", label: "Vantagens & Defeitos" },
     { key: "conviccoes", label: "Convicções & Pilares" },
+    { key: "estado", label: "Estado" },
     { key: "equipamento", label: "Equipamento" },
     { key: "revisao", label: "Revisão" },
   ];
@@ -191,7 +201,8 @@ export function DynamicSheet({
               <Field label="Senhor (Sire)" v={str(sheet.sire)} on={(v) => set("sire", v)} />
               <Field label="Geração" type="number" v={str(sheet.generation)} on={(v) => set("generation", v ? Number(v) : undefined)} ph="ex.: 13" />
               <Field label="Potência de Sangue (0–6)" type="number" v={str(sheet.bloodPotency)} on={(v) => set("bloodPotency", v ? Number(v) : undefined)} />
-              <Field label="Tipo de Predador" v={str(sheet.predatorType)} on={(v) => set("predatorType", v || undefined)} disabled={!canHaveClan} ph="ex.: Alcateia, Sedutor…" />
+              <PredatorField catalog={catalog} value={str(sheet.predatorType)} disabled={!canHaveClan}
+                onChange={(v) => set("predatorType", v || undefined)} />
               <Field label="Idade aparente" v={str(sheet.apparentAge)} on={(v) => set("apparentAge", v)} />
             </div>
             <BloodPotencyEffects catalog={catalog} potency={Number(sheet.bloodPotency)} />
@@ -220,6 +231,7 @@ export function DynamicSheet({
               </div>
             </div>
             <h3>Atributos <span className="muted" style={{ fontSize: ".8rem" }}>(1 com 4 · 3 com 3 · 4 com 2 · 1 com 1)</span></h3>
+            <AttrBudget attributes={attributes} attrs={attrs} />
             {attributes.length === 0 && <p className="muted">Schema sem atributos.</p>}
             <div className="attr-layout">
               <div className="trait-cols">
@@ -302,9 +314,9 @@ export function DynamicSheet({
         {/* 6 · VANTAGENS & DEFEITOS */}
         {cur === "vantagens" && (
           <section>
-            <h3>Vantagens & Antecedentes <span className="muted" style={{ fontSize: ".8rem" }}>(7 pontos)</span></h3>
+            <h3>Vantagens & Antecedentes <Budget used={sumDots(advantages)} max={7} /></h3>
             <AdvantageEditor items={advantages} testid="advantages" onChange={(v) => set("advantages", v)} ph="ex.: Refúgio, Aliados, Recursos, Mentor…" />
-            <h3 style={{ marginTop: "1.1rem" }}>Defeitos <span className="muted" style={{ fontSize: ".8rem" }}>(2 pontos + do predador)</span></h3>
+            <h3 style={{ marginTop: "1.1rem" }}>Defeitos <Budget used={sumDots(flaws)} max={2} /> <span className="muted" style={{ fontSize: ".8rem" }}>(+ os do predador)</span></h3>
             <AdvantageEditor items={flaws} testid="flaws" onChange={(v) => set("flaws", v)} ph="ex.: Inimigo, Caçado, Suspeito…" />
           </section>
         )}
@@ -324,6 +336,37 @@ export function DynamicSheet({
             <h3 style={{ marginTop: "1.1rem" }}>Pilares (Touchstones)</h3>
             <p className="muted" style={{ fontSize: 13 }}>Cada Pilar conectado a uma Convicção — pessoas que te prendem à Humanidade.</p>
             <StringList items={touchstones} onChange={(v) => set("touchstones", v)} ph="ex.: Maria, sua irmã mortal" />
+          </section>
+        )}
+
+        {/* 7.5 · ESTADO (trilhas de dano) */}
+        {cur === "estado" && (
+          <section>
+            <h3>Estado <span className="muted" style={{ fontSize: ".8rem" }}>(marque o dano durante o jogo)</span></h3>
+            <div className="trait-cols">
+              <div className="trait-col">
+                <DamageTrack label="Vitalidade" max={vitMax} sup={healthDmg.sup} agg={healthDmg.agg}
+                  onChange={(s, a) => setTop("healthDmg", { sup: s, agg: a })} />
+                <p className="muted" style={{ fontSize: 12, margin: 0 }}>Vitalidade = Vigor + 3. Superficial cura por noite; Agravado é grave.</p>
+              </div>
+              <div className="trait-col">
+                <DamageTrack label="Força de Vontade" max={wpMax} sup={wpDmg.sup} agg={wpDmg.agg}
+                  onChange={(s, a) => setTop("wpDmg", { sup: s, agg: a })} />
+                <p className="muted" style={{ fontSize: 12, margin: 0 }}>FdV = Autocontrole + Determinação.</p>
+              </div>
+            </div>
+            <div className="grid2" style={{ maxWidth: 320, marginTop: 12 }}>
+              <div>
+                <label>Fome (0–5)</label>
+                <input type="number" min={0} max={5} value={(sheet.hunger as number) ?? 0}
+                  onChange={(e) => setTop("hunger", Number(e.target.value))} />
+              </div>
+              <div>
+                <label>Humanidade (0–10)</label>
+                <input type="number" min={0} max={10} value={(sheet.humanity as number) ?? 7}
+                  onChange={(e) => setTop("humanity", Number(e.target.value))} />
+              </div>
+            </div>
           </section>
         )}
 
@@ -499,6 +542,55 @@ function BloodPotencyEffects({ catalog, potency }: { catalog?: V5Catalog | null;
           <span key={k} className="badge" style={{ gap: 6 }}>{k}: <b style={{ color: "var(--accent)" }}>{v}</b></span>
         ))}
       </div>
+    </div>
+  );
+}
+
+function sumDots(items: { dots: number }[]): number {
+  return items.reduce((a, b) => a + (b.dots || 0), 0);
+}
+
+function Budget({ used, max }: { used: number; max: number }) {
+  const ok = used === max;
+  return <span className={`budget ${ok ? "ok" : "warn"}`}>{used}/{max} pts {ok ? "✓" : ""}</span>;
+}
+
+function AttrBudget({ attributes, attrs }: { attributes: string[]; attrs: Record<string, number> }) {
+  // alvo da criação: um 4, três 3, quatro 2, um 1 (9 atributos)
+  const target: Record<number, number> = { 4: 1, 3: 3, 2: 4, 1: 1 };
+  const have: Record<number, number> = { 4: 0, 3: 0, 2: 0, 1: 0 };
+  for (const n of attributes) { const v = attrs[n] ?? 0; if (have[v] !== undefined) have[v]++; }
+  return (
+    <div className="chips" style={{ margin: "0 0 10px" }}>
+      {[4, 3, 2, 1].map((v) => {
+        const ok = have[v] === target[v];
+        return <span key={v} className={`budget ${ok ? "ok" : "warn"}`} style={{ padding: "3px 8px", border: "1px solid var(--border)", borderRadius: 999 }}>
+          {have[v]}/{target[v]} com {v} {ok ? "✓" : "⚠"}</span>;
+      })}
+    </div>
+  );
+}
+
+function PredatorField({ catalog, value, onChange, disabled }: {
+  catalog?: V5Catalog | null; value: string; onChange: (v: string) => void; disabled?: boolean;
+}) {
+  const list = catalog?.predatorTypes;
+  const sel = list?.find((p) => p.name === value);
+  if (!list || list.length === 0) {
+    return <Field label="Tipo de Predador" v={value} on={onChange} disabled={disabled} ph="ex.: Gatuno, Sereia…" />;
+  }
+  return (
+    <div>
+      <label>Tipo de Predador</label>
+      <select value={value} disabled={disabled} onChange={(e) => onChange(e.target.value)} style={{ marginTop: 7 }}>
+        <option value="">—</option>
+        {list.map((p) => <option key={p.name} value={p.name}>{p.name}</option>)}
+      </select>
+      {sel && (
+        <div className="muted" style={{ fontSize: 12, marginTop: 6 }}>
+          {sel.summary} · aumenta <b style={{ color: "var(--accent)" }}>{sel.disciplines.join(" ou ")}</b>
+        </div>
+      )}
     </div>
   );
 }

@@ -257,6 +257,39 @@ public final class V5Catalog {
         return DISCIPLINES;
     }
 
+    // --- Tipos de Predador (pg.175) ---------------------------------------
+    // name, resumo do estilo de caça e as 2 disciplinas que o tipo pode aumentar.
+    // Detalhes (especialização/antecedente/defeito concedidos) vêm do livro (Chat IA).
+
+    public record PredatorType(String name, String summary, List<String> disciplines) {
+    }
+
+    private static final List<PredatorType> PREDATORS = List.of(
+            new PredatorType("Gatuno", "Caça pela força e violência, em becos e ruas.",
+                    List.of("Celeridade", "Potência")),
+            new PredatorType("Sacoleiro", "Compra ou rouba sangue preservado (bolsas).",
+                    List.of("Feitiçaria de Sangue", "Ofuscação")),
+            new PredatorType("Sanguessuga", "Alimenta-se de outros vampiros.",
+                    List.of("Celeridade", "Proteanismo")),
+            new PredatorType("Provedor", "Alimenta-se de pessoas próximas / da própria família.",
+                    List.of("Dominação", "Animalismo")),
+            new PredatorType("Consensualista", "Só se alimenta com consentimento.",
+                    List.of("Auspícios", "Fortitude")),
+            new PredatorType("Fazendeiro", "Alimenta-se de animais.",
+                    List.of("Animalismo", "Proteanismo")),
+            new PredatorType("Osíris", "Alimenta-se de seu culto, fãs ou seguidores.",
+                    List.of("Feitiçaria de Sangue", "Presença")),
+            new PredatorType("Sandman", "Alimenta-se de vítimas adormecidas.",
+                    List.of("Auspícios", "Ofuscação")),
+            new PredatorType("Rainha da Cena", "Alimenta-se de uma subcultura que adora.",
+                    List.of("Ofuscação", "Presença")),
+            new PredatorType("Sereia", "Alimenta-se por sedução.",
+                    List.of("Fortitude", "Presença")));
+
+    public static List<PredatorType> predatorTypes() {
+        return PREDATORS;
+    }
+
     // --- Tabela de Potência de Sangue 0–6 (errata Companion §13.6) ---------
 
     /**
