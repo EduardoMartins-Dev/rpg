@@ -13,6 +13,7 @@ import {
 } from "@/lib/api";
 
 type Sheet = Record<string, unknown>;
+const str = (v: unknown): string => (v == null ? "" : String(v));
 
 export default function CharacterSheetPage() {
   const { user } = useRequireUser();
@@ -74,9 +75,16 @@ export default function CharacterSheetPage() {
         </p>
 
         <div style={{ display: "flex", alignItems: "center", gap: 18, marginBottom: 22 }}>
-          <span className="avatar lg" style={{ background: "linear-gradient(135deg,#2a2e38,#1a1d24)" }}>
-            {(name || "?").slice(0, 1).toUpperCase()}
-          </span>
+          {str(sheet.avatarUrl) ? (
+            <span className="portrait" data-testid="header-portrait">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={str(sheet.avatarUrl)} alt="retrato" />
+            </span>
+          ) : (
+            <span className="avatar lg" style={{ background: "linear-gradient(135deg,#2a2e38,#1a1d24)" }}>
+              {(name || "?").slice(0, 1).toUpperCase()}
+            </span>
+          )}
           <div style={{ flex: 1 }}>
             <input data-testid="sheet-name" value={name} onChange={(e) => setName(e.target.value)}
               placeholder="Nome do personagem"

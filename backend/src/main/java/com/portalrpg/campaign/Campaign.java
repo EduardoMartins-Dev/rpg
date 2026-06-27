@@ -36,6 +36,12 @@ public class Campaign {
     @Column(name = "invite_code", nullable = false, unique = true)
     private String inviteCode;
 
+    @Column(name = "banner_url", columnDefinition = "text")
+    private String bannerUrl;
+
+    @Column(name = "theme", length = 32)
+    private String theme;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false, insertable = false)
     private Instant createdAt;
@@ -85,6 +91,22 @@ public class Campaign {
 
     public void setInviteCode(String inviteCode) {
         this.inviteCode = inviteCode;
+    }
+
+    public String getBannerUrl() {
+        return bannerUrl;
+    }
+
+    public void setBannerUrl(String bannerUrl) {
+        this.bannerUrl = bannerUrl;
+    }
+
+    public String getTheme() {
+        return theme;
+    }
+
+    public void setTheme(String theme) {
+        this.theme = theme;
     }
 
     public Instant getCreatedAt() {

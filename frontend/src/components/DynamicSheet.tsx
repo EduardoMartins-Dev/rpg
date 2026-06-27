@@ -80,6 +80,7 @@ export function DynamicSheet({
     { key: "conviccoes", label: "Convicções & Pilares" },
     { key: "estado", label: "Estado" },
     { key: "equipamento", label: "Equipamento" },
+    { key: "notas", label: "Notas" },
     { key: "revisao", label: "Revisão" },
   ];
   const [step, setStep] = useState(0);
@@ -208,6 +209,20 @@ export function DynamicSheet({
         {/* 2 · CONCEITO & LORE */}
         {cur === "conceito" && (
           <section>
+            <h3>Retrato</h3>
+            <div style={{ display: "flex", gap: 16, alignItems: "flex-start", flexWrap: "wrap", marginBottom: ".6rem" }}>
+              <span className="portrait" data-testid="sheet-portrait">
+                {str(sheet.avatarUrl)
+                  // eslint-disable-next-line @next/next/no-img-element
+                  ? <img src={str(sheet.avatarUrl)} alt="retrato" />
+                  : <span className="muted" style={{ fontSize: 12, textAlign: "center", padding: 8 }}>sem foto</span>}
+              </span>
+              <div style={{ flex: 1, minWidth: 220 }}>
+                <Field label="Foto do personagem (URL)" v={str(sheet.avatarUrl)}
+                  on={(v) => set("avatarUrl", v || undefined)} ph="https://…" />
+                <p className="muted" style={{ fontSize: 12, margin: "6px 0 0" }}>Cole o link de uma imagem (arte, retrato).</p>
+              </div>
+            </div>
             <h3>Conceito</h3>
             <div className="grid2">
               <Field label="Conceito" v={str(sheet.concept)} on={(v) => set("concept", v)} ph="ex.: detetive amaldiçoado" />
@@ -441,6 +456,20 @@ export function DynamicSheet({
             </div>
             <button type="button" className="secondary" style={{ marginTop: 8 }}
               onClick={() => set("weapons", [...weapons, { name: "", damage: "" }])}>+ Adicionar arma/item</button>
+          </section>
+        )}
+
+        {/* 8.5 · NOTAS — anotações livres do jogador */}
+        {cur === "notas" && (
+          <section data-testid="notes-section">
+            <h3>Anotações <span className="muted" style={{ fontSize: ".8rem" }}>(suas notas livres — segredos, contatos, objetivos)</span></h3>
+            <textarea data-testid="sheet-notes" value={str(sheet.notes)} rows={14}
+              placeholder="Anote o que quiser sobre a crônica, pistas, NPCs, planos…"
+              style={{ fontFamily: "var(--ui)", minHeight: 0, lineHeight: 1.6 }}
+              onChange={(e) => set("notes", e.target.value)} />
+            <h3 style={{ marginTop: "1.1rem" }}>Diário de sessão</h3>
+            <StringList items={(sheet.journal as string[]) ?? []} onChange={(v) => set("journal", v)}
+              ph="ex.: Sessão 3 — fizemos um pacto com o Príncipe" />
           </section>
         )}
 

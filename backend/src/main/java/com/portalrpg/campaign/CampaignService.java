@@ -77,6 +77,8 @@ public class CampaignService {
         Campaign c = require(campaignId);
         c.setName(req.name());
         c.setDescription(req.description());
+        c.setBannerUrl(blankToNull(req.bannerUrl()));
+        c.setTheme(blankToNull(req.theme()));
         return toResponse(c, roleOf(campaignId, userId));
     }
 
@@ -162,6 +164,15 @@ public class CampaignService {
 
     private CampaignResponse toResponse(Campaign c, CampaignRole role) {
         return new CampaignResponse(c.getId(), c.getName(), c.getDescription(), c.getSystemId(),
-                c.getMasterId(), c.getInviteCode(), role != null ? role.name() : null, c.getCreatedAt());
+                c.getMasterId(), c.getInviteCode(), c.getBannerUrl(), c.getTheme(),
+                role != null ? role.name() : null, c.getCreatedAt());
+    }
+
+    private static String blankToNull(String s) {
+        if (s == null) {
+            return null;
+        }
+        String t = s.trim();
+        return t.isEmpty() ? null : t;
     }
 }

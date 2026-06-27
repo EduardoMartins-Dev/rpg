@@ -20,7 +20,9 @@ public final class CampaignDtos {
 
     public record UpdateCampaignRequest(
             @NotBlank @Size(max = 255) String name,
-            String description) {
+            String description,
+            @Size(max = 2048) String bannerUrl,
+            @Size(max = 32) String theme) {
     }
 
     public record JoinRequest(
@@ -35,6 +37,8 @@ public final class CampaignDtos {
             UUID systemId,
             UUID masterId,
             String inviteCode,
+            String bannerUrl,
+            String theme,
             String role,
             Instant createdAt) {
     }

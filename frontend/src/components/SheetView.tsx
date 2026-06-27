@@ -38,8 +38,20 @@ export function SheetView({ schema, sheet, catalog }: {
   const skillMeta = buildSkillMeta(catalog);
   const bpRow = catalog?.bloodPotency?.find((b) => b.potency === bp);
 
+  const notes = str(sheet.notes);
+  const journal = (sheet.journal as string[]) ?? [];
+  const avatarUrl = str(sheet.avatarUrl);
+
   return (
     <div data-testid="sheet-view">
+      {avatarUrl && (
+        <div style={{ marginBottom: 14 }}>
+          <span className="portrait lg" data-testid="view-portrait">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={avatarUrl} alt="retrato" />
+          </span>
+        </div>
+      )}
       {/* Identidade */}
       <div className="review-grid">
         <div className="panel" style={{ margin: 0 }}>
@@ -158,6 +170,19 @@ export function SheetView({ schema, sheet, catalog }: {
             <ul style={{ margin: ".3rem 0 0", paddingLeft: 18 }}>{convictions.map((c, i) => <li key={i}>{c}</li>)}</ul></div>
           <div className="panel" style={{ margin: 0 }}><span className="kv-label">Pilares</span>
             <ul style={{ margin: ".3rem 0 0", paddingLeft: 18 }}>{touchstones.map((t, i) => <li key={i}>{t}</li>)}</ul></div>
+        </div>
+      )}
+
+      {/* Anotações / Diário */}
+      {(notes || journal.length > 0) && (
+        <div className="panel" style={{ marginTop: 14 }} data-testid="view-notes">
+          {notes && <><span className="kv-label">Anotações</span><p style={{ whiteSpace: "pre-wrap" }}>{notes}</p></>}
+          {journal.length > 0 && (
+            <>
+              <span className="kv-label">Diário de sessão</span>
+              <ul style={{ margin: ".3rem 0 0", paddingLeft: 18 }}>{journal.map((j, i) => <li key={i}>{j}</li>)}</ul>
+            </>
+          )}
         </div>
       )}
 

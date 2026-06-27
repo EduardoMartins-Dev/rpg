@@ -117,6 +117,7 @@ export interface SystemDocument { id: string; systemId: string; fileUrl: string;
 export interface Campaign {
   id: string; name: string; description: string | null; systemId: string;
   masterId: string; inviteCode: string; role: "MASTER" | "PLAYER" | null;
+  bannerUrl?: string | null; theme?: string | null;
 }
 export interface Member { userId: string; email: string; displayName: string; role: string; }
 export interface MyCharacter {

@@ -20,6 +20,44 @@ function gradient(seed: string): string {
 }
 const initials = (s: string) => (s || "?").slice(0, 2).toUpperCase();
 
+// Temas: cor de destaque por campanha. Preset ou hex livre.
+const THEMES: { label: string; color: string }[] = [
+  { label: "Sangue (padrão)", color: "#C9A24B" },
+  { label: "Carmesim", color: "#C0392B" },
+  { label: "Ametista", color: "#9B59B6" },
+  { label: "Esmeralda", color: "#27AE60" },
+  { label: "Safira", color: "#4A7FE0" },
+  { label: "Âmbar", color: "#E08A1E" },
+  { label: "Aço", color: "#8895A7" },
+];
+
+function hexToRgb(hex: string): [number, number, number] | null {
+  const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
+  if (!m) return null;
+  const n = parseInt(m[1], 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+}
+function lighten(hex: string, amt: number): string {
+  const rgb = hexToRgb(hex);
+  if (!rgb) return hex;
+  const [r, g, b] = rgb.map((c) => Math.round(c + (255 - c) * amt));
+  return `rgb(${r}, ${g}, ${b})`;
+}
+function rgba(hex: string, a: number): string {
+  const rgb = hexToRgb(hex);
+  if (!rgb) return hex;
+  return `rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, ${a})`;
+}
+// Sobrescreve as vars de accent no escopo da campanha quando há tema definido.
+function themeVars(hex?: string | null): React.CSSProperties {
+  if (!hex || !hexToRgb(hex)) return {};
+  return {
+    ["--accent" as string]: hex,
+    ["--accent-hover" as string]: lighten(hex, 0.16),
+    ["--accent-tint" as string]: rgba(hex, 0.12),
+  };
+}
+
 export default function CampaignDetailPage() {
   const { user } = useRequireUser();
   const params = useParams<{ id: string }>();
@@ -37,6 +75,13 @@ export default function CampaignDetailPage() {
   const [asking, setAsking] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<Tab>("overview");
+
+  // personalização (mestre): nome, descrição, banner, tema
+  const [editing, setEditing] = useState(false);
+  const [cName, setCName] = useState("");
+  const [cDesc, setCDesc] = useState("");
+  const [cBanner, setCBanner] = useState("");
+  const [cTheme, setCTheme] = useState("");
 
   // widget de rolagem (cliente)
   const [pool, setPool] = useState(3);
@@ -69,6 +114,32 @@ export default function CampaignDetailPage() {
     for (const ch of characters) m.set(ch.playerId, ch.name);
     return m;
   }, [characters]);
+
+  function openEdit() {
+    if (!campaign) return;
+    setCName(campaign.name);
+    setCDesc(campaign.description ?? "");
+    setCBanner(campaign.bannerUrl ?? "");
+    setCTheme(campaign.theme ?? "");
+    setEditing(true);
+  }
+
+  async function saveCustomize(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    try {
+      const updated = await api.put<Campaign>(`/campaigns/${id}`, {
+        name: cName.trim() || campaign?.name,
+        description: cDesc.trim() || null,
+        bannerUrl: cBanner.trim() || null,
+        theme: cTheme.trim() || null,
+      });
+      setCampaign(updated);
+      setEditing(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "erro ao salvar personalização");
+    }
+  }
 
   async function regenInvite() {
     const r = await api.post<{ inviteCode: string }>(`/campaigns/${id}/invite`);
@@ -148,9 +219,11 @@ export default function CampaignDetailPage() {
 
   return (
     <AppShell user={user} active="campaigns">
-      <div data-testid="campaign-detail">
+      <div data-testid="campaign-detail" style={themeVars(campaign.theme)}>
         {/* hero */}
-        <div className="cam-hero" style={{ background: gradient(campaign.name) }}>
+        <div className="cam-hero" style={campaign.bannerUrl
+          ? { background: `linear-gradient(rgba(13,14,18,0.55), rgba(13,14,18,0.78)), url(${JSON.stringify(campaign.bannerUrl)}) center/cover no-repeat` }
+          : { background: gradient(campaign.name) }}>
           <div className="inner">
             <span className="avatar lg" style={{ background: "rgba(13,14,18,0.5)" }}>{initials(campaign.name)}</span>
             <div style={{ flex: 1 }}>
@@ -159,7 +232,10 @@ export default function CampaignDetailPage() {
               <span className="sys">{system?.name ?? "—"} · {members.length} membros · <span className={`badge role-${campaign.role}`} data-testid="my-role">{campaign.role}</span></span>
             </div>
             {isMaster && (
-              <button data-testid="invite-regen" onClick={regenInvite} style={{ alignSelf: "center" }}>Gerar convite</button>
+              <div style={{ alignSelf: "center", display: "flex", gap: 8 }}>
+                <button className="secondary" data-testid="campaign-customize" onClick={() => { setTab("overview"); openEdit(); }}>Personalizar</button>
+                <button data-testid="invite-regen" onClick={regenInvite}>Gerar convite</button>
+              </div>
             )}
           </div>
         </div>
@@ -177,6 +253,50 @@ export default function CampaignDetailPage() {
           {tab === "overview" && (
             <div style={{ display: "grid", gridTemplateColumns: "1.6fr 1fr", gap: 20 }} className="ov-grid">
               <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+                {isMaster && editing && (
+                  <form className="panel" data-testid="customize-form" onSubmit={saveCustomize} style={{ margin: 0, display: "flex", flexDirection: "column", gap: 12 }}>
+                    <h3 style={{ fontSize: 18, margin: 0 }}>Personalizar campanha</h3>
+                    <div>
+                      <label>Nome</label>
+                      <input data-testid="cz-name" value={cName} onChange={(e) => setCName(e.target.value)} />
+                    </div>
+                    <div>
+                      <label>Descrição / tom da crônica</label>
+                      <textarea data-testid="cz-desc" value={cDesc} rows={3} style={{ resize: "vertical" }}
+                        onChange={(e) => setCDesc(e.target.value)} />
+                    </div>
+                    <div>
+                      <label>Banner (URL de imagem)</label>
+                      <input data-testid="cz-banner" value={cBanner} placeholder="https://…"
+                        onChange={(e) => setCBanner(e.target.value)} />
+                      {cBanner.trim() && (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={cBanner} alt="" style={{ marginTop: 8, width: "100%", maxHeight: 120, objectFit: "cover", borderRadius: 8 }} />
+                      )}
+                    </div>
+                    <div>
+                      <label>Tema (cor de destaque)</label>
+                      <div className="chips" data-testid="cz-themes" style={{ marginTop: 6 }}>
+                        {THEMES.map((t) => (
+                          <button key={t.color} type="button" title={t.label}
+                            onClick={() => setCTheme(t.color)}
+                            style={{
+                              width: 30, height: 30, borderRadius: "50%", padding: 0, background: t.color,
+                              border: cTheme.toLowerCase() === t.color.toLowerCase() ? "3px solid var(--text)" : "2px solid var(--border)",
+                              cursor: "pointer",
+                            }} />
+                        ))}
+                        <input type="color" data-testid="cz-theme-custom" value={cTheme || "#C9A24B"}
+                          onChange={(e) => setCTheme(e.target.value)}
+                          style={{ width: 38, height: 30, padding: 0, background: "none", border: "1px solid var(--border)", borderRadius: 6 }} />
+                      </div>
+                    </div>
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <button type="submit" data-testid="cz-save">Salvar</button>
+                      <button type="button" className="secondary" onClick={() => setEditing(false)}>Cancelar</button>
+                    </div>
+                  </form>
+                )}
                 <div className="panel" style={{ margin: 0 }}>
                   <h3 style={{ fontSize: 18 }}>Sobre a campanha</h3>
                   <p className="muted" style={{ lineHeight: 1.65, margin: 0 }}>
