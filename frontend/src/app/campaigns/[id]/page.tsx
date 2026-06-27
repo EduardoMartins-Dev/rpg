@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useRequireUser } from "@/lib/guard";
 import { AppShell } from "@/components/AppShell";
 import {
@@ -21,6 +21,7 @@ const initials = (s: string) => (s || "?").slice(0, 2).toUpperCase();
 export default function CampaignDetailPage() {
   const { user } = useRequireUser();
   const params = useParams<{ id: string }>();
+  const router = useRouter();
   const id = params.id;
 
   const [campaign, setCampaign] = useState<Campaign | null>(null);
@@ -97,6 +98,28 @@ export default function CampaignDetailPage() {
     setRoll(Array.from({ length: pool }, () => 1 + Math.floor(Math.random() * 6)));
   }
 
+  async function deleteCharacter(ch: Character) {
+    if (!confirm(`Excluir a ficha "${ch.name}"? Ação permanente.`)) return;
+    setError(null);
+    try { await api.del(`/campaigns/${id}/characters/${ch.id}`); await load(); }
+    catch (err) { setError(err instanceof Error ? err.message : "erro ao excluir ficha"); }
+  }
+
+  async function deleteCampaign() {
+    if (!campaign) return;
+    if (!confirm(`Excluir a campanha "${campaign.name}" e TODAS as fichas dela? Ação permanente.`)) return;
+    setError(null);
+    try { await api.del(`/campaigns/${id}`); router.push("/campaigns"); }
+    catch (err) { setError(err instanceof Error ? err.message : "erro ao excluir campanha"); }
+  }
+
+  async function removeMember(m: Member) {
+    if (!confirm(`Remover ${m.displayName} da campanha?`)) return;
+    setError(null);
+    try { await api.del(`/campaigns/${id}/members/${m.userId}`); await load(); }
+    catch (err) { setError(err instanceof Error ? err.message : "erro ao remover membro"); }
+  }
+
   if (!user) return <p className="muted" style={{ padding: 38 }}>Carregando…</p>;
   if (!campaign) {
     return (
@@ -158,6 +181,13 @@ export default function CampaignDetailPage() {
                     </p>
                   </div>
                 )}
+                {isMaster && (
+                  <div className="panel" style={{ margin: 0, borderColor: "var(--err)", background: "rgba(217,72,59,0.06)" }}>
+                    <h3 style={{ fontSize: 16, margin: "0 0 6px", color: "var(--err)" }}>Zona de perigo</h3>
+                    <p className="muted" style={{ fontSize: 13, margin: "0 0 12px" }}>Exclui a campanha e todas as fichas dela. Permanente.</p>
+                    <button className="danger" data-testid="campaign-delete" onClick={deleteCampaign}>Excluir campanha</button>
+                  </div>
+                )}
               </div>
 
               {/* dice widget */}
@@ -206,6 +236,10 @@ export default function CampaignDetailPage() {
                       </div>
                     </div>
                     <span className={`badge role-${m.role}`}>{m.role === "MASTER" ? "Mestre" : "Jogador"}</span>
+                    {isMaster && m.role !== "MASTER" && (
+                      <button className="ghost" title="Remover da campanha" data-testid={`member-remove-${m.userId}`}
+                        style={{ padding: "2px 8px", color: "var(--err)" }} onClick={() => removeMember(m)}>✕</button>
+                    )}
                   </div>
                 ))}
                 {members.length === 0 && <p className="muted" style={{ padding: 18 }}>Sem membros.</p>}
@@ -230,7 +264,12 @@ export default function CampaignDetailPage() {
                 {characters.map((c) => (
                   <Link key={c.id} href={`/campaigns/${id}/characters/${c.id}`}
                     data-testid={`character-open-${c.id}`} style={{ color: "inherit" }}>
-                    <div className="sheet-card" data-testid="character-row">
+                    <div className="sheet-card" data-testid="character-row" style={{ position: "relative" }}>
+                      {(isMaster || c.playerId === user.id) && (
+                        <button className="ghost" title="Excluir ficha" data-testid={`character-delete-${c.id}`}
+                          style={{ position: "absolute", top: 8, right: 8, padding: "2px 8px", color: "var(--err)" }}
+                          onClick={(e) => { e.preventDefault(); e.stopPropagation(); deleteCharacter(c); }}>✕</button>
+                      )}
                       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                         <span className="avatar" style={{ borderRadius: 10 }}>{initials(c.name)}</span>
                         <div>
