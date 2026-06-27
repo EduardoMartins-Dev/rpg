@@ -159,6 +159,104 @@ public final class V5Catalog {
         return ABILITIES.stream().filter(a -> a.category() == category).toList();
     }
 
+    // --- Disciplinas (§ Disciplinas) --------------------------------------
+    // Fixtures factuais: nome da disciplina, resumo curto (original) e os NOMES dos
+    // poderes por nível. O texto INTEGRAL de cada poder vem do PDF indexado (Chat IA),
+    // nunca hardcoded aqui — mesma política dos clãs.
+
+    public record Power(int level, String name) {
+    }
+
+    public record DisciplineInfo(String name, String summary, List<Power> powers) {
+    }
+
+    private static Power p(int lvl, String name) {
+        return new Power(lvl, name);
+    }
+
+    private static final List<DisciplineInfo> DISCIPLINES = List.of(
+            new DisciplineInfo("Animalismo",
+                    "Comunhão e controle de animais e da Besta interior.",
+                    List.of(p(1, "Sentir a Besta"), p(1, "Vínculo Famulus"),
+                            p(2, "Sussurros Selvagens"), p(2, "Suculência Animal"),
+                            p(3, "Acalmar a Besta"), p(3, "Colmeia Vívida"),
+                            p(4, "Subsumir o Espírito"),
+                            p(5, "Domínio Animal"), p(5, "Extrair a Besta"))),
+            new DisciplineInfo("Auspícios",
+                    "Sentidos aguçados, percepção sobrenatural e premonições.",
+                    List.of(p(1, "Sentidos Aguçados"), p(1, "Sentir o Invisível"),
+                            p(2, "Premonição"),
+                            p(3, "Perscrutar a Alma"), p(3, "Compartilhar os Sentidos"),
+                            p(4, "Toque do Espírito"),
+                            p(5, "Clarividência"), p(5, "Telepatia"))),
+            new DisciplineInfo("Celeridade",
+                    "Velocidade e reflexos sobre-humanos.",
+                    List.of(p(1, "Graça Felina"), p(1, "Reflexos Rápidos"),
+                            p(2, "Velocidade Fantástica"),
+                            p(3, "Investida Brutal"), p(3, "Esquiva Sobrenatural"),
+                            p(4, "Passo do Vento"),
+                            p(5, "Velocidade Relâmpago"))),
+            new DisciplineInfo("Dominação",
+                    "Controle da mente através de um olhar penetrante.",
+                    List.of(p(1, "Hipnotizar"), p(1, "Cunhar"),
+                            p(2, "Esquecer um Momento"),
+                            p(3, "A Voz do Comando"), p(3, "Manobra Dissimulada"),
+                            p(4, "Esquecimento Profundo"),
+                            p(5, "Domínio da Massa"), p(5, "Possessão"))),
+            new DisciplineInfo("Fortitude",
+                    "Tenacidade sobrenatural: resistir a dano, fogo e luz solar.",
+                    List.of(p(1, "Resiliência"), p(1, "Inabalável"),
+                            p(2, "Vigor"),
+                            p(3, "Defesa do Sangue Valente"), p(3, "Casca Fortalecida"),
+                            p(4, "Aço Forjado"),
+                            p(5, "Pele do Carvalho"))),
+            new DisciplineInfo("Ofuscação",
+                    "Permanecer obscuro e invisível, mesmo em meio a multidões.",
+                    List.of(p(1, "Manto das Sombras"), p(1, "Presença Fugaz"),
+                            p(2, "Máscara dos Mil Rostos"), p(2, "Véu da Distração"),
+                            p(3, "Desaparecer"),
+                            p(4, "Predador Invisível"),
+                            p(5, "Imersão Total"))),
+            new DisciplineInfo("Potência",
+                    "Força e vigor físicos sobre-humanos.",
+                    List.of(p(1, "Força Letal"), p(1, "Investida Fatal"),
+                            p(2, "Punhos Pesados"),
+                            p(3, "Salto Descomunal"), p(3, "Arremesso Brutal"),
+                            p(4, "Golpe Demolidor"),
+                            p(5, "Punho de Caim"))),
+            new DisciplineInfo("Presença",
+                    "Atrair, influenciar e controlar emoções.",
+                    List.of(p(1, "Admiração"), p(1, "Olhar Atemorizante"),
+                            p(2, "Presença Avassaladora"),
+                            p(3, "Coração Apaixonado"), p(3, "Aura Cativante"),
+                            p(4, "Súmula da Majestade"),
+                            p(5, "Convocação"))),
+            new DisciplineInfo("Proteanismo",
+                    "Mudança de forma: garras, formas bestiais e fusão com a terra.",
+                    List.of(p(1, "Olhos da Besta"), p(1, "Sentir a Terra"),
+                            p(2, "Garras da Fera"),
+                            p(3, "Forma de Névoa"), p(3, "Fundir-se à Terra"),
+                            p(4, "Forma Metamórfica"),
+                            p(5, "Forma do Mil Nuvens"))),
+            new DisciplineInfo("Feitiçaria de Sangue",
+                    "Magia do sangue e rituais (exclusiva de alguns clãs).",
+                    List.of(p(1, "Corrupção do Sangue"), p(1, "Língua do Diabo"),
+                            p(2, "Extrair Vitae"),
+                            p(3, "Roubo de Vitae"),
+                            p(4, "Cataclismo do Sangue"),
+                            p(5, "Marca de Caim"))),
+            new DisciplineInfo("Alquimia de Sangue-Ralo",
+                    "Fórmulas alquímicas dos sangues-ralos (níveis = potência da fórmula).",
+                    List.of(p(1, "Despertar do Sangue Adormecido"),
+                            p(2, "Sangue Falso"),
+                            p(3, "Toque Profano"),
+                            p(4, "Envenenar o Poço"),
+                            p(5, "Pulso da Profecia"))));
+
+    public static List<DisciplineInfo> disciplines() {
+        return DISCIPLINES;
+    }
+
     // --- Tabela de Potência de Sangue 0–6 (errata Companion §13.6) ---------
 
     /**

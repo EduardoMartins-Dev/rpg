@@ -142,8 +142,11 @@ export interface BloodPotencyView {
   potency: number; bloodSurge: number; rouseReroll: number;
   disciplineBonus: number; baneSeverity: number; mendingRouse: number;
 }
+export interface PowerView { level: number; name: string; }
+export interface DisciplineView { name: string; summary: string; powers: PowerView[]; }
 export interface V5Catalog {
-  types: string[]; clans: ClanView[]; abilities: AbilityGroup[]; bloodPotency?: BloodPotencyView[];
+  types: string[]; clans: ClanView[]; abilities: AbilityGroup[];
+  bloodPotency?: BloodPotencyView[]; disciplines?: DisciplineView[];
 }
 
 // --- admin: gestão de usuários ----------------------------------------------

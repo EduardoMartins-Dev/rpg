@@ -279,6 +279,15 @@ export function DynamicSheet({
                 </div>
                 <button type="button" className="secondary" style={{ marginTop: 8 }}
                   onClick={() => set("disciplines", [...disciplines, { name: "", level: 1, powers: "" }])}>+ Disciplina</button>
+
+                {catalog?.disciplines && catalog.disciplines.length > 0 && (
+                  <DisciplineCatalog
+                    list={catalog.disciplines}
+                    onAdd={(name) => {
+                      if (disciplines.some((d) => norm(d.name) === norm(name))) return;
+                      set("disciplines", [...disciplines, { name, level: 1, powers: "" }]);
+                    }} />
+                )}
               </>
             )}
           </section>
@@ -423,6 +432,48 @@ export function DynamicSheet({
 }
 
 // --- subcomponentes ----------------------------------------------------------
+
+function DisciplineCatalog({ list, onAdd }: {
+  list: NonNullable<V5Catalog["disciplines"]>; onAdd: (name: string) => void;
+}) {
+  const [open, setOpen] = useState<string | null>(null);
+  return (
+    <div className="sheet-section" data-testid="discipline-catalog">
+      <h3>Todas as disciplinas <span className="muted" style={{ fontSize: ".8rem" }}>(clique para ver o que faz)</span></h3>
+      <div className="disc-cat">
+        {list.map((d) => {
+          const isOpen = open === d.name;
+          const byLevel = groupBy(d.powers, (p) => String(p.level));
+          return (
+            <div key={d.name} className={`disc-item${isOpen ? " on" : ""}`}>
+              <button type="button" className="disc-head" data-testid={`disc-cat-${d.name}`}
+                onClick={() => setOpen(isOpen ? null : d.name)}>
+                <span>{d.name}</span>
+                <span className="muted" style={{ fontSize: 12 }}>{isOpen ? "▲" : "▼"}</span>
+              </button>
+              {isOpen && (
+                <div className="disc-detail">
+                  <p className="muted" style={{ margin: "0 0 8px" }}>{d.summary}</p>
+                  {Object.entries(byLevel).sort((a, b) => Number(a[0]) - Number(b[0])).map(([lvl, powers]) => (
+                    <div key={lvl} style={{ display: "flex", gap: 8, padding: "2px 0" }}>
+                      <span className="badge" style={{ minWidth: 28, justifyContent: "center" }}>•{lvl}</span>
+                      <span style={{ fontSize: 14 }}>{powers.map((p) => p.name).join(" · ")}</span>
+                    </div>
+                  ))}
+                  <p className="muted" style={{ fontSize: 12, margin: "8px 0 0" }}>
+                    Texto completo de cada poder: pergunte no <b>Chat (IA)</b> da campanha.
+                  </p>
+                  <button type="button" className="secondary" style={{ marginTop: 8 }}
+                    onClick={() => onAdd(d.name)}>+ Adicionar à ficha</button>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 function BloodPotencyEffects({ catalog, potency }: { catalog?: V5Catalog | null; potency: number }) {
   const bp = catalog?.bloodPotency?.find((b) => b.potency === potency);
