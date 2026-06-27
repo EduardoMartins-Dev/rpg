@@ -11,7 +11,17 @@ const DEFAULT_SCHEMA = JSON.stringify(
   {
     attributes: ["forca", "destreza", "vigor", "carisma", "manipulacao", "autocontrole",
       "inteligencia", "raciocinio", "determinacao"],
-    skills: ["briga", "armas_brancas", "atletismo", "intimidacao", "ocultismo"],
+    skills: [
+      // Físicas
+      "Armas Brancas", "Armas de Fogo", "Atletismo", "Briga", "Condução",
+      "Furtividade", "Ladroagem", "Ofícios", "Sobrevivência",
+      // Sociais
+      "Empatia com Animais", "Etiqueta", "Sagacidade", "Intimidação", "Liderança",
+      "Performance", "Persuasão", "Manha", "Subterfúgio",
+      // Mentais
+      "Erudição", "Percepção", "Ciência", "Finanças", "Investigação",
+      "Medicina", "Ocultismo", "Política", "Tecnologia",
+    ],
   },
   null,
   2,

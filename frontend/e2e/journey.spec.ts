@@ -60,15 +60,16 @@ test("jornada: admin → sistema → campanha → ficha dinâmica → IA", async
   await page.getByTestId("char-create").click();
   await page.getByTestId("character-row").filter({ hasText: "Lucian" }).first().click();
 
-  // wizard por etapas, dirigido pelo sheet-schema
+  // wizard por etapas (clã primeiro), dirigido pelo sheet-schema
   await expect(page.getByTestId("dynamic-sheet")).toBeVisible();
-  // etapa 1 — Atributos
+  // etapa Clã
+  await page.getByTestId("step-cla").click();
+  await page.getByTestId("sheet-clan").fill("BRUJAH");
+  // etapa Atributos
+  await page.getByTestId("step-atributos").click();
   await page.getByTestId("attr-vigor").fill("3");
   await page.getByTestId("attr-autocontrole").fill("3");
   await page.getByTestId("attr-determinacao").fill("2");
-  // etapa 2 — Origem/Clã
-  await page.getByTestId("step-tab-1").click();
-  await page.getByTestId("sheet-clan").fill("BRUJAH");
   await page.getByTestId("sheet-save").click();
 
   // derivados calculados no servidor + clã auto-populado
