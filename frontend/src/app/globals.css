@@ -264,6 +264,9 @@ th { font-size: .72rem; text-transform: uppercase; letter-spacing: .5px; color: 
 .disc-row { display: grid; grid-template-columns: 1.2fr auto 1.5fr auto; gap: .4rem; align-items: center; margin-bottom: .4rem; }
 @media (max-width: 640px) { .disc-row { grid-template-columns: 1fr auto auto; } }
 .review .panel p { margin: .2rem 0 .6rem; }
+.card-menu { position: absolute; top: 34px; right: 8px; z-index: 30; background: var(--elev); border: 1px solid var(--border); border-radius: 9px; padding: 4px; min-width: 130px; box-shadow: 0 10px 30px rgba(0,0,0,.45); }
+.card-menu button { padding: 8px 10px; font-size: 14px; border-radius: 6px; }
+.menu-backdrop { position: fixed; inset: 0; z-index: 20; }
 .radial { display: block; }
 .radial-ring { fill: none; stroke: var(--border); stroke-width: 1; }
 .radial-axis { stroke: var(--border); stroke-width: 1; }
