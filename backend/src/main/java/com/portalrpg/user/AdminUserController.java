@@ -9,9 +9,11 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -21,7 +23,11 @@ import org.springframework.web.bind.annotation.RestController;
 import com.portalrpg.common.ApiException;
 import com.portalrpg.security.AppPrincipal;
 
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 
 /**
  * Gestão de usuários — exclusivo de admin. Lista contas, alterna o papel de admin
@@ -34,15 +40,36 @@ import jakarta.validation.constraints.NotNull;
 public class AdminUserController {
 
     private final UserRepository users;
+    private final PasswordEncoder encoder;
 
-    public AdminUserController(UserRepository users) {
+    public AdminUserController(UserRepository users, PasswordEncoder encoder) {
         this.users = users;
+        this.encoder = encoder;
     }
 
     public record AdminUserView(UUID id, String email, String displayName, boolean admin, Instant createdAt) {
     }
 
     public record SetAdminRequest(@NotNull Boolean admin) {
+    }
+
+    public record CreateUserRequest(
+            @NotBlank @Email String email,
+            @NotBlank @Size(max = 255) String displayName,
+            @NotBlank @Size(min = 8, max = 255) String password,
+            boolean admin) {
+    }
+
+    @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
+    public AdminUserView create(@Valid @RequestBody CreateUserRequest req) {
+        String email = req.email().trim().toLowerCase();
+        if (users.existsByEmail(email)) {
+            throw ApiException.conflict("email already in use");
+        }
+        User u = new User(email, encoder.encode(req.password()), req.displayName().trim(), req.admin());
+        users.save(u);
+        return new AdminUserView(u.getId(), u.getEmail(), u.getDisplayName(), u.isAdmin(), u.getCreatedAt());
     }
 
     @GetMapping

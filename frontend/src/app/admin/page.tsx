@@ -50,6 +50,10 @@ export default function AdminPage() {
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<AdminTab>("systems");
   const [users, setUsers] = useState<AdminUser[]>([]);
+  const [nuEmail, setNuEmail] = useState("");
+  const [nuName, setNuName] = useState("");
+  const [nuPass, setNuPass] = useState("");
+  const [nuAdmin, setNuAdmin] = useState(false);
 
   const loadSystems = useCallback(async () => {
     setSystems(await api.get<RpgSystem[]>("/systems"));
@@ -96,6 +100,19 @@ export default function AdminPage() {
       setError(err instanceof Error ? err.message : "erro no upload via Storage");
     } finally {
       setUpBusy(false);
+    }
+  }
+
+  async function createUser(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null); setMsg(null);
+    try {
+      await api.post("/admin/users", { email: nuEmail, displayName: nuName, password: nuPass, admin: nuAdmin });
+      setNuEmail(""); setNuName(""); setNuPass(""); setNuAdmin(false);
+      await loadUsers();
+      setMsg(`Usuário "${nuName || nuEmail}" criado.`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "erro ao criar usuário");
     }
   }
 
@@ -252,6 +269,31 @@ export default function AdminPage() {
         <button className={`tab${tab === "systems" ? " on" : ""}`} data-testid="admin-tab-systems" onClick={() => setTab("systems")}>Sistemas</button>
         <button className={`tab${tab === "users" ? " on" : ""}`} data-testid="admin-tab-users" onClick={() => setTab("users")}>Usuários</button>
       </div>
+
+      {tab === "users" && (
+        <div className="panel">
+          <h2 style={{ fontSize: 18 }}>Novo usuário</h2>
+          <form onSubmit={createUser} className="row" style={{ alignItems: "end" }}>
+            <div>
+              <label htmlFor="nu-name">Nome</label>
+              <input id="nu-name" data-testid="newuser-name" value={nuName} onChange={(e) => setNuName(e.target.value)} />
+            </div>
+            <div>
+              <label htmlFor="nu-email">E-mail</label>
+              <input id="nu-email" type="email" data-testid="newuser-email" value={nuEmail} onChange={(e) => setNuEmail(e.target.value)} />
+            </div>
+            <div>
+              <label htmlFor="nu-pass">Senha (mín. 8)</label>
+              <input id="nu-pass" type="password" data-testid="newuser-password" value={nuPass} onChange={(e) => setNuPass(e.target.value)} />
+            </div>
+            <label style={{ display: "flex", alignItems: "center", gap: 6, flex: "0 0 auto", margin: "0 0 4px" }}>
+              <input type="checkbox" data-testid="newuser-admin" checked={nuAdmin} onChange={(e) => setNuAdmin(e.target.checked)} style={{ width: "auto" }} />
+              Admin
+            </label>
+            <button type="submit" data-testid="newuser-create" style={{ flex: "0 0 auto" }}>+ Criar usuário</button>
+          </form>
+        </div>
+      )}
 
       {tab === "users" && (
         <div className="panel" style={{ padding: 0 }} data-testid="admin-users">
