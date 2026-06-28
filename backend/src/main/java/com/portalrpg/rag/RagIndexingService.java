@@ -19,7 +19,9 @@ import com.portalrpg.system.SystemDocumentRepository;
 @Service
 public class RagIndexingService {
 
-    private static final int MAX_CHUNK_CHARS = 600;
+    // Chunk maior mantém a descrição de um clã/grupo inteira num único trecho, em vez de
+    // recuperar só a menção/índice. jina-v3 (8192 tokens) e o LLM aguentam folgado.
+    private static final int MAX_CHUNK_CHARS = 1100;
 
     private final SystemDocumentRepository documents;
     private final DocumentTextExtractor extractor;
