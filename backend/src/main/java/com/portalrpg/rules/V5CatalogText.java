@@ -43,7 +43,8 @@ public final class V5CatalogText {
     private static String disciplineLines(DisciplineInfo d) {
         String powers = d.powers().stream()
                 .sorted((a, b) -> Integer.compare(a.level(), b.level()))
-                .map(p -> "N" + p.level() + " " + p.name())
+                .map(p -> "N" + p.level() + " " + p.name()
+                        + (p.en() == null ? "" : " [" + p.en() + "]"))
                 .collect(Collectors.joining("; "));
         return "- " + d.name() + " — " + d.summary() + " Poderes: " + powers + ".";
     }

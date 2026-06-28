@@ -164,14 +164,20 @@ public final class V5Catalog {
     // poderes por nível. O texto INTEGRAL de cada poder vem do PDF indexado (Chat IA),
     // nunca hardcoded aqui — mesma política dos clãs.
 
-    public record Power(int level, String name) {
+    /** name: nome em PT (exibição). en: nome canônico em inglês do livro (corebook), usado
+     *  para a IA casar o poder com o trecho EN indexado; null quando não mapeado ainda. */
+    public record Power(int level, String name, String en) {
     }
 
     public record DisciplineInfo(String name, String summary, List<Power> powers) {
     }
 
     private static Power p(int lvl, String name) {
-        return new Power(lvl, name);
+        return new Power(lvl, name, null);
+    }
+
+    private static Power p(int lvl, String name, String en) {
+        return new Power(lvl, name, en);
     }
 
     private static final List<DisciplineInfo> DISCIPLINES = List.of(
@@ -191,11 +197,14 @@ public final class V5Catalog {
                             p(5, "Clarividência"), p(5, "Telepatia"))),
             new DisciplineInfo("Celeridade",
                     "Velocidade e reflexos sobre-humanos.",
-                    List.of(p(1, "Graça Felina"), p(1, "Reflexos Rápidos"),
-                            p(2, "Velocidade Fantástica"),
-                            p(3, "Investida Brutal"), p(3, "Esquiva Sobrenatural"),
-                            p(4, "Passo do Vento"),
-                            p(5, "Velocidade Relâmpago"))),
+                    List.of(p(1, "Graça Felina", "Cat's Grace"),
+                            p(1, "Reflexos Rápidos", "Rapid Reflexes"),
+                            p(2, "Fugacidade", "Fleetness"),
+                            p(3, "Lampejo", "Blink"), p(3, "Travessia", "Traversal"),
+                            p(4, "Gole de Elegância", "Draught of Elegance"),
+                            p(4, "Pontaria Infalível", "Unerring Aim"),
+                            p(5, "Golpe Relâmpago", "Lightning Strike"),
+                            p(5, "Fração de Segundo", "Split Second"))),
             new DisciplineInfo("Dominação",
                     "Controle da mente através de um olhar penetrante.",
                     List.of(p(1, "Hipnotizar"), p(1, "Cunhar"),
