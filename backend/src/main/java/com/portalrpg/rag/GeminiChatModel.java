@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestClient;
 
 import com.portalrpg.common.ApiException;
@@ -28,6 +29,9 @@ public class GeminiChatModel implements ChatModel {
 
     /** Teto generoso de saída — evita resposta gigante acidental sem truncar respostas reais. */
     private static final int MAX_OUTPUT_TOKENS = 2048;
+    /** Retry para 429 (cota) e 5xx (ex.: 503 "high demand", comum no flash free). */
+    private static final int MAX_RETRIES = 4;
+    private static final long RETRY_WAIT_MS = 4_000;
 
     private final RestClient http;
     private final String model;
@@ -35,7 +39,7 @@ public class GeminiChatModel implements ChatModel {
     public GeminiChatModel(
             @Value("${app.ai.gemini.base-url:https://generativelanguage.googleapis.com/v1beta}") String baseUrl,
             @Value("${app.ai.gemini.api-key:}") String apiKey,
-            @Value("${app.ai.gemini.model:gemini-2.5-flash}") String model) {
+            @Value("${app.ai.gemini.model:gemini-2.0-flash}") String model) {
         if (apiKey == null || apiKey.isBlank()) {
             throw new IllegalStateException("app.ai.provider=gemini requires GEMINI_API_KEY");
         }
@@ -61,30 +65,58 @@ public class GeminiChatModel implements ChatModel {
                 "Contexto (system_id=" + systemId + "):\n" + context
                         + "\n\nPergunta: " + question));
 
+        Map<String, Object> generationConfig = new java.util.HashMap<>();
+        generationConfig.put("temperature", 0.2);
+        generationConfig.put("maxOutputTokens", MAX_OUTPUT_TOKENS);
+        // thinkingConfig só existe nos modelos 2.5+ (mandar p/ 2.0 dá erro "unknown field").
+        if (model.contains("2.5")) {
+            // desliga o "thinking": desnecessário p/ RAG, mais barato, e evita resposta vazia
+            // quando o thinking consome todo o orçamento de saída.
+            generationConfig.put("thinkingConfig", Map.of("thinkingBudget", 0));
+        }
         Map<String, Object> body = Map.of(
                 "system_instruction", Map.of("parts", List.of(Map.of("text", AiPrompts.SYSTEM))),
                 "contents", contents,
-                "generationConfig", Map.of(
-                        "temperature", 0.2,
-                        "maxOutputTokens", MAX_OUTPUT_TOKENS,
-                        // desliga o "thinking" do 2.5 Flash: desnecessário p/ RAG, mais barato,
-                        // e evita resposta vazia quando o thinking consome todo o orçamento.
-                        "thinkingConfig", Map.of("thinkingBudget", 0)));
-        try {
-            GeminiResponse res = http.post()
-                    .uri("/models/{model}:generateContent", model)
-                    .body(body)
-                    .retrieve()
-                    .body(GeminiResponse.class);
-            String text = firstText(res);
-            if (text == null || text.isBlank()) {
-                throw new ApiException(HttpStatus.BAD_GATEWAY, "empty response from AI provider");
+                "generationConfig", generationConfig);
+
+        RuntimeException last = null;
+        for (int attempt = 0; attempt < MAX_RETRIES; attempt++) {
+            try {
+                GeminiResponse res = http.post()
+                        .uri("/models/{model}:generateContent", model)
+                        .body(body)
+                        .retrieve()
+                        .body(GeminiResponse.class);
+                String text = firstText(res);
+                if (text == null || text.isBlank()) {
+                    throw new ApiException(HttpStatus.BAD_GATEWAY, "empty response from AI provider");
+                }
+                return text;
+            } catch (HttpStatusCodeException e) {
+                int code = e.getStatusCode().value();
+                if ((code == 429 || code >= 500) && attempt < MAX_RETRIES - 1) {
+                    last = e;
+                    sleep(RETRY_WAIT_MS * (attempt + 1)); // backoff linear p/ overload transitório
+                    continue;
+                }
+                throw new ApiException(HttpStatus.BAD_GATEWAY, "AI provider error: " + e.getMessage());
+            } catch (ApiException e) {
+                throw e;
+            } catch (RuntimeException e) {
+                throw new ApiException(HttpStatus.BAD_GATEWAY, "AI provider error: " + e.getMessage());
             }
-            return text;
-        } catch (ApiException e) {
-            throw e;
-        } catch (RuntimeException e) {
-            throw new ApiException(HttpStatus.BAD_GATEWAY, "AI provider error: " + e.getMessage());
+        }
+        throw new ApiException(HttpStatus.BAD_GATEWAY,
+                "AI provider indisponível após retentativas: "
+                        + (last == null ? "" : last.getMessage()));
+    }
+
+    private static void sleep(long ms) {
+        try {
+            Thread.sleep(ms);
+        } catch (InterruptedException ie) {
+            Thread.currentThread().interrupt();
+            throw new ApiException(HttpStatus.BAD_GATEWAY, "interrupted waiting for AI provider");
         }
     }
 
