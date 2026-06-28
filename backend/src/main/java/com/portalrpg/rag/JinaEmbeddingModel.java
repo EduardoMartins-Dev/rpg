@@ -51,27 +51,50 @@ public class JinaEmbeddingModel implements EmbeddingModel {
     @Override
     public float[] embed(String text) {
         String input = (text == null || text.isBlank()) ? " " : text;
+        return request(List.of(input)).get(0);
+    }
+
+    @Override
+    public List<float[]> embedAll(List<String> texts) {
+        if (texts.isEmpty()) {
+            return List.of();
+        }
+        // textos vazios quebram a API; troca por espaço (mantém a posição no lote).
+        List<String> inputs = texts.stream()
+                .map(t -> (t == null || t.isBlank()) ? " " : t)
+                .toList();
+        return request(inputs);
+    }
+
+    /** Uma chamada à Jina para N textos; devolve vetores na MESMA ordem da entrada. */
+    private List<float[]> request(List<String> inputs) {
         Map<String, Object> body = Map.of(
                 "model", model,
                 "task", "text-matching",
                 "dimensions", DIM,
-                "input", List.of(input));
+                "input", inputs);
         try {
             JinaResponse res = http.post()
                     .uri("/embeddings")
                     .body(body)
                     .retrieve()
                     .body(JinaResponse.class);
-            if (res == null || res.data() == null || res.data().isEmpty()
-                    || res.data().get(0).embedding() == null) {
-                throw new ApiException(HttpStatus.BAD_GATEWAY, "empty embedding from Jina");
+            if (res == null || res.data() == null || res.data().size() != inputs.size()) {
+                throw new ApiException(HttpStatus.BAD_GATEWAY, "unexpected embedding count from Jina");
             }
-            List<Double> e = res.data().get(0).embedding();
-            float[] v = new float[e.size()];
-            for (int i = 0; i < e.size(); i++) {
-                v[i] = e.get(i).floatValue();
+            float[][] ordered = new float[inputs.size()][];
+            for (Data d : res.data()) {
+                if (d.embedding() == null) {
+                    throw new ApiException(HttpStatus.BAD_GATEWAY, "empty embedding from Jina");
+                }
+                int idx = d.index() == null ? 0 : d.index();
+                float[] v = new float[d.embedding().size()];
+                for (int i = 0; i < v.length; i++) {
+                    v[i] = d.embedding().get(i).floatValue();
+                }
+                ordered[idx] = v;
             }
-            return v;
+            return List.of(ordered);
         } catch (ApiException ex) {
             throw ex;
         } catch (RuntimeException ex) {
@@ -83,6 +106,6 @@ public class JinaEmbeddingModel implements EmbeddingModel {
     record JinaResponse(List<Data> data) {
     }
 
-    record Data(List<Double> embedding) {
+    record Data(Integer index, List<Double> embedding) {
     }
 }

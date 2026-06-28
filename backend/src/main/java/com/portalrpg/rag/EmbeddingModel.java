@@ -12,4 +12,17 @@ public interface EmbeddingModel {
     int dimension();
 
     float[] embed(String text);
+
+    /**
+     * Embedding em lote (uma chamada para vários textos). O padrão itera {@link #embed},
+     * mas provedores remotos sobrescrevem para mandar tudo num request — corta drasticamente
+     * latência/rate-limit na indexação de documentos grandes. Saída na MESMA ordem da entrada.
+     */
+    default java.util.List<float[]> embedAll(java.util.List<String> texts) {
+        java.util.List<float[]> out = new java.util.ArrayList<>(texts.size());
+        for (String t : texts) {
+            out.add(embed(t));
+        }
+        return out;
+    }
 }

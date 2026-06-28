@@ -59,14 +59,23 @@ public class RagIndexingService {
     }
 
     /** Indexa texto já extraído (ex.: "colar regras", ingestão por texto puro). */
+    /** Quantos chunks por chamada de embedding (lote). Mantém o request curto e respeita
+     *  limites do provedor; documentos grandes deixam de fazer 1 call por chunk. */
+    private static final int EMBED_BATCH = 64;
+
     @Transactional
     public void indexText(SystemDocument doc, String text) {
         if (text == null || text.isBlank()) {
             throw ApiException.badRequest("no text to index");
         }
         store.deleteByDocument(doc.getId());
-        for (String chunk : chunk(text)) {
-            store.insert(doc.getId(), doc.getSystemId(), chunk, embeddings.embed(chunk));
+        List<String> chunks = chunk(text);
+        for (int i = 0; i < chunks.size(); i += EMBED_BATCH) {
+            List<String> slice = chunks.subList(i, Math.min(i + EMBED_BATCH, chunks.size()));
+            List<float[]> vectors = embeddings.embedAll(slice);
+            for (int j = 0; j < slice.size(); j++) {
+                store.insert(doc.getId(), doc.getSystemId(), slice.get(j), vectors.get(j));
+            }
         }
         doc.setStatus(SystemDocument.Status.INDEXED);
         documents.save(doc);
