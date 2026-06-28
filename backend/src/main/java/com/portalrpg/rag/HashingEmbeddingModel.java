@@ -3,19 +3,25 @@ package com.portalrpg.rag;
 import java.text.Normalizer;
 import java.util.Locale;
 
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 /**
- * Embedding lexical determinístico: term-frequency com hashing trick, dimensão 1536,
+ * Embedding lexical determinístico: term-frequency com hashing trick, dimensão 1024,
  * normalizado L2. Acentos removidos e caixa baixa, então "Vitalidade" no chunk casa
  * "vitalidade" na pergunta. Similaridade de cosseno (pgvector {@code <=>}) ranqueia
  * sobreposição de termos — suficiente para a recuperação testada nas fixtures, e sem
  * depender de modelo externo. Mesma entrada ⇒ mesmo vetor (idempotência da suíte).
+ *
+ * É o EmbeddingModel PADRÃO (tests/dev). Em prod, EMBEDDINGS_PROVIDER=jina ativa o
+ * {@link JinaEmbeddingModel} (semântico). Ambos produzem dimensão 1024 — casa com
+ * {@code vector(1024)} de document_chunks (V7).
  */
 @Component
+@ConditionalOnProperty(prefix = "app.embeddings", name = "provider", havingValue = "hashing", matchIfMissing = true)
 public class HashingEmbeddingModel implements EmbeddingModel {
 
-    public static final int DIM = 1536; // casa com vector(1536) na V1
+    public static final int DIM = 1024; // casa com vector(1024) (V7) e com a dim do jina-v3
 
     @Override
     public int dimension() {

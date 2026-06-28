@@ -53,6 +53,14 @@ app:
       base-url: ${GROQ_BASE_URL:https://api.groq.com/openai/v1}
       api-key: ${GROQ_API_KEY:}
       model: ${GROQ_MODEL:llama-3.3-70b-versatile}
+  embeddings:
+    # hashing (default) = embedding lexical determinístico (tests/dev, sem rede).
+    # jina = embedding semântico via API da Jina (ativa o JinaEmbeddingModel). Ambos 1024.
+    provider: ${EMBEDDINGS_PROVIDER:hashing}
+    jina:
+      base-url: ${JINA_BASE_URL:https://api.jina.ai/v1}
+      api-key: ${JINA_API_KEY:}
+      model: ${JINA_MODEL:jina-embeddings-v3}
   storage:
     # none (default) = sem Storage; supabase = upload direto + indexação assíncrona.
     provider: ${STORAGE_PROVIDER:none}
