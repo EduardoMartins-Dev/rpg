@@ -29,13 +29,16 @@ public class RagQueryService {
     private static final int TOP_K = 16;
 
     private final CampaignRepository campaigns;
+    private final com.portalrpg.system.RpgSystemRepository systems;
     private final DocumentChunkStore store;
     private final EmbeddingModel embeddings;
     private final ChatModel chat;
 
-    public RagQueryService(CampaignRepository campaigns, DocumentChunkStore store,
+    public RagQueryService(CampaignRepository campaigns,
+            com.portalrpg.system.RpgSystemRepository systems, DocumentChunkStore store,
             EmbeddingModel embeddings, ChatModel chat) {
         this.campaigns = campaigns;
+        this.systems = systems;
         this.store = store;
         this.embeddings = embeddings;
         this.chat = chat;
@@ -44,7 +47,8 @@ public class RagQueryService {
     @Transactional(readOnly = true)
     public AskResponse ask(UUID campaignId, String question) {
         UUID systemId = systemOf(campaignId);
-        List<RetrievedChunk> chunks = store.search(systemId, embeddings.embed(question), TOP_K);
+        List<RetrievedChunk> chunks = withCatalog(systemId,
+                store.search(systemId, embeddings.embed(question), TOP_K));
         boolean grounded = !chunks.isEmpty();
         String answer = grounded ? chat.generate(question, chunks, systemId) : FALLBACK;
         List<SourceChunk> sources = chunks.stream()
@@ -56,7 +60,27 @@ public class RagQueryService {
     @Transactional(readOnly = true)
     public Grounding retrieve(UUID campaignId, String question) {
         UUID systemId = systemOf(campaignId);
-        return new Grounding(systemId, store.search(systemId, embeddings.embed(question), TOP_K));
+        List<RetrievedChunk> chunks = withCatalog(systemId,
+                store.search(systemId, embeddings.embed(question), TOP_K));
+        return new Grounding(systemId, chunks);
+    }
+
+    /** Prepende a lista canônica do catálogo V5 (se o sistema for v5) aos trechos do livro,
+     *  garantindo completude/correção em perguntas amplas sem depender só do retrieval. */
+    private List<RetrievedChunk> withCatalog(UUID systemId, List<RetrievedChunk> chunks) {
+        if (chunks.isEmpty()) {
+            return chunks; // sem material indexado: mantém o fallback honesto (não injeta catálogo)
+        }
+        boolean v5 = systems.findById(systemId)
+                .map(s -> "v5".equalsIgnoreCase(s.getRuleset()))
+                .orElse(false);
+        if (!v5) {
+            return chunks;
+        }
+        List<RetrievedChunk> out = new java.util.ArrayList<>(chunks.size() + 1);
+        out.add(new RetrievedChunk(com.portalrpg.rules.V5CatalogText.referenceBlock(), systemId));
+        out.addAll(chunks);
+        return out;
     }
 
     /** Resultado do retrieval: o sistema e os chunks recuperados. */

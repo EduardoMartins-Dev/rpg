@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import {
   api, ApiError,
   type AiChatMessage, type AiConversationDetail, type AiConversationSummary,
@@ -152,7 +154,13 @@ export default function AiChat({ campaignId, systemName }: { campaignId: string;
             return (
               <div key={m.id} className={`ai-row ${m.role}`}>
                 <div className="ai-bubble" data-testid={isLastAssistant ? "ai-answer" : undefined}>
-                  <div className="ai-bubble-text">{m.content}</div>
+                  {m.role === "assistant" ? (
+                    <div className="ai-bubble-text md">
+                      <ReactMarkdown remarkPlugins={[remarkGfm]}>{m.content}</ReactMarkdown>
+                    </div>
+                  ) : (
+                    <div className="ai-bubble-text">{m.content}</div>
+                  )}
                   {m.role === "assistant" && (
                     <div className="ai-bubble-meta mono">
                       {m.grounded ? `${m.sourceCount} trecho(s) do sistema` : "sem material indexado"}
