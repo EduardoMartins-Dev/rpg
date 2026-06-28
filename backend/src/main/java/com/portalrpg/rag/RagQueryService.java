@@ -26,7 +26,7 @@ public class RagQueryService {
 
     static final String FALLBACK =
             "Não há material indexado para este sistema; não posso responder com base no livro.";
-    private static final int TOP_K = 8;
+    private static final int TOP_K = 12;
 
     private final CampaignRepository campaigns;
     private final DocumentChunkStore store;
