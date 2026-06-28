@@ -1,5 +1,6 @@
 package com.portalrpg.rag;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -48,17 +49,23 @@ public class GroqChatModel implements ChatModel {
     }
 
     @Override
-    public String generate(String question, List<RetrievedChunk> sources, UUID systemId) {
+    public String generate(String question, List<RetrievedChunk> sources, UUID systemId, List<Turn> history) {
         String context = sources.stream().map(RetrievedChunk::content)
                 .collect(Collectors.joining("\n---\n"));
+        List<Map<String, Object>> messages = new ArrayList<>();
+        messages.add(Map.of("role", "system", "content", SYSTEM_PROMPT));
+        // Histórico da conversa (turnos anteriores), para continuidade estilo ChatGPT.
+        for (Turn t : history) {
+            String role = "assistant".equals(t.role()) ? "assistant" : "user";
+            messages.add(Map.of("role", role, "content", t.content()));
+        }
+        messages.add(Map.of("role", "user", "content",
+                "Contexto (system_id=" + systemId + "):\n" + context
+                        + "\n\nPergunta: " + question));
         Map<String, Object> body = Map.of(
                 "model", model,
                 "temperature", 0.2,
-                "messages", List.of(
-                        Map.of("role", "system", "content", SYSTEM_PROMPT),
-                        Map.of("role", "user", "content",
-                                "Contexto (system_id=" + systemId + "):\n" + context
-                                        + "\n\nPergunta: " + question)));
+                "messages", messages);
         try {
             GroqResponse res = http.post()
                     .uri("/chat/completions")

@@ -9,8 +9,9 @@ import { V5Roller } from "@/components/V5Roller";
 import { CampaignBoard } from "@/components/CampaignBoard";
 import { CampaignNotes } from "@/components/CampaignNotes";
 import { SheetView } from "@/components/SheetView";
+import AiChat from "@/components/AiChat";
 import {
-  api, type AskResponse, type Campaign, type Character, type Member, type RpgSystem,
+  api, type Campaign, type Character, type Member, type RpgSystem,
   type SchemaShape, type SheetSchema, type V5Catalog,
 } from "@/lib/api";
 
@@ -74,9 +75,6 @@ export default function CampaignDetailPage() {
   const [members, setMembers] = useState<Member[]>([]);
   const [characters, setCharacters] = useState<Character[]>([]);
   const [charName, setCharName] = useState("");
-  const [question, setQuestion] = useState("");
-  const [answer, setAnswer] = useState<AskResponse | null>(null);
-  const [asking, setAsking] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<Tab>("overview");
 
@@ -167,18 +165,6 @@ export default function CampaignDetailPage() {
     }
   }
 
-  async function ask(e: React.FormEvent) {
-    e.preventDefault();
-    setAsking(true);
-    setAnswer(null);
-    try {
-      setAnswer(await api.post<AskResponse>(`/campaigns/${id}/ai/ask`, { question }));
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "erro na IA");
-    } finally {
-      setAsking(false);
-    }
-  }
 
   function doRoll() {
     setRoll(Array.from({ length: pool }, () => 1 + Math.floor(Math.random() * 6)));
@@ -463,32 +449,7 @@ export default function CampaignDetailPage() {
           )}
 
           {/* AI */}
-          {tab === "ai" && (
-            <div className="ai-chat" style={{ maxWidth: 760, margin: "0 auto" }}>
-              <div style={{ padding: "16px 20px", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", gap: 10 }}>
-                <span style={{ width: 30, height: 30, borderRadius: 8, background: "var(--accent-tint)", color: "var(--accent)", display: "flex", alignItems: "center", justifyContent: "center" }}>✦</span>
-                <div>
-                  <div style={{ fontWeight: 600, fontSize: 15 }}>Mestre de Regras</div>
-                  <div className="muted" style={{ fontSize: 12 }}>baseado em {system?.name ?? "este sistema"}</div>
-                </div>
-              </div>
-              <div style={{ padding: 20, minHeight: 160 }}>
-                {answer ? (
-                  <div data-testid="ai-answer">
-                    <p style={{ marginTop: 0 }}>{answer.answer}</p>
-                    <p className="mono" style={{ fontSize: 12, color: "var(--accent)", borderTop: "1px solid var(--border)", paddingTop: 8 }}>
-                      {answer.grounded ? `${answer.sources.length} trecho(s) do sistema` : "sem material indexado"}
-                    </p>
-                  </div>
-                ) : <p className="muted" style={{ marginTop: 0 }}>Pergunte sobre as regras do sistema desta campanha.</p>}
-              </div>
-              <form onSubmit={ask} style={{ padding: "14px 16px", borderTop: "1px solid var(--border)", display: "flex", gap: 10 }}>
-                <input data-testid="ai-question" value={question} placeholder="Pergunte sobre as regras do sistema…"
-                  onChange={(e) => setQuestion(e.target.value)} style={{ flex: 1 }} />
-                <button type="submit" data-testid="ai-ask" disabled={asking || !question}>{asking ? "…" : "Enviar"}</button>
-              </form>
-            </div>
-          )}
+          {tab === "ai" && <AiChat campaignId={id} systemName={system?.name} />}
 
           {error && <p className="error" data-testid="detail-error" style={{ marginTop: 16 }}>⚠ {error}</p>}
         </div>

@@ -12,5 +12,19 @@ import com.portalrpg.rag.DocumentChunkStore.RetrievedChunk;
  */
 public interface ChatModel {
 
-    String generate(String question, List<RetrievedChunk> sources, UUID systemId);
+    /** Geração stateless (uma pergunta, sem histórico) — usada por {@code /ai/ask}. */
+    default String generate(String question, List<RetrievedChunk> sources, UUID systemId) {
+        return generate(question, sources, systemId, List.of());
+    }
+
+    /**
+     * Geração com histórico de conversa (chat estilo ChatGPT). {@code history} são os
+     * turnos anteriores em ordem cronológica (sem a pergunta atual). A resposta continua
+     * ancorada nos chunks do sistema da campanha.
+     */
+    String generate(String question, List<RetrievedChunk> sources, UUID systemId, List<Turn> history);
+
+    /** Turno anterior da conversa. role = "user" | "assistant". */
+    record Turn(String role, String content) {
+    }
 }

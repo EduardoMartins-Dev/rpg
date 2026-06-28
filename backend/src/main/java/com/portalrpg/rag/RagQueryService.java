@@ -26,7 +26,7 @@ public class RagQueryService {
 
     static final String FALLBACK =
             "Não há material indexado para este sistema; não posso responder com base no livro.";
-    private static final int TOP_K = 4;
+    private static final int TOP_K = 8;
 
     private final CampaignRepository campaigns;
     private final DocumentChunkStore store;
@@ -50,6 +50,17 @@ public class RagQueryService {
         List<SourceChunk> sources = chunks.stream()
                 .map(c -> new SourceChunk(c.content(), c.systemId())).toList();
         return new AskResponse(campaignId, systemId, question, answer, grounded, sources);
+    }
+
+    /** Retrieval ancorado no sistema da campanha — usado pelo chat com histórico. */
+    @Transactional(readOnly = true)
+    public Grounding retrieve(UUID campaignId, String question) {
+        UUID systemId = systemOf(campaignId);
+        return new Grounding(systemId, store.search(systemId, embeddings.embed(question), TOP_K));
+    }
+
+    /** Resultado do retrieval: o sistema e os chunks recuperados. */
+    public record Grounding(UUID systemId, List<RetrievedChunk> chunks) {
     }
 
     /** E2E-SHEET-13 — texto integral de um poder de disciplina, lido do PDF indexado. */

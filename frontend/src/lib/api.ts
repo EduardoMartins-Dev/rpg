@@ -153,6 +153,18 @@ export interface AskResponse {
   grounded: boolean; sources: { content: string; systemId: string }[];
 }
 
+// --- chat com IA estilo ChatGPT (conversas + histórico) ----------------------
+export interface AiConversationSummary { id: string; title: string; updatedAt: string | null; }
+export interface AiChatMessage {
+  id: string; role: "user" | "assistant"; content: string;
+  grounded: boolean; sourceCount: number; createdAt: string | null;
+}
+export interface AiConversationDetail {
+  id: string; title: string; createdAt: string | null; updatedAt: string | null;
+  messages: AiChatMessage[];
+}
+export interface SendMessageResponse { conversationId: string; title: string; answer: AiChatMessage; }
+
 // --- anotações da campanha (player escreve; mestre vê todas) -----------------
 export interface CampaignNote {
   id: string; authorId: string; authorName: string; title: string | null;

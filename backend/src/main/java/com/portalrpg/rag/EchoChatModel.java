@@ -19,9 +19,11 @@ import com.portalrpg.rag.DocumentChunkStore.RetrievedChunk;
 public class EchoChatModel implements ChatModel {
 
     @Override
-    public String generate(String question, List<RetrievedChunk> sources, UUID systemId) {
+    public String generate(String question, List<RetrievedChunk> sources, UUID systemId, List<Turn> history) {
         String context = sources.stream().map(RetrievedChunk::content)
                 .collect(Collectors.joining(" | "));
-        return "Resposta (system_id=" + systemId + ") para \"" + question + "\": " + context;
+        // histórico é ecoado de forma determinística para os testes verem o contexto usado.
+        String hist = history.isEmpty() ? "" : " [hist=" + history.size() + "]";
+        return "Resposta (system_id=" + systemId + ")" + hist + " para \"" + question + "\": " + context;
     }
 }
