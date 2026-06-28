@@ -46,8 +46,9 @@ public class RagQueryService {
         this.chat = chat;
     }
 
-    // Quantos trechos por poder no retrieval direcionado (cada poder é ~1 trecho). */
-    private static final int PER_POWER_K = 2;
+    // Quantos trechos por poder no retrieval direcionado. 3 dá folga p/ nomes parecidos
+    // (ex.: Draught of Elegance vs Draught of Endurance) — o corpo certo entra junto. */
+    private static final int PER_POWER_K = 3;
 
     @Transactional(readOnly = true)
     public AskResponse ask(UUID campaignId, String question) {

@@ -121,18 +121,42 @@ public class RagIndexingService {
                 if (cut <= 0) {
                     cut = MAX_CHUNK_CHARS;
                 }
-                out.add(p.substring(0, cut).strip());
+                addUseful(out, p.substring(0, cut).strip());
                 p = p.substring(cut).strip();
             }
             if (!p.isEmpty()) {
-                out.add(p); // cauda de parágrafo longo é mantida mesmo se curta
+                addUseful(out, p); // cauda de parágrafo longo é mantida mesmo se curta
             }
         }
         // headings finais sem conteúdo seguinte só são emitidos se já têm densidade própria
         if (pending.length() >= MIN_CHUNK_CHARS) {
-            out.add(pending.toString().strip());
+            addUseful(out, pending.toString().strip());
         }
         return out;
+    }
+
+    /** Páginas de índice remissivo / sumário ("Draught Of Elegance 254 Draught Of Endurance
+     *  259 ...") têm muitos números de página e nenhum conteúdo útil — só poluíam a busca
+     *  (ex.: faziam a IA pegar a mecânica de Draught of Endurance por causa do nome parecido). */
+    private static final java.util.regex.Pattern PAGE_NUM =
+            java.util.regex.Pattern.compile("\\b\\d{2,4}\\b");
+
+    private static void addUseful(List<String> out, String chunk) {
+        if (chunk.isEmpty() || looksLikeIndex(chunk)) {
+            return;
+        }
+        out.add(chunk);
+    }
+
+    private static boolean looksLikeIndex(String chunk) {
+        java.util.regex.Matcher m = PAGE_NUM.matcher(chunk);
+        int nums = 0;
+        while (m.find()) {
+            if (++nums >= 6) {
+                return true; // 6+ números de página num só trecho ⇒ índice/sumário
+            }
+        }
+        return false;
     }
 
     /** Acumula um heading no prefixo, respeitando {@link #MAX_PENDING_CHARS} (descarta o
