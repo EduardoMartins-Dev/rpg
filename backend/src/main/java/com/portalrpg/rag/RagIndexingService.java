@@ -83,22 +83,38 @@ public class RagIndexingService {
         documents.save(doc);
     }
 
-    /** Parágrafos com menos que isto são descartados: cabeçalhos de página, títulos de
-     *  seção e ruído de OCR (ex.: a palavra "CLÃS" repetida no topo de cada página) que,
-     *  por baterem alto na busca, afogavam os parágrafos de conteúdo. */
+    /** Parágrafos curtos (nome de poder, "Level 2", cabeçalho de seção) NÃO viram chunk
+     *  sozinhos: são acumulados e PREFIXADOS no próximo parágrafo de conteúdo. Antes eram
+     *  descartados, o que separava o NOME do poder das suas mecânicas — a IA via o efeito
+     *  mas não o nome e acabava inventando. Mesclar mantém "Level 2 fleetness <mecânica>"
+     *  num único trecho. Também neutraliza ruído de header ("CLÃS"): em vez de virar um
+     *  chunk que afoga a busca, vira um prefixo barato do conteúdo seguinte. */
     private static final int MIN_CHUNK_CHARS = 40;
 
-    /** Chunking simples: parágrafos (linhas em branco); parágrafos longos são quebrados.
-     *  Parágrafos curtos (headers/ruído) são ignorados — ver {@link #MIN_CHUNK_CHARS}. */
+    /** Teto do prefixo acumulado: evita que uma sequência longa de linhas curtas/ruído
+     *  (ex.: header repetido em várias páginas) inche o próximo chunk. */
+    private static final int MAX_PENDING_CHARS = 200;
+
+    /** Chunking por parágrafos (linhas em branco). Parágrafos longos são quebrados;
+     *  parágrafos curtos (headings) são mesclados no parágrafo de conteúdo seguinte. */
     static List<String> chunk(String text) {
         List<String> out = new ArrayList<>();
         if (text == null) {
             return out;
         }
+        StringBuilder pending = new StringBuilder(); // headings curtos aguardando conteúdo
         for (String para : text.split("\\r?\\n\\s*\\r?\\n")) {
             String p = para.strip().replaceAll("\\s+", " ");
+            if (p.isEmpty()) {
+                continue;
+            }
             if (p.length() < MIN_CHUNK_CHARS) {
-                continue; // cabeçalho/título/ruído de OCR — não vira chunk
+                appendPending(pending, p); // heading/título/ruído: segura p/ prefixar o próximo
+                continue;
+            }
+            if (pending.length() > 0) {
+                p = pending + " " + p;
+                pending.setLength(0);
             }
             while (p.length() > MAX_CHUNK_CHARS) {
                 int cut = p.lastIndexOf(' ', MAX_CHUNK_CHARS);
@@ -112,6 +128,22 @@ public class RagIndexingService {
                 out.add(p); // cauda de parágrafo longo é mantida mesmo se curta
             }
         }
+        // headings finais sem conteúdo seguinte só são emitidos se já têm densidade própria
+        if (pending.length() >= MIN_CHUNK_CHARS) {
+            out.add(pending.toString().strip());
+        }
         return out;
+    }
+
+    /** Acumula um heading no prefixo, respeitando {@link #MAX_PENDING_CHARS} (descarta o
+     *  começo se estourar — mantém os headings mais recentes, próximos do conteúdo). */
+    private static void appendPending(StringBuilder pending, String heading) {
+        if (pending.length() > 0) {
+            pending.append(' ');
+        }
+        pending.append(heading);
+        if (pending.length() > MAX_PENDING_CHARS) {
+            pending.delete(0, pending.length() - MAX_PENDING_CHARS);
+        }
     }
 }
