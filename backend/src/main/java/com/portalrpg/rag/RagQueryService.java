@@ -47,7 +47,7 @@ public class RagQueryService {
     @Transactional(readOnly = true)
     public AskResponse ask(UUID campaignId, String question) {
         UUID systemId = systemOf(campaignId);
-        List<RetrievedChunk> chunks = withCatalog(systemId,
+        List<RetrievedChunk> chunks = withCatalog(systemId, question,
                 store.search(systemId, embeddings.embed(question), TOP_K));
         boolean grounded = !chunks.isEmpty();
         String answer = grounded ? chat.generate(question, chunks, systemId) : FALLBACK;
@@ -60,14 +60,15 @@ public class RagQueryService {
     @Transactional(readOnly = true)
     public Grounding retrieve(UUID campaignId, String question) {
         UUID systemId = systemOf(campaignId);
-        List<RetrievedChunk> chunks = withCatalog(systemId,
+        List<RetrievedChunk> chunks = withCatalog(systemId, question,
                 store.search(systemId, embeddings.embed(question), TOP_K));
         return new Grounding(systemId, chunks);
     }
 
-    /** Prepende a lista canônica do catálogo V5 (se o sistema for v5) aos trechos do livro,
-     *  garantindo completude/correção em perguntas amplas sem depender só do retrieval. */
-    private List<RetrievedChunk> withCatalog(UUID systemId, List<RetrievedChunk> chunks) {
+    /** Prepende a referência canônica V5 (se o sistema for v5) aos trechos do livro. O bloco
+     *  é contextual à pergunta (só expande o clã/disciplina citado) para economizar tokens. */
+    private List<RetrievedChunk> withCatalog(UUID systemId, String question,
+            List<RetrievedChunk> chunks) {
         if (chunks.isEmpty()) {
             return chunks; // sem material indexado: mantém o fallback honesto (não injeta catálogo)
         }
@@ -78,7 +79,8 @@ public class RagQueryService {
             return chunks;
         }
         List<RetrievedChunk> out = new java.util.ArrayList<>(chunks.size() + 1);
-        out.add(new RetrievedChunk(com.portalrpg.rules.V5CatalogText.referenceBlock(), systemId));
+        out.add(new RetrievedChunk(
+                com.portalrpg.rules.V5CatalogText.referenceBlock(question), systemId));
         out.addAll(chunks);
         return out;
     }
