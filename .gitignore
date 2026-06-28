@@ -37,3 +37,4 @@ frontend/.playwright/
 .ocr-work/
 corpus/
 *.pdf
+corpus-en/
