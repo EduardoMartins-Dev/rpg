@@ -32,3 +32,8 @@ frontend/.playwright/
 
 # Local JDK / tooling notes
 /.tool-versions
+
+# OCR do exemplar local (não versionar)
+.ocr-work/
+corpus/
+*.pdf

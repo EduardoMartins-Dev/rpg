@@ -59,6 +59,29 @@ export class ApiError extends Error {
   }
 }
 
+/**
+ * Lê a resposta com tolerância a corpos não-JSON. O backend sempre responde JSON,
+ * mas o proxy/Render pode devolver HTML (ex.: página 502 enquanto a instância acorda)
+ * ou texto vazio. Nesses casos NÃO estouramos JSON.parse cru ("unexpected character");
+ * lançamos um ApiError com mensagem legível.
+ */
+async function readJson(res: Response): Promise<unknown> {
+  const text = await res.text();
+  if (!text) return res.ok ? null : Promise.reject(new ApiError(res.status, httpMsg(res.status)));
+  try {
+    return JSON.parse(text);
+  } catch {
+    // corpo não-JSON (HTML/erro de gateway). Sob 2xx isso é resposta inesperada do proxy.
+    throw new ApiError(res.ok ? 502 : res.status, httpMsg(res.ok ? 502 : res.status));
+  }
+}
+
+function httpMsg(status: number): string {
+  if (status === 502 || status === 503 || status === 504)
+    return "Servidor indisponível ou iniciando. Tente novamente em alguns segundos.";
+  return `Falha na requisição (${status})`;
+}
+
 async function request<T>(method: string, path: string, body?: unknown, retry = true): Promise<T> {
   const headers: Record<string, string> = {};
   const token = getToken();
@@ -73,11 +96,9 @@ async function request<T>(method: string, path: string, body?: unknown, retry = 
   if (res.status === 401 && retry && !path.startsWith("/auth/") && await tryRefresh()) {
     return request<T>(method, path, body, false);
   }
-  const text = await res.text();
-  const data = text ? JSON.parse(text) : null;
+  const data = await readJson(res) as { message?: string } | null;
   if (!res.ok) {
-    const msg = data?.message ?? `request failed (${res.status})`;
-    throw new ApiError(res.status, msg);
+    throw new ApiError(res.status, data?.message ?? httpMsg(res.status));
   }
   return data as T;
 }
@@ -100,9 +121,8 @@ export async function uploadFile<T>(path: string, file: File, retry = true): Pro
   if (res.status === 401 && retry && await tryRefresh()) {
     return uploadFile<T>(path, file, false);
   }
-  const text = await res.text();
-  const data = text ? JSON.parse(text) : null;
-  if (!res.ok) throw new ApiError(res.status, data?.message ?? `upload failed (${res.status})`);
+  const data = await readJson(res) as { message?: string } | null;
+  if (!res.ok) throw new ApiError(res.status, data?.message ?? httpMsg(res.status));
   return data as T;
 }
 
