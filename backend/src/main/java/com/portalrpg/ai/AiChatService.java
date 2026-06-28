@@ -84,7 +84,10 @@ public class AiChatService {
 
         persist(c.getId(), AiMessage.ROLE_USER, question, false, 0);
 
-        Grounding g = rag.retrieve(campaignId, question);
+        // Retrieval usa a pergunta ENRIQUECIDA com os últimos turnos do usuário: follow-ups
+        // como "e mecanicamente?" não têm o tópico ("Celeridade") e, sozinhos, recuperavam
+        // trechos genéricos. A geração continua recebendo a pergunta real + histórico.
+        Grounding g = rag.retrieve(campaignId, retrievalQuery(prior, question));
         boolean grounded = !g.chunks().isEmpty();
         String answer = grounded
                 ? chat.generate(question, g.chunks(), g.systemId(), history)
@@ -99,6 +102,22 @@ public class AiChatService {
         conversations.save(c);
 
         return new SendMessageResponse(c.getId(), c.getTitle(), view(assistant));
+    }
+
+    /** Quantos turnos de usuário anteriores entram na query de retrieval (mantém o tópico). */
+    private static final int RETRIEVAL_CONTEXT_TURNS = 2;
+
+    /** Junta as últimas perguntas do usuário com a atual para o embedding de busca, para que
+     *  follow-ups curtos herdem o tópico da conversa. Não afeta o texto enviado ao modelo. */
+    private static String retrievalQuery(List<AiMessage> prior, String question) {
+        List<String> userMsgs = prior.stream()
+                .filter(m -> AiMessage.ROLE_USER.equals(m.getRole()))
+                .map(AiMessage::getContent)
+                .toList();
+        String topic = userMsgs.stream()
+                .skip(Math.max(0, userMsgs.size() - RETRIEVAL_CONTEXT_TURNS))
+                .reduce("", (a, b) -> a.isEmpty() ? b : a + " " + b);
+        return topic.isBlank() ? question : topic + " " + question;
     }
 
     private AiMessage persist(UUID conversationId, String role, String content,
