@@ -53,6 +53,22 @@ public class DocumentChunkStore {
                 systemId, toVectorLiteral(queryEmbedding), k);
     }
 
+    /** Busca por PALAVRA-CHAVE (substring, case-insensitive) dentro do system_id. Necessária
+     *  porque a busca vetorial não distingue trechos quase idênticos que diferem por uma
+     *  palavra (ex.: "draught of elegance" [Celeridade] vs "draught of endurance" [Fortitude]):
+     *  o nome do poder, agora colado no chunk, casa exato aqui. Prioriza o trecho cujo nome
+     *  aparece mais ao início (o corpo do poder, não uma menção solta). */
+    public List<RetrievedChunk> searchByKeyword(UUID systemId, String term, int limit) {
+        String like = "%" + term + "%";
+        return jdbc.query(
+                "SELECT content, system_id FROM document_chunks "
+                        + "WHERE system_id = ? AND content ILIKE ? "
+                        + "ORDER BY position(lower(?) in lower(content)) ASC, length(content) ASC "
+                        + "LIMIT ?",
+                (rs, i) -> new RetrievedChunk(rs.getString("content"), rs.getObject("system_id", UUID.class)),
+                systemId, like, term, limit);
+    }
+
     public long countBySystem(UUID systemId) {
         Long n = jdbc.queryForObject(
                 "SELECT count(*) FROM document_chunks WHERE system_id = ?", Long.class, systemId);

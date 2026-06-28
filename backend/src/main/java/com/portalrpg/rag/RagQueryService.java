@@ -88,18 +88,28 @@ public class RagQueryService {
         return withCatalog(systemId, question, new java.util.ArrayList<>(dedup.values()));
     }
 
-    /** Busca o trecho de cada poder da(s) disciplina(s) citada(s), uma query por poder. Um
-     *  único embedAll (lote) evita N chamadas ao provedor de embeddings. */
+    /** Busca o trecho de cada poder da(s) disciplina(s) citada(s). Combina:
+     *  (a) busca por PALAVRA-CHAVE pelo nome do poder (inglês, que está colado no chunk) —
+     *      determinística e essencial p/ poderes quase idênticos (Draught of Elegance vs
+     *      Endurance), que a busca vetorial confunde; e
+     *  (b) busca VETORIAL por poder, p/ pegar o trecho mesmo se o nome não casar exato.
+     *  Um único embedAll (lote) evita N chamadas ao provedor de embeddings. */
     private List<RetrievedChunk> targetedPowerChunks(UUID systemId, String question) {
         if (!isV5(systemId)) {
             return List.of();
         }
-        List<String> queries = com.portalrpg.rules.V5CatalogText.powerQueries(question);
-        if (queries.isEmpty()) {
+        var powers = com.portalrpg.rules.V5CatalogText.powerKeywords(question);
+        if (powers.isEmpty()) {
             return List.of();
         }
-        List<float[]> vectors = embeddings.embedAll(queries);
         List<RetrievedChunk> out = new java.util.ArrayList<>();
+        // (a) keyword pelo nome em inglês (colado no início do corpo do poder)
+        for (String en : powers) {
+            out.addAll(store.searchByKeyword(systemId, en, 1));
+        }
+        // (b) vetorial por poder (nome PT + inglês)
+        List<String> queries = com.portalrpg.rules.V5CatalogText.powerQueries(question);
+        List<float[]> vectors = embeddings.embedAll(queries);
         for (float[] v : vectors) {
             out.addAll(store.search(systemId, v, PER_POWER_K));
         }

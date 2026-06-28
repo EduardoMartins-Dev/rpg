@@ -99,6 +99,18 @@ public final class V5CatalogText {
                 .toList();
     }
 
+    /** Nomes em inglês dos poderes das disciplinas citadas — termos exatos p/ busca por
+     *  palavra-chave (o nome em inglês está colado no início do corpo do poder no índice). */
+    public static List<String> powerKeywords(String question) {
+        String qn = normalize(question == null ? "" : question);
+        return V5Catalog.disciplines().stream()
+                .filter(d -> disciplineRelevant(qn, d))
+                .flatMap(d -> d.powers().stream())
+                .map(V5Catalog.Power::en)
+                .filter(s -> s != null && !s.isBlank())
+                .toList();
+    }
+
     /** Disciplina é relevante se a pergunta cita seu nome ou o nome de algum de seus poderes
      *  (PT ou inglês). Nomes muito curtos não contam, para evitar falso positivo. */
     private static boolean disciplineRelevant(String qn, DisciplineInfo d) {
