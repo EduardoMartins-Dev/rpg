@@ -73,6 +73,20 @@ public final class V5CatalogText {
         return sb.toString();
     }
 
+    /** Termos para EXPANDIR a query de retrieval: nomes (PT + inglês) dos poderes das
+     *  disciplinas citadas na pergunta. Sem isso, o trecho de um poder cujo texto não cita a
+     *  disciplina (ex.: "cat's grace ... trapeze artists") fica longe da busca por "Celeridade"
+     *  e não é recuperado. Devolve "" se nenhuma disciplina for citada. */
+    public static String retrievalExpansion(String question) {
+        String qn = normalize(question == null ? "" : question);
+        return V5Catalog.disciplines().stream()
+                .filter(d -> disciplineRelevant(qn, d))
+                .flatMap(d -> d.powers().stream())
+                .flatMap(p -> java.util.stream.Stream.of(p.name(), p.en()))
+                .filter(s -> s != null && !s.isBlank())
+                .collect(Collectors.joining(" "));
+    }
+
     /** Disciplina é relevante se a pergunta cita seu nome ou o nome de algum de seus poderes
      *  (PT ou inglês). Nomes muito curtos não contam, para evitar falso positivo. */
     private static boolean disciplineRelevant(String qn, DisciplineInfo d) {

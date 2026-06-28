@@ -26,7 +26,9 @@ public class RagQueryService {
 
     static final String FALLBACK =
             "Não há material indexado para este sistema; não posso responder com base no livro.";
-    private static final int TOP_K = 16;
+    // TOP_K alto p/ cobrir todos os poderes de uma disciplina (cada poder é um trecho). O
+    // gerador (Gemini) tem contexto de 1M tokens, então não é mais o gargalo que era no Groq.
+    private static final int TOP_K = 40;
 
     private final CampaignRepository campaigns;
     private final com.portalrpg.system.RpgSystemRepository systems;
@@ -48,7 +50,7 @@ public class RagQueryService {
     public AskResponse ask(UUID campaignId, String question) {
         UUID systemId = systemOf(campaignId);
         List<RetrievedChunk> chunks = withCatalog(systemId, question,
-                store.search(systemId, embeddings.embed(question), TOP_K));
+                store.search(systemId, embeddings.embed(expandedQuery(systemId, question)), TOP_K));
         boolean grounded = !chunks.isEmpty();
         String answer = grounded ? chat.generate(question, chunks, systemId) : FALLBACK;
         List<SourceChunk> sources = chunks.stream()
@@ -61,8 +63,25 @@ public class RagQueryService {
     public Grounding retrieve(UUID campaignId, String question) {
         UUID systemId = systemOf(campaignId);
         List<RetrievedChunk> chunks = withCatalog(systemId, question,
-                store.search(systemId, embeddings.embed(question), TOP_K));
+                store.search(systemId, embeddings.embed(expandedQuery(systemId, question)), TOP_K));
         return new Grounding(systemId, chunks);
+    }
+
+    /** Expande a query de busca (apenas v5) com os nomes dos poderes da disciplina citada,
+     *  para que o trecho de cada poder seja recuperado mesmo quando seu texto não menciona a
+     *  disciplina. Não altera a pergunta enviada ao gerador — só o vetor de busca. */
+    private String expandedQuery(UUID systemId, String question) {
+        if (!isV5(systemId)) {
+            return question;
+        }
+        String ext = com.portalrpg.rules.V5CatalogText.retrievalExpansion(question);
+        return ext.isBlank() ? question : question + " " + ext;
+    }
+
+    private boolean isV5(UUID systemId) {
+        return systems.findById(systemId)
+                .map(s -> "v5".equalsIgnoreCase(s.getRuleset()))
+                .orElse(false);
     }
 
     /** Prepende a referência canônica V5 (se o sistema for v5) aos trechos do livro. O bloco
@@ -72,10 +91,7 @@ public class RagQueryService {
         if (chunks.isEmpty()) {
             return chunks; // sem material indexado: mantém o fallback honesto (não injeta catálogo)
         }
-        boolean v5 = systems.findById(systemId)
-                .map(s -> "v5".equalsIgnoreCase(s.getRuleset()))
-                .orElse(false);
-        if (!v5) {
+        if (!isV5(systemId)) {
             return chunks;
         }
         List<RetrievedChunk> out = new java.util.ArrayList<>(chunks.size() + 1);
