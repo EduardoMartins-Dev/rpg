@@ -46,11 +46,13 @@ public class RagQueryService {
         this.chat = chat;
     }
 
+    // Quantos trechos por poder no retrieval direcionado (cada poder é ~1 trecho). */
+    private static final int PER_POWER_K = 2;
+
     @Transactional(readOnly = true)
     public AskResponse ask(UUID campaignId, String question) {
         UUID systemId = systemOf(campaignId);
-        List<RetrievedChunk> chunks = withCatalog(systemId, question,
-                store.search(systemId, embeddings.embed(expandedQuery(systemId, question)), TOP_K));
+        List<RetrievedChunk> chunks = groundChunks(systemId, question);
         boolean grounded = !chunks.isEmpty();
         String answer = grounded ? chat.generate(question, chunks, systemId) : FALLBACK;
         List<SourceChunk> sources = chunks.stream()
@@ -62,9 +64,45 @@ public class RagQueryService {
     @Transactional(readOnly = true)
     public Grounding retrieve(UUID campaignId, String question) {
         UUID systemId = systemOf(campaignId);
-        List<RetrievedChunk> chunks = withCatalog(systemId, question,
-                store.search(systemId, embeddings.embed(expandedQuery(systemId, question)), TOP_K));
-        return new Grounding(systemId, chunks);
+        return new Grounding(systemId, groundChunks(systemId, question));
+    }
+
+    /** Retrieval combinado: (1) busca direcionada por poder da disciplina citada — garante o
+     *  trecho de CADA poder mesmo com o índice poluído por outros livros — e (2) busca geral
+     *  pela pergunta expandida. Junta sem duplicar (direcionados primeiro) e prepende o
+     *  catálogo. Resolve o caso "liste os poderes e a mecânica de cada um", onde a query única
+     *  trazia só 1-2 poderes e ruído. */
+    private List<RetrievedChunk> groundChunks(UUID systemId, String question) {
+        List<RetrievedChunk> targeted = targetedPowerChunks(systemId, question);
+        List<RetrievedChunk> general =
+                store.search(systemId, embeddings.embed(expandedQuery(systemId, question)), TOP_K);
+
+        java.util.LinkedHashMap<String, RetrievedChunk> dedup = new java.util.LinkedHashMap<>();
+        for (RetrievedChunk c : targeted) {
+            dedup.putIfAbsent(c.content(), c); // direcionados primeiro = prioridade no contexto
+        }
+        for (RetrievedChunk c : general) {
+            dedup.putIfAbsent(c.content(), c);
+        }
+        return withCatalog(systemId, question, new java.util.ArrayList<>(dedup.values()));
+    }
+
+    /** Busca o trecho de cada poder da(s) disciplina(s) citada(s), uma query por poder. Um
+     *  único embedAll (lote) evita N chamadas ao provedor de embeddings. */
+    private List<RetrievedChunk> targetedPowerChunks(UUID systemId, String question) {
+        if (!isV5(systemId)) {
+            return List.of();
+        }
+        List<String> queries = com.portalrpg.rules.V5CatalogText.powerQueries(question);
+        if (queries.isEmpty()) {
+            return List.of();
+        }
+        List<float[]> vectors = embeddings.embedAll(queries);
+        List<RetrievedChunk> out = new java.util.ArrayList<>();
+        for (float[] v : vectors) {
+            out.addAll(store.search(systemId, v, PER_POWER_K));
+        }
+        return out;
     }
 
     /** Expande a query de busca (apenas v5) com os nomes dos poderes da disciplina citada,

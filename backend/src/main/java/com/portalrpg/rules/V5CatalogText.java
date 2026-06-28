@@ -87,6 +87,18 @@ public final class V5CatalogText {
                 .collect(Collectors.joining(" "));
     }
 
+    /** Uma query de busca POR PODER (nome PT + inglês) para as disciplinas citadas. Permite
+     *  retrieval direcionado: buscar o trecho de cada poder individualmente, em vez de uma
+     *  query única que compete com o ruído do índice. Vazio se nenhuma disciplina for citada. */
+    public static List<String> powerQueries(String question) {
+        String qn = normalize(question == null ? "" : question);
+        return V5Catalog.disciplines().stream()
+                .filter(d -> disciplineRelevant(qn, d))
+                .flatMap(d -> d.powers().stream())
+                .map(p -> p.en() == null ? p.name() : p.name() + " " + p.en())
+                .toList();
+    }
+
     /** Disciplina é relevante se a pergunta cita seu nome ou o nome de algum de seus poderes
      *  (PT ou inglês). Nomes muito curtos não contam, para evitar falso positivo. */
     private static boolean disciplineRelevant(String qn, DisciplineInfo d) {
