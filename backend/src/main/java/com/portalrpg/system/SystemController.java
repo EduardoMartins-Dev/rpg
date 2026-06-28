@@ -118,6 +118,14 @@ public class SystemController {
         return java.util.Map.of("removedChunks", service.clearIndex(id));
     }
 
+    /** Remove um único documento do RAG (chunks + registro), sem afetar os demais. */
+    @DeleteMapping("/{id}/documents/{docId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteDocument(@PathVariable UUID id, @PathVariable UUID docId) {
+        service.deleteDocument(id, docId);
+    }
+
     // --- Supabase Storage: upload direto do navegador + indexação assíncrona ---
 
     @GetMapping("/storage/enabled")

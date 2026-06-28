@@ -252,6 +252,19 @@ export default function AdminPage() {
     }
   }
 
+  async function deleteDoc(docId: string, name: string) {
+    if (!selected) return;
+    if (!confirm(`Remover "${name}" do RAG (documento + chunks)? Os demais ficam intactos.`)) return;
+    setError(null); setMsg(null);
+    try {
+      await api.del(`/systems/${selected}/documents/${docId}`);
+      setDocs(await api.get<SystemDocument[]>(`/systems/${selected}/documents`));
+      setMsg(`Documento removido: ${name}.`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "erro ao remover documento");
+    }
+  }
+
   if (!user) return <p className="muted" style={{ padding: 38 }}>Carregando…</p>;
 
   return (
@@ -484,15 +497,24 @@ export default function AdminPage() {
           </div>
 
           <table style={{ marginTop: "1rem" }}>
-            <thead><tr><th>Documento</th><th>Status</th></tr></thead>
+            <thead><tr><th>Documento</th><th>Status</th><th style={{ textAlign: "right", paddingRight: 12 }}></th></tr></thead>
             <tbody data-testid="doc-list">
-              {docs.map((d) => (
-                <tr key={d.id} data-testid={`doc-row`}>
-                  <td className="muted" style={{ wordBreak: "break-all" }}>{d.fileUrl.split("/").pop()}</td>
-                  <td><span className="badge" data-testid="doc-status">{d.status}</span></td>
-                </tr>
-              ))}
-              {docs.length === 0 && <tr><td colSpan={2} className="muted">Sem documentos.</td></tr>}
+              {docs.map((d) => {
+                const name = d.fileUrl.split("/").pop() ?? d.id;
+                return (
+                  <tr key={d.id} data-testid={`doc-row`}>
+                    <td className="muted" style={{ wordBreak: "break-all" }}>{name}</td>
+                    <td><span className="badge" data-testid="doc-status">{d.status}</span></td>
+                    <td style={{ textAlign: "right", paddingRight: 12 }}>
+                      <button
+                        type="button" className="danger" data-testid={`doc-delete-${d.id}`}
+                        title="Remover este documento do RAG" onClick={() => deleteDoc(d.id, name)}
+                      >Remover</button>
+                    </td>
+                  </tr>
+                );
+              })}
+              {docs.length === 0 && <tr><td colSpan={3} className="muted">Sem documentos.</td></tr>}
             </tbody>
           </table>
         </div>

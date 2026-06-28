@@ -213,6 +213,19 @@ public class SystemService {
         return removed;
     }
 
+    /** Remove um único documento do RAG (chunks + registro) sem mexer nos demais. */
+    @Transactional
+    public void deleteDocument(UUID systemId, UUID documentId) {
+        require(systemId);
+        SystemDocument doc = documents.findById(documentId)
+                .orElseThrow(() -> ApiException.notFound("document not found"));
+        if (!systemId.equals(doc.getSystemId())) {
+            throw ApiException.notFound("document not found"); // não pertence a este sistema
+        }
+        chunks.deleteByDocument(documentId); // chunks 1º (FK p/ system_documents)
+        documents.delete(doc);
+    }
+
     @Transactional(readOnly = true)
     public List<DocumentResponse> listDocuments(UUID systemId) {
         require(systemId);
