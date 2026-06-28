@@ -81,7 +81,13 @@ public class RagIndexingService {
         documents.save(doc);
     }
 
-    /** Chunking simples: parágrafos (linhas em branco); parágrafos longos são quebrados. */
+    /** Parágrafos com menos que isto são descartados: cabeçalhos de página, títulos de
+     *  seção e ruído de OCR (ex.: a palavra "CLÃS" repetida no topo de cada página) que,
+     *  por baterem alto na busca, afogavam os parágrafos de conteúdo. */
+    private static final int MIN_CHUNK_CHARS = 40;
+
+    /** Chunking simples: parágrafos (linhas em branco); parágrafos longos são quebrados.
+     *  Parágrafos curtos (headers/ruído) são ignorados — ver {@link #MIN_CHUNK_CHARS}. */
     static List<String> chunk(String text) {
         List<String> out = new ArrayList<>();
         if (text == null) {
@@ -89,8 +95,8 @@ public class RagIndexingService {
         }
         for (String para : text.split("\\r?\\n\\s*\\r?\\n")) {
             String p = para.strip().replaceAll("\\s+", " ");
-            if (p.isEmpty()) {
-                continue;
+            if (p.length() < MIN_CHUNK_CHARS) {
+                continue; // cabeçalho/título/ruído de OCR — não vira chunk
             }
             while (p.length() > MAX_CHUNK_CHARS) {
                 int cut = p.lastIndexOf(' ', MAX_CHUNK_CHARS);
@@ -101,7 +107,7 @@ public class RagIndexingService {
                 p = p.substring(cut).strip();
             }
             if (!p.isEmpty()) {
-                out.add(p);
+                out.add(p); // cauda de parágrafo longo é mantida mesmo se curta
             }
         }
         return out;
