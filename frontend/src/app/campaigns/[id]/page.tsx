@@ -9,13 +9,14 @@ import { V5Roller } from "@/components/V5Roller";
 import { CampaignBoard } from "@/components/CampaignBoard";
 import { CampaignNotes } from "@/components/CampaignNotes";
 import { SheetView } from "@/components/SheetView";
+import { MasterScreen } from "@/components/MasterScreen";
 import AiChat from "@/components/AiChat";
 import {
   api, type Campaign, type Character, type Member, type RpgSystem,
   type SchemaShape, type SheetSchema, type V5Catalog,
 } from "@/lib/api";
 
-type Tab = "overview" | "board" | "notes" | "members" | "sheets" | "ai";
+type Tab = "overview" | "board" | "notes" | "members" | "sheets" | "screen" | "ai";
 
 function gradient(seed: string): string {
   let h = 0;
@@ -207,6 +208,7 @@ export default function CampaignDetailPage() {
     { k: "notes", label: "Anotações" },
     { k: "members", label: "Membros" },
     { k: "sheets", label: "Fichas" },
+    ...(isMaster ? [{ k: "screen" as Tab, label: "Escudo do Mestre" }] : []),
     { k: "ai", label: "Chat (IA)" },
   ];
 
@@ -446,6 +448,11 @@ export default function CampaignDetailPage() {
                 </div>
               )}
             </div>
+          )}
+
+          {/* ESCUDO DO MESTRE (só mestre) */}
+          {tab === "screen" && isMaster && (
+            <MasterScreen campaignId={id} characters={characters} members={members} catalog={catalog} />
           )}
 
           {/* AI */}
