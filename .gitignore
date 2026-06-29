@@ -38,3 +38,4 @@ frontend/.playwright/
 corpus/
 *.pdf
 corpus-en/
+corpus-companion/

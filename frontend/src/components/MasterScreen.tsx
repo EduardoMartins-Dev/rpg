@@ -21,9 +21,11 @@ function pips(filled: number, max: number): string {
 }
 
 export function MasterScreen({
-  campaignId, characters, members, catalog,
+  campaignId, characters, members, catalog, onDamage,
 }: {
   campaignId: string; characters: Character[]; members: Member[]; catalog?: V5Catalog | null;
+  /** Persiste a edição de dano de uma trilha na ficha do jogador. */
+  onDamage: (c: Character, field: "healthDmg" | "wpDmg", sup: number, agg: number) => void;
 }) {
   const memberOf = new Map(members.map((m) => [m.userId, m]));
 
@@ -36,7 +38,7 @@ export function MasterScreen({
       <p className="muted" style={{ fontSize: 14, margin: "0 0 16px" }}>
         Escudo do Mestre — dados vitais de cada personagem de relance. Clique em um card para abrir a ficha completa.
       </p>
-      <div className="ms-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: 16 }}>
+      <div className="ms-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))", gap: 16 }}>
         {characters.map((c) => {
           const s = c.sheetData ?? {};
           const derived = (s.derived as Record<string, number>) ?? {};
@@ -68,9 +70,11 @@ export function MasterScreen({
                 </Link>
               </div>
 
-              {/* trilhas de dano (só-leitura) */}
-              <DamageTrack label="Vitalidade" max={vitality} sup={healthDmg.sup} agg={healthDmg.agg} readOnly />
-              <DamageTrack label="Força de Vontade" max={willpower} sup={wpDmg.sup} agg={wpDmg.agg} readOnly />
+              {/* trilhas de dano — mestre marca ao vivo, salva na ficha do jogador */}
+              <DamageTrack label="Vitalidade" max={vitality} sup={healthDmg.sup} agg={healthDmg.agg}
+                onChange={(s, a) => onDamage(c, "healthDmg", s, a)} />
+              <DamageTrack label="Força de Vontade" max={willpower} sup={wpDmg.sup} agg={wpDmg.agg}
+                onChange={(s, a) => onDamage(c, "wpDmg", s, a)} />
 
               {/* recursos rápidos */}
               <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 16px", fontSize: 13 }}>

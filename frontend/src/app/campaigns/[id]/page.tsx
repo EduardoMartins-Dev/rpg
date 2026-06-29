@@ -186,6 +186,23 @@ export default function CampaignDetailPage() {
     catch (err) { setError(err instanceof Error ? err.message : "erro ao excluir campanha"); }
   }
 
+  // Escudo do Mestre: marca dano ao vivo. Atualiza otimista, persiste a ficha INTEIRA
+  // (o backend re-deriva vitality/willpower; só healthDmg/wpDmg muda) e reconcilia com a
+  // resposta. Em erro, recarrega para voltar ao estado do servidor.
+  async function patchDamage(c: Character, field: "healthDmg" | "wpDmg", sup: number, agg: number) {
+    const newSheet = { ...(c.sheetData ?? {}), [field]: { sup, agg } };
+    setCharacters((list) => list.map((x) => (x.id === c.id ? { ...c, sheetData: newSheet } : x)));
+    try {
+      const saved = await api.put<Character>(`/campaigns/${id}/characters/${c.id}`, {
+        name: c.name, sheetData: newSheet,
+      });
+      setCharacters((list) => list.map((x) => (x.id === c.id ? saved : x)));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "erro ao salvar dano");
+      await load();
+    }
+  }
+
   async function removeMember(m: Member) {
     if (!confirm(`Remover ${m.displayName} da campanha?`)) return;
     setError(null);
@@ -452,7 +469,7 @@ export default function CampaignDetailPage() {
 
           {/* ESCUDO DO MESTRE (só mestre) */}
           {tab === "screen" && isMaster && (
-            <MasterScreen campaignId={id} characters={characters} members={members} catalog={catalog} />
+            <MasterScreen campaignId={id} characters={characters} members={members} catalog={catalog} onDamage={patchDamage} />
           )}
 
           {/* AI */}
