@@ -27,7 +27,7 @@ jobs:
           for i in 1 2 3 4; do
             code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 60 "$URL" || echo "000")
             echo "ping $i -> HTTP $code ($URL)"
-            [ "$i" -lt 4 ] && sleep 120
+            if [ "$i" -lt 4 ]; then sleep 120; fi
           done
         env:
           KEEP_WARM_URL: ${{ vars.KEEP_WARM_URL }}
