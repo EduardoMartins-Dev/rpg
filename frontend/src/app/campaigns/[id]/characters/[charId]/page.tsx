@@ -7,6 +7,7 @@ import { useRequireUser } from "@/lib/guard";
 import { AppShell } from "@/components/AppShell";
 import { DynamicSheet } from "@/components/DynamicSheet";
 import { SheetView } from "@/components/SheetView";
+import { SessionSheet } from "@/components/SessionSheet";
 import {
   api, type Campaign, type Character, type SchemaShape, type SheetSchema,
   type RpgSystem, type V5Catalog,
@@ -24,9 +25,10 @@ export default function CharacterSheetPage() {
   const [catalog, setCatalog] = useState<V5Catalog | null>(null);
   const [name, setName] = useState("");
   const [sheet, setSheet] = useState<Sheet>({});
-  const [viewMode, setViewMode] = useState(false);
+  const [mode, setMode] = useState<"session" | "edit" | "view">("edit");
   const [msg, setMsg] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [savedAt, setSavedAt] = useState<number | null>(null);
 
   const load = useCallback(async () => {
     setError(null);
@@ -44,7 +46,13 @@ export default function CharacterSheetPage() {
       }
       const ch = await api.get<Character>(`/campaigns/${id}/characters/${charId}`);
       setName(ch.name);
-      setSheet(ch.sheetData ?? {});
+      const sd = ch.sheetData ?? {};
+      setSheet(sd);
+      // Ficha já construída (tem atributos) abre direto na SESSÃO (ferramenta de mesa);
+      // ficha nova abre no editor para ser montada.
+      const attrs = sd.attributes as Record<string, number> | undefined;
+      const built = !!attrs && Object.values(attrs).some((v) => Number(v) > 0);
+      setMode(built ? "session" : "edit");
     } catch (err) {
       setError(err instanceof Error ? err.message : "erro ao carregar ficha");
     }
@@ -62,6 +70,23 @@ export default function CharacterSheetPage() {
       setMsg("Ficha salva.");
     } catch (err) {
       setError(err instanceof Error ? err.message : "erro ao salvar");
+    }
+  }
+
+  // Auto-save da SESSÃO: cada interação na barra de status grava na hora (otimista),
+  // depois reconcilia com os derivados recalculados no servidor. Em erro, recarrega.
+  async function persist(next: Sheet) {
+    setError(null);
+    setSheet(next);
+    try {
+      const updated = await api.put<Character>(`/campaigns/${id}/characters/${charId}`, {
+        name, sheetData: next,
+      });
+      setSheet(updated.sheetData ?? {});
+      setSavedAt(Date.now());
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "erro ao salvar");
+      await load();
     }
   }
 
@@ -92,17 +117,23 @@ export default function CharacterSheetPage() {
             <div className="mono" style={{ fontSize: 13, color: "var(--accent)" }}>Ficha dinâmica</div>
           </div>
           <div className="seg" data-testid="sheet-mode">
-            <button className={!viewMode ? "on" : ""} data-testid="mode-edit" onClick={() => setViewMode(false)}>Editar</button>
-            <button className={viewMode ? "on" : ""} data-testid="mode-view" onClick={() => setViewMode(true)}>Visualizar</button>
+            <button className={mode === "session" ? "on" : ""} data-testid="mode-session" onClick={() => setMode("session")}>Sessão</button>
+            <button className={mode === "edit" ? "on" : ""} data-testid="mode-edit" onClick={() => setMode("edit")}>Editar</button>
+            <button className={mode === "view" ? "on" : ""} data-testid="mode-view" onClick={() => setMode("view")}>Visualizar</button>
           </div>
-          {!viewMode && <button data-testid="sheet-save" onClick={save}>Salvar ficha</button>}
+          {mode === "edit" && <button data-testid="sheet-save" onClick={save}>Salvar ficha</button>}
+          {mode === "session" && savedAt && (
+            <span className="mono muted" data-testid="session-saved" style={{ fontSize: 12 }}>✓ salvo</span>
+          )}
         </div>
 
         <div className="panel">
           {!schema ? (
             <p className="muted">Carregando schema…</p>
-          ) : viewMode ? (
+          ) : mode === "view" ? (
             <SheetView schema={schema} sheet={sheet} catalog={catalog} />
+          ) : mode === "session" ? (
+            <SessionSheet sheet={sheet} catalog={catalog} onPersist={persist} />
           ) : (
             <DynamicSheet schema={schema} sheet={sheet} onChange={setSheet} catalog={catalog} />
           )}
