@@ -114,6 +114,10 @@ export function DynamicSheet({
   ];
   const [step, setStep] = useState(0);
   const [infoClan, setInfoClan] = useState<string | null>(null);
+  // Trava de edição: protege as bolinhas (atributos/perícias/níveis) contra clique
+  // acidental. Ficha já construída abre TRAVADA; ficha nova abre destravada p/ montar.
+  const built = Object.values(attrs).some((v) => Number(v) > 0);
+  const [locked, setLocked] = useState(built);
   const cur = steps[step].key;
   // detalhe exibido: o clã que está com o (i) aberto, senão o selecionado
   const detailClan: ClanView | undefined = catalog?.clans.find((c) => c.id === (infoClan ?? clanId));
@@ -176,6 +180,18 @@ export function DynamicSheet({
           </li>
         ))}
       </ol>
+
+      <div style={{ display: "flex", alignItems: "center", gap: 10, margin: "8px 0 4px", flexWrap: "wrap" }}>
+        <button type="button" className={locked ? "" : "secondary"} data-testid="traits-lock"
+          onClick={() => setLocked((l) => !l)} style={{ padding: "4px 12px" }}>
+          {locked ? "🔒 Traços travados" : "🔓 Editando traços"}
+        </button>
+        <span className="muted" style={{ fontSize: 12 }}>
+          {locked
+            ? "Atributos, perícias e níveis protegidos contra clique acidental. Destrave para editar."
+            : "Bolinhas editáveis. Trave ao terminar para não mudar valores sem querer."}
+        </span>
+      </div>
 
       <div className="step-body">
         {/* 1 · CLÃ */}
@@ -333,7 +349,7 @@ export function DynamicSheet({
                     <div className="cat-head">{cat}</div>
                     {names.map((name) => (
                       <DotRating key={name} name={titleCase(name)} testid={`attr-${name}`} min={1} max={5}
-                        value={attrs[name] ?? ""} onChange={(raw) => setNumGroup("attributes", name, raw)} />
+                        value={attrs[name] ?? ""} disabled={locked} onChange={(raw) => setNumGroup("attributes", name, raw)} />
                     ))}
                   </div>
                 ))}
@@ -355,7 +371,7 @@ export function DynamicSheet({
                   {names.map((name) => (
                     <DotRating key={name} name={skillMeta.get(norm(name))?.label ?? titleCase(name)}
                       testid={`skill-${name}`} min={0} max={5} value={skillVals[name] ?? ""}
-                      onChange={(raw) => setNumGroup("skills", name, raw)} />
+                      disabled={locked} onChange={(raw) => setNumGroup("skills", name, raw)} />
                   ))}
                 </div>
               ))}
@@ -400,7 +416,7 @@ export function DynamicSheet({
                       <div className="disc-head-row">
                         <input aria-label="disciplina" placeholder="Disciplina" value={d.name}
                           onChange={(e) => updDisc(i, { name: e.target.value })} />
-                        <DotsOnly value={d.level} max={5} onChange={(lv) => updDisc(i, { level: lv })} />
+                        <DotsOnly value={d.level} max={5} disabled={locked} onChange={(lv) => updDisc(i, { level: lv })} />
                         <button type="button" className="secondary" aria-label="remover disciplina"
                           onClick={() => setDisc(disciplines.filter((_, j) => j !== i))}>✕</button>
                       </div>
@@ -866,8 +882,9 @@ function Area({ label, v, on, rows = 3 }: { label: string; v: string; on: (v: st
   );
 }
 
-function DotRating({ value, max, min, onChange, testid, name }: {
-  value: number | ""; max: number; min: number; onChange: (raw: string) => void; testid: string; name: string;
+function DotRating({ value, max, min, onChange, testid, name, disabled }: {
+  value: number | ""; max: number; min: number; onChange: (raw: string) => void;
+  testid: string; name: string; disabled?: boolean;
 }) {
   const v = typeof value === "number" ? value : 0;
   return (
@@ -876,21 +893,26 @@ function DotRating({ value, max, min, onChange, testid, name }: {
       <span className="dots">
         {Array.from({ length: max }, (_, i) => i + 1).map((i) => (
           <button key={i} type="button" tabIndex={-1} aria-label={`${name} ${i}`}
-            className={`dot${v >= i ? " on" : ""}`} onClick={() => onChange(String(v === i ? i - 1 : i))} />
+            className={`dot${v >= i ? " on" : ""}`}
+            style={disabled ? { cursor: "not-allowed" } : undefined}
+            onClick={() => { if (!disabled) onChange(String(v === i ? i - 1 : i)); }} />
         ))}
       </span>
       <input className="num" type="number" min={min} max={max} data-testid={testid} aria-label={name}
-        value={value} onChange={(e) => onChange(e.target.value)} />
+        value={value} readOnly={disabled} onChange={(e) => onChange(e.target.value)} />
     </div>
   );
 }
 
-function DotsOnly({ value, max, onChange }: { value: number; max: number; onChange: (v: number) => void }) {
+function DotsOnly({ value, max, onChange, disabled }: {
+  value: number; max: number; onChange: (v: number) => void; disabled?: boolean;
+}) {
   return (
     <span className="dots">
       {Array.from({ length: max }, (_, i) => i + 1).map((i) => (
         <button key={i} type="button" tabIndex={-1} className={`dot${value >= i ? " on" : ""}`}
-          onClick={() => onChange(value === i ? i - 1 : i)} />
+          style={disabled ? { cursor: "not-allowed" } : undefined}
+          onClick={() => { if (!disabled) onChange(value === i ? i - 1 : i); }} />
       ))}
     </span>
   );
