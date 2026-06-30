@@ -18,6 +18,7 @@ public final class V5Catalog {
 
     public enum Clan {
         BRUJAH, GANGREL, MALKAVIAN, NOSFERATU, TOREADOR, TREMERE, VENTRUE,
+        BANU_HAQIM, HECATA, LASOMBRA, MINISTRY,
         CAITIFF, THIN_BLOOD, RAVNOS, SALUBRI, TZIMISCE
     }
 
@@ -39,33 +40,71 @@ public final class V5Catalog {
 
     static {
         clan(Clan.BRUJAH, "Brujah",
-                "Rebeldes apaixonados e guerreiros-filósofos, movidos por ideais e fúria.",
+                "Rebeldes apaixonados e guerreiros-filósofos. Ser Brujah é arder por uma causa "
+                        + "e lutar contra a injustiça — e contra a própria fúria, sempre à flor da pele.",
                 List.of("Celeridade", "Potência", "Presença"),
-                "penalidade vs frenesi de fúria", "Rebelião");
+                "Frenesi de fúria mais fácil: penalidade igual à Gravidade da Perdição em testes para resistir à fúria.",
+                "Rebelião");
         clan(Clan.GANGREL, "Gangrel",
-                "Nômades ferais, próximos das feras e da terra, sobreviventes solitários.",
+                "Nômades ferais, os mais próximos da Besta. Sobrevivem sozinhos, leem a estrada e a "
+                        + "natureza — e a cada frenesi se parecem um pouco mais com os animais.",
                 List.of("Animalismo", "Fortitude", "Proteanismo"),
-                "traços animais em frenesi", "Impulsos Ferais");
+                "Ao entrar em frenesi, ganham traços animais (penalidade ligada à Gravidade da Perdição) que perduram.",
+                "Impulsos Ferais");
         clan(Clan.MALKAVIAN, "Malkavian",
-                "Oráculos lunáticos; a loucura lhes revela verdades ocultas.",
+                "Visionários tocados pela loucura. Enxergam padrões e verdades ocultas que os outros "
+                        + "não veem — ao preço de uma mente fraturada que distorce a percepção.",
                 List.of("Auspícios", "Dominação", "Ofuscação"),
-                "perturbação mental", "Delírio");
+                "Carregam uma perturbação mental que se manifesta sob estresse, impondo penalidade conforme a Gravidade da Perdição.",
+                "Delírio");
         clan(Clan.NOSFERATU, "Nosferatu",
-                "Monstros das sombras: espiões desfigurados que tudo veem e tudo sabem.",
+                "Monstros deformados condenados às sombras e aos esgotos. Trocam a aparência por "
+                        + "segredos: são os melhores espiões e informantes da noite.",
                 List.of("Animalismo", "Ofuscação", "Potência"),
-                "Repulsivo; sem Aparência", "Criptofilia");
+                "Repugnantes: contam como tendo Aparência 0 e falham em testes sociais que dependam de causar boa impressão.",
+                "Criptofilia");
         clan(Clan.TOREADOR, "Toreador",
-                "Estetas seduzidos pela beleza, pela arte e pela paixão.",
+                "Estetas apaixonados pela beleza, pela arte e pelo prazer. Atravessam a eternidade "
+                        + "atrás da obra ou do instante perfeito — e se perdem nele.",
                 List.of("Auspícios", "Celeridade", "Presença"),
-                "perde dados sem beleza", "Obsessão");
+                "Na ausência de beleza ao redor, perdem dados (igual à Gravidade da Perdição) ou ficam fascinados.",
+                "Obsessão");
         clan(Clan.TREMERE, "Tremere",
-                "Feiticeiros de sangue organizados em hierarquia rígida e ambiciosa.",
+                "Feiticeiros de sangue numa hierarquia rígida. Trocaram a magia mortal pela Feitiçaria "
+                        + "de Sangue e por uma pirâmide de poder, lealdade e segredos.",
                 List.of("Auspícios", "Dominação", "Feitiçaria de Sangue"),
-                "Laço de Sangue alterado", "Perfeccionismo");
+                "Seu Laço de Sangue é instável: ligam-se com facilidade e seu vitae não cria laços como o de outros clãs.",
+                "Perfeccionismo");
         clan(Clan.VENTRUE, "Ventrue",
-                "Aristocratas natos: líderes, governantes e o sangue azul da estirpe.",
+                "Os 'Reis' da estirpe: líderes e aristocratas natos. Assumem o comando por direito "
+                        + "presumido — e carregam um paladar de sangue exigente e seletivo.",
                 List.of("Dominação", "Fortitude", "Presença"),
-                "só bebe de presa específica", "Arrogância");
+                "Só conseguem se alimentar de um tipo específico de presa; outro sangue é vomitado.",
+                "Arrogância");
+        clan(Clan.BANU_HAQIM, "Banu Haqim",
+                "Juízes e assassinos guerreiros. Caçam quem viola sua lei e sentem uma atração "
+                        + "perigosa pelo sangue de outros vampiros.",
+                List.of("Feitiçaria de Sangue", "Celeridade", "Ofuscação"),
+                "Ao saciar Fome com o sangue de outro vampiro, testam frenesi de Fome (Dif 2 + Gravidade da Perdição) para não cometer diablerie.",
+                "Julgamento");
+        clan(Clan.HECATA, "Hecata",
+                "A Família da Morte: necromantes que negociam com os mortos e com o outro lado, "
+                        + "mantendo laços de sangue e de família além da sepultura.",
+                List.of("Auspícios", "Fortitude", "Oblivion"),
+                "O Beijo deles é sempre doloroso: a presa nunca sente prazer e tende a resistir e se debater.",
+                "Morbidez");
+        clan(Clan.LASOMBRA, "Lasombra",
+                "Predadores das sombras, ambiciosos e implacáveis. Comandam a escuridão e sobem pela "
+                        + "hierarquia passando por cima de quem for preciso.",
+                List.of("Dominação", "Oblivion", "Potência"),
+                "Imagem distorcida em espelhos e gravações; perturbam aparelhos eletrônicos sensíveis ao toque.",
+                "Crueldade");
+        clan(Clan.MINISTRY, "Ministério",
+                "Herdeiros de Set: tentadores que libertam — e escravizam — os outros pelos próprios "
+                        + "vícios e transgressões.",
+                List.of("Ofuscação", "Presença", "Proteanismo"),
+                "A luz forte os fere mais: penalidade de dados igual à Gravidade da Perdição e dano aumentado por luz/sol.",
+                "Transgressão");
         clan(Clan.CAITIFF, "Caitiff",
                 "Sem clã: herança incerta, sem fraqueza fixa nem disciplinas próprias.",
                 List.of(),

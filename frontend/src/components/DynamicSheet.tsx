@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import type { SchemaShape, V5Catalog, ClanView } from "@/lib/api";
 import { DamageTrack } from "@/components/DamageTrack";
 import { AttributeRadial } from "@/components/AttributeRadial";
+import { ClanTrait } from "@/components/ClanTrait";
 
 type Dmg = { sup: number; agg: number };
 type Xp = { total: number; entries: { desc: string; cost: number }[] };
@@ -232,25 +233,17 @@ export function DynamicSheet({
                       )}
                       {detailClan.id === clanId && <span className="badge role-MASTER">selecionado</span>}
                     </div>
-                    <p className="muted">{detailClan.description}</p>
-                    <div className="grid2">
-                      <div>
-                        <span className="kv-label">Disciplinas (buffs)</span>
-                        <div className="chips">
-                          {detailClan.disciplines.length
-                            ? detailClan.disciplines.map((d) => <span key={d} className="badge buff">{d}</span>)
-                            : <span className="muted">nenhuma</span>}
-                        </div>
+                    <p style={{ marginTop: 0, lineHeight: 1.55 }}>{detailClan.description}</p>
+                    <div>
+                      <span className="kv-label">Disciplinas de clã</span>
+                      <div className="chips" style={{ marginTop: 4 }}>
+                        {detailClan.disciplines.length
+                          ? detailClan.disciplines.map((d) => <span key={d} className="badge buff">{d}</span>)
+                          : <span className="muted">nenhuma</span>}
                       </div>
-                      <div><span className="kv-label">Compulsão</span><p style={{ margin: ".2rem 0 0" }}>{detailClan.compulsion}</p></div>
                     </div>
-                    <div style={{ marginTop: ".5rem" }}>
-                      <span className="kv-label">Maldição (fraqueza do clã)</span>
-                      <p style={{ margin: ".2rem 0 0" }}>{detailClan.bane}</p>
-                      <p className="muted" style={{ fontSize: 12, margin: "6px 0 0" }}>
-                        Fraqueza inata do clã. A severidade segue a <b>Gravidade da Perdição</b> (vem da Potência de Sangue) — quanto maior a potência, mais forte.
-                      </p>
-                    </div>
+                    <ClanTrait kind="bane" text={detailClan.bane} />
+                    <ClanTrait kind="compulsion" text={detailClan.compulsion} />
                   </div>
                 )}
               </>

@@ -3,6 +3,7 @@
 import type { SchemaShape, V5Catalog, ClanView } from "@/lib/api";
 import { DamageTrack } from "@/components/DamageTrack";
 import { AttributeRadial } from "@/components/AttributeRadial";
+import { ClanTrait } from "@/components/ClanTrait";
 
 type Sheet = Record<string, unknown>;
 type Dmg = { sup: number; agg: number };
@@ -105,24 +106,15 @@ export function SheetView({ schema, sheet, catalog }: {
       {clan && (
         <div className="panel" style={{ marginTop: 14 }}>
           <h3 style={{ marginTop: 0 }}>{clan.label}</h3>
-          <p className="muted" style={{ marginTop: 0 }}>{clan.description}</p>
-          <div className="review-grid">
-            <div>
-              <span className="kv-label">Disciplinas de clã</span>
-              <div className="chips" style={{ marginTop: 6 }}>
-                {clan.disciplines.length ? clan.disciplines.map((d) => <span key={d} className="badge buff">{d}</span>) : <span className="muted">nenhuma</span>}
-              </div>
+          <p style={{ marginTop: 0, lineHeight: 1.55 }}>{clan.description}</p>
+          <div>
+            <span className="kv-label">Disciplinas de clã</span>
+            <div className="chips" style={{ marginTop: 6 }}>
+              {clan.disciplines.length ? clan.disciplines.map((d) => <span key={d} className="badge buff">{d}</span>) : <span className="muted">nenhuma</span>}
             </div>
-            <div><span className="kv-label">Compulsão</span><p style={{ margin: ".2rem 0 0" }}>{clan.compulsion}</p></div>
           </div>
-          <div style={{ marginTop: 10 }}>
-            <span className="kv-label">Maldição (fraqueza do clã)</span>
-            <p style={{ margin: ".2rem 0 0" }}>{clan.bane}</p>
-            <p className="muted" style={{ fontSize: 12, margin: "6px 0 0" }}>
-              A maldição é a fraqueza inata do clã. Sua severidade segue a <b>Gravidade da Perdição</b>
-              {bpRow ? ` (${bpRow.baneSeverity} nesta Potência de Sangue)` : " (vem da Potência de Sangue)"} — quanto maior a potência, mais forte a maldição.
-            </p>
-          </div>
+          <ClanTrait kind="bane" text={clan.bane} />
+          <ClanTrait kind="compulsion" text={clan.compulsion} />
         </div>
       )}
 
