@@ -4,6 +4,7 @@ import { useState } from "react";
 import type { V5Catalog } from "@/lib/api";
 import { DamageTrack } from "@/components/DamageTrack";
 import { HumanityTable, BloodPotencyTable } from "@/components/ReferenceTables";
+import { V5Roller, type TraitItem } from "@/components/V5Roller";
 
 /**
  * Ficha VIVA de sessão: barras de status grandes e tocáveis para o jogador usar na mesa —
@@ -36,7 +37,19 @@ export function SessionSheet({
   const bp = num(sheet.bloodPotency);
   const bpRow = catalog?.bloodPotency?.find((b) => b.potency === bp);
   const disciplines = ((sheet.disciplines as Discipline[]) ?? []).filter((d) => d?.name);
+  const skillVals = (sheet.skills as Record<string, number>) ?? {};
   const [showTables, setShowTables] = useState(false);
+
+  // Traços para o "teste rápido": Atributos (todos os da ficha) + Perícias (todas do
+  // catálogo, com o valor da ficha) — assim o mestre pede qualquer atributo × perícia
+  // sem trocar de tela. Valores casam por nome normalizado (mesma lógica da visualização).
+  const attrItems: TraitItem[] = Object.entries(attrs)
+    .map(([k, v]) => ({ key: k, label: titleCase(k), value: num(v) }));
+  const skillByNorm = new Map(Object.entries(skillVals).map(([k, v]) => [norm(k), num(v)]));
+  const catalogSkills = (catalog?.abilities ?? []).flatMap((g) => g.abilities);
+  const skillItems: TraitItem[] = catalogSkills.length > 0
+    ? catalogSkills.map((nm) => ({ key: nm, label: nm, value: skillByNorm.get(norm(nm)) ?? 0 }))
+    : Object.entries(skillVals).map(([k, v]) => ({ key: k, label: titleCase(k), value: num(v) }));
 
   const patch = (key: string, value: unknown) => onPersist({ ...sheet, [key]: value });
   const setHunger = (n: number) => patch("hunger", clamp(n, 0, 5));
@@ -152,6 +165,13 @@ export function SessionSheet({
         </div>
       </div>
 
+      {/* Teste rápido: atributo + perícia juntos + rolagem V5 (sem trocar de tela) */}
+      <div className="panel" style={{ margin: 0 }} data-testid="ss-roller">
+        <V5Roller bloodPotency={catalog?.bloodPotency}
+          traits={{ attributes: attrItems, skills: skillItems }}
+          initialHunger={hunger} initialBp={bp} />
+      </div>
+
       {/* Tira de referência: Potência de Sangue (consulta rápida na mesa) */}
       {bpRow && (
         <div className="panel" style={{ margin: 0 }} data-testid="ss-bp">
@@ -196,4 +216,12 @@ export function SessionSheet({
 
 function clamp(n: number, lo: number, hi: number): number {
   return Math.max(lo, Math.min(hi, n));
+}
+
+function titleCase(s: string): string {
+  return s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
+}
+
+function norm(s: string): string {
+  return s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9]/g, "");
 }

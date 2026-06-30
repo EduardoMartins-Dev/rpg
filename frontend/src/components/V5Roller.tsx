@@ -30,15 +30,35 @@ function bpEffects(table: BloodPotencyView[] | undefined, bp: number) {
 
 const d10 = () => 1 + Math.floor(Math.random() * 10);
 
-export function V5Roller({ bloodPotency }: { bloodPotency?: BloodPotencyView[] }) {
+/** Traço (atributo ou perícia) para o construtor de teste rápido. */
+export type TraitItem = { key: string; label: string; value: number };
+
+export function V5Roller({ bloodPotency, traits, initialHunger, initialBp }: {
+  bloodPotency?: BloodPotencyView[];
+  /** Quando fornecido, mostra o construtor "Atributo + Perícia" com os traços da ficha. */
+  traits?: { attributes: TraitItem[]; skills: TraitItem[] };
+  initialHunger?: number; initialBp?: number;
+}) {
   const [pool, setPool] = useState(4);
-  const [hunger, setHunger] = useState(1);
+  const [hunger, setHunger] = useState(initialHunger ?? 1);
   const [difficulty, setDifficulty] = useState(2);
-  const [bp, setBp] = useState(1);
+  const [bp, setBp] = useState(initialBp ?? 1);
   const [surge, setSurge] = useState(false);
   const [discipline, setDiscipline] = useState(false);
   const [res, setRes] = useState<Result | null>(null);
   const [rouse, setRouse] = useState<{ v: number; ok: boolean } | null>(null);
+  const [selAttr, setSelAttr] = useState("");
+  const [selSkill, setSelSkill] = useState("");
+
+  // Monta a reserva a partir dos traços escolhidos: Atributo + Perícia (regra V5).
+  function buildPool(attrKey: string, skillKey: string) {
+    if (!traits || !attrKey || !skillKey) return;
+    const a = traits.attributes.find((t) => t.key === attrKey)?.value ?? 0;
+    const s = traits.skills.find((t) => t.key === skillKey)?.value ?? 0;
+    setPool(a + s);
+  }
+  const selAttrVal = traits?.attributes.find((t) => t.key === selAttr)?.value ?? 0;
+  const selSkillVal = traits?.skills.find((t) => t.key === selSkill)?.value ?? 0;
 
   function doRouse() {
     const v = d10();
@@ -87,6 +107,59 @@ export function V5Roller({ bloodPotency }: { bloodPotency?: BloodPotencyView[] }
   return (
     <div className="dice-widget" data-testid="v5-roller">
       <h3 style={{ fontSize: 17, marginTop: 0 }}>Rolagem V5</h3>
+
+      {traits && (
+        <div data-testid="quick-test" style={{ marginBottom: 14 }}>
+          <div className="kv-label">Teste rápido — Atributo + Perícia</div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, margin: "6px 0" }}>
+            <select aria-label="atributo" data-testid="qt-attr" value={selAttr}
+              onChange={(e) => { setSelAttr(e.target.value); buildPool(e.target.value, selSkill); }}>
+              <option value="">Atributo…</option>
+              {traits.attributes.map((t) => (
+                <option key={t.key} value={t.key}>{t.label} ({t.value})</option>
+              ))}
+            </select>
+            <select aria-label="perícia" data-testid="qt-skill" value={selSkill}
+              onChange={(e) => { setSelSkill(e.target.value); buildPool(selAttr, e.target.value); }}>
+              <option value="">Perícia…</option>
+              {traits.skills.map((t) => (
+                <option key={t.key} value={t.key}>{t.label} ({t.value})</option>
+              ))}
+            </select>
+          </div>
+          {selAttr && selSkill && (
+            <div className="muted" data-testid="qt-pool" style={{ fontSize: 13 }}>
+              {traits.attributes.find((t) => t.key === selAttr)?.label} {selAttrVal} +{" "}
+              {traits.skills.find((t) => t.key === selSkill)?.label} {selSkillVal} ={" "}
+              <b style={{ color: "var(--text)" }}>{selAttrVal + selSkillVal} dados</b>
+            </div>
+          )}
+          {/* Referência: atributos e perícias juntos na mesma tela (sem trocar de aba). */}
+          <details style={{ marginTop: 8 }}>
+            <summary className="muted" style={{ fontSize: 12, cursor: "pointer" }}>Ver atributos e perícias</summary>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 8, fontSize: 12 }}>
+              <div>
+                <div className="kv-label">Atributos</div>
+                {traits.attributes.map((t) => (
+                  <div key={t.key} style={{ display: "flex", justifyContent: "space-between", padding: "1px 0" }}>
+                    <span>{t.label}</span><b className="mono">{t.value}</b>
+                  </div>
+                ))}
+              </div>
+              <div>
+                <div className="kv-label">Perícias</div>
+                {traits.skills.filter((t) => t.value > 0).map((t) => (
+                  <div key={t.key} style={{ display: "flex", justifyContent: "space-between", padding: "1px 0" }}>
+                    <span>{t.label}</span><b className="mono">{t.value}</b>
+                  </div>
+                ))}
+                {traits.skills.every((t) => t.value <= 0) && <span className="muted">sem perícias</span>}
+              </div>
+            </div>
+          </details>
+        </div>
+      )}
+
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
         {num(pool, setPool, 1, 20, "Parada (Atrib+Perícia)", "roll-pool")}
         {num(hunger, setHunger, 0, 5, "Fome", "roll-hunger")}
