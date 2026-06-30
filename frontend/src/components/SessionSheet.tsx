@@ -1,7 +1,9 @@
 "use client";
 
+import { useState } from "react";
 import type { V5Catalog } from "@/lib/api";
 import { DamageTrack } from "@/components/DamageTrack";
+import { HumanityTable, BloodPotencyTable } from "@/components/ReferenceTables";
 
 /**
  * Ficha VIVA de sessão: barras de status grandes e tocáveis para o jogador usar na mesa —
@@ -30,13 +32,25 @@ export function SessionSheet({
   const wpMax = num(derived.willpower, num(attrs.autocontrole) + num(attrs.determinacao));
   const hunger = num(sheet.hunger);
   const humanity = num(sheet.humanity, 7);
+  const stains = num(sheet.stains);
   const bp = num(sheet.bloodPotency);
   const bpRow = catalog?.bloodPotency?.find((b) => b.potency === bp);
   const disciplines = ((sheet.disciplines as Discipline[]) ?? []).filter((d) => d?.name);
+  const [showTables, setShowTables] = useState(false);
 
   const patch = (key: string, value: unknown) => onPersist({ ...sheet, [key]: value });
   const setHunger = (n: number) => patch("hunger", clamp(n, 0, 5));
   const setHumanity = (n: number) => patch("humanity", clamp(n, 0, 10));
+  const setStains = (n: number) => patch("stains", clamp(n, 0, 10));
+
+  // Manchas marcam as caixas VAZIAS da direita p/ esquerda. Remorso (fim de sessão) rola
+  // dados = caixas vazias SEM mancha (mín 1). Degeneração: manchas que não cabem nas vazias →
+  // Debilitado + 1 Agravado de FdV por mancha excedente (corebook p.239).
+  const emptyBoxes = 10 - humanity;
+  const stainsCap = Math.min(stains, 10);
+  const remorseDice = Math.max(1, emptyBoxes - Math.min(stains, emptyBoxes));
+  const excessAgg = Math.max(0, stains - emptyBoxes);
+  const degeneration = excessAgg > 0;
 
   return (
     <div data-testid="session-sheet" style={{ display: "flex", flexDirection: "column", gap: 18 }}>
@@ -88,26 +102,53 @@ export function SessionSheet({
           </div>
         </div>
 
-        {/* Humanidade (0–10) */}
+        {/* Humanidade (0–10) + Manchas (direita→esquerda) */}
         <div className="panel" style={{ margin: 0 }} data-testid="ss-humanity">
           <div className="track-head">
             <span style={{ fontWeight: 600 }}>Humanidade</span>
-            <span className="mono muted" style={{ fontSize: 12 }}>{humanity}/10</span>
+            <span className="mono muted" style={{ fontSize: 12 }}>
+              {humanity}/10{stains > 0 ? ` · ${stains} mancha${stains > 1 ? "s" : ""}` : ""}
+            </span>
           </div>
           <div style={{ display: "flex", gap: 4, margin: "8px 0", flexWrap: "wrap" }}>
-            {Array.from({ length: 10 }, (_, i) => (
-              <span key={i} style={{
-                width: 18, height: 18, borderRadius: 4,
-                background: i < humanity ? "var(--text)" : "transparent",
-                border: `1px solid ${i < humanity ? "var(--text)" : "var(--border)"}`,
-              }} />
-            ))}
+            {Array.from({ length: 10 }, (_, i) => {
+              const isHuman = i < humanity;
+              const isStain = i >= 10 - stainsCap;
+              const conflict = isHuman && isStain; // mancha sobre caixa preenchida = degeneração
+              const bg = conflict ? "var(--err)" : isHuman ? "var(--text)" : "transparent";
+              const border = conflict ? "var(--err)" : isStain ? "var(--err)" : isHuman ? "var(--text)" : "var(--border)";
+              return (
+                <span key={i} title={isStain ? "Mancha" : isHuman ? `Humanidade ${i + 1}` : "vazio"}
+                  style={{
+                    width: 18, height: 18, borderRadius: 4, background: bg,
+                    border: `1px solid ${border}`, display: "flex", alignItems: "center",
+                    justifyContent: "center", fontSize: 12, lineHeight: 1,
+                    color: conflict ? "#fff" : "var(--err)",
+                  }}>{isStain ? "✗" : ""}</span>
+              );
+            })}
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+            <span className="muted" style={{ fontSize: 12 }}>Humanidade</span>
             <button className="secondary" data-testid="ss-humanity-dec" onClick={() => setHumanity(humanity - 1)} style={{ padding: "2px 10px" }}>−</button>
             <span className="mono" style={{ minWidth: 18, textAlign: "center" }}>{humanity}</span>
             <button className="secondary" data-testid="ss-humanity-inc" onClick={() => setHumanity(humanity + 1)} style={{ padding: "2px 10px" }}>+</button>
+            <span className="muted" style={{ fontSize: 12, marginLeft: 6 }}>Manchas</span>
+            <button className="secondary" data-testid="ss-stains-dec" onClick={() => setStains(stains - 1)} style={{ padding: "2px 10px" }}>−</button>
+            <span className="mono" style={{ minWidth: 18, textAlign: "center", color: stains > 0 ? "var(--err)" : "inherit" }}>{stains}</span>
+            <button className="secondary" data-testid="ss-stains-inc" onClick={() => setStains(stains + 1)} style={{ padding: "2px 10px" }}>+</button>
           </div>
+          {stains > 0 && (
+            <p className="muted" data-testid="ss-remorse" style={{ fontSize: 12, margin: "8px 0 0" }}>
+              Remorso (fim de sessão): role <b>{remorseDice}</b> dado{remorseDice > 1 ? "s" : ""}.
+              Sucesso mantém a Humanidade e limpa as manchas; falha tira 1 de Humanidade.
+            </p>
+          )}
+          {degeneration && (
+            <p data-testid="ss-degeneration" style={{ fontSize: 12, margin: "6px 0 0", color: "var(--err)" }}>
+              ⚠ Degeneração: Debilitado (−2 em tudo) e {excessAgg} de dano Agravado de Força de Vontade.
+            </p>
+          )}
         </div>
       </div>
 
@@ -135,6 +176,20 @@ export function SessionSheet({
           </div>
         </div>
       )}
+
+      {/* Tabelas de referência (Humanidade + Potência de Sangue) */}
+      <div>
+        <button className="secondary" data-testid="ss-tables-toggle"
+          onClick={() => setShowTables((v) => !v)} style={{ padding: "4px 12px" }}>
+          {showTables ? "Ocultar tabelas de referência" : "Tabelas de referência (Humanidade / Potência)"}
+        </button>
+        {showTables && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 14, marginTop: 14 }}>
+            <HumanityTable current={humanity} />
+            <BloodPotencyTable catalog={catalog} current={bp} />
+          </div>
+        )}
+      </div>
     </div>
   );
 }

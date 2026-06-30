@@ -505,6 +505,11 @@ export function DynamicSheet({
                 <input type="number" min={0} max={10} value={(sheet.humanity as number) ?? 7}
                   onChange={(e) => setTop("humanity", Number(e.target.value))} />
               </div>
+              <div>
+                <label>Manchas (0–10)</label>
+                <input type="number" min={0} max={10} value={(sheet.stains as number) ?? 0}
+                  onChange={(e) => setTop("stains", Number(e.target.value))} />
+              </div>
             </div>
 
             <XpPanel xp={(sheet.xp as Xp) ?? { total: 0, entries: [] }} onChange={(v) => setTop("xp", v)} />

@@ -79,6 +79,7 @@ export function SheetView({ schema, sheet, catalog }: {
           <Kv k="Ambição" v={str(sheet.ambition) || "—"} />
           <Kv k="Desejo" v={str(sheet.desire) || "—"} />
           <Kv k="Humanidade" v={String((sheet.humanity as number) ?? 7)} />
+          <Kv k="Manchas" v={String((sheet.stains as number) ?? 0)} />
           <Kv k="Fome" v={String((sheet.hunger as number) ?? 0)} />
           <Kv k="XP disponível" v={xpAvail(sheet)} />
         </div>
