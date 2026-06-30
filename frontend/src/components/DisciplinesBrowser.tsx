@@ -70,17 +70,22 @@ export function DisciplinesBrowser({
               const open = openPower === key;
               const entry = cache[key];
               return (
-                <div key={key} className="panel" style={{ margin: "0 0 6px", padding: "8px 12px" }}>
+                <div key={key} className="panel" style={{ margin: "0 0 6px", padding: "10px 12px" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8 }}>
+                    <span style={{ fontWeight: 600 }}>{p.name}
+                      {p.en ? <span className="muted" style={{ fontSize: 12, fontWeight: 400 }}> · {p.en}</span> : null}</span>
+                  </div>
+                  {/* descrição em PT-BR — sempre presente, vinda do catálogo do sistema */}
+                  <p data-testid={`disc-power-desc-${key}`} style={{ margin: "4px 0 0", fontSize: 14, lineHeight: 1.55 }}>
+                    {p.desc || <span className="muted">Sem descrição resumida.</span>}
+                  </p>
+                  {/* opcional: texto integral do material indexado (pode estar em inglês) */}
                   <button data-testid={`disc-power-${key}`} onClick={() => togglePower(p)}
-                    className="secondary" style={{
-                      width: "100%", textAlign: "left", padding: "4px 8px",
-                      display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8,
-                    }}>
-                    <span>{p.name}{p.en ? <span className="muted" style={{ fontSize: 12 }}> · {p.en}</span> : null}</span>
-                    <span className="muted" style={{ fontSize: 12 }}>{open ? "▲" : "▼"}</span>
+                    className="secondary" style={{ marginTop: 8, padding: "2px 10px", fontSize: 12 }}>
+                    {open ? "Ocultar trecho do material" : "Ver trecho do material indexado"}
                   </button>
                   {open && (
-                    <div data-testid={`disc-power-text-${key}`} style={{ padding: "10px 8px 2px", fontSize: 14 }}>
+                    <div data-testid={`disc-power-text-${key}`} style={{ padding: "10px 2px 2px", fontSize: 14 }}>
                       {entry?.loading && <span className="muted">Buscando no material…</span>}
                       {entry?.error && <span className="muted">{entry.error}</span>}
                       {entry?.text && <p style={{ whiteSpace: "pre-wrap", margin: 0, lineHeight: 1.6 }}>{entry.text}</p>}
