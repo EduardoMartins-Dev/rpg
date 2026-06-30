@@ -33,7 +33,7 @@ public class RulesController {
             int disciplineBonus, int baneSeverity, int mendingRouse) {
     }
 
-    public record PowerView(int level, String name) {
+    public record PowerView(int level, String name, String en) {
     }
 
     public record DisciplineView(String name, String summary, List<PowerView> powers) {
@@ -87,7 +87,7 @@ public class RulesController {
 
         List<DisciplineView> disciplines = V5Catalog.disciplines().stream()
                 .map(d -> new DisciplineView(d.name(), d.summary(),
-                        d.powers().stream().map(p -> new PowerView(p.level(), p.name())).toList()))
+                        d.powers().stream().map(p -> new PowerView(p.level(), p.name(), p.en())).toList()))
                 .toList();
 
         List<PredatorView> predators = V5Catalog.predatorTypes().stream()

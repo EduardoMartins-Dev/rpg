@@ -10,13 +10,14 @@ import { CampaignBoard } from "@/components/CampaignBoard";
 import { CampaignNotes } from "@/components/CampaignNotes";
 import { SheetView } from "@/components/SheetView";
 import { MasterScreen } from "@/components/MasterScreen";
+import { DisciplinesBrowser } from "@/components/DisciplinesBrowser";
 import AiChat from "@/components/AiChat";
 import {
   api, type Campaign, type Character, type Member, type RpgSystem,
   type SchemaShape, type SheetSchema, type V5Catalog,
 } from "@/lib/api";
 
-type Tab = "overview" | "board" | "notes" | "members" | "sheets" | "screen" | "ai";
+type Tab = "overview" | "board" | "notes" | "members" | "sheets" | "disciplines" | "screen" | "ai";
 
 function gradient(seed: string): string {
   let h = 0;
@@ -225,6 +226,7 @@ export default function CampaignDetailPage() {
     { k: "notes", label: "Anotações" },
     { k: "members", label: "Membros" },
     { k: "sheets", label: "Fichas" },
+    { k: "disciplines", label: "Disciplinas" },
     ...(isMaster ? [{ k: "screen" as Tab, label: "Escudo do Mestre" }] : []),
     { k: "ai", label: "Chat (IA)" },
   ];
@@ -466,6 +468,9 @@ export default function CampaignDetailPage() {
               )}
             </div>
           )}
+
+          {/* DISCIPLINAS (agregador: todas + efeito do material indexado) */}
+          {tab === "disciplines" && <DisciplinesBrowser campaignId={id} catalog={catalog} />}
 
           {/* ESCUDO DO MESTRE (só mestre) */}
           {tab === "screen" && isMaster && (

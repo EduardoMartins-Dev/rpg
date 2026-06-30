@@ -187,7 +187,8 @@ export interface BloodPotencyView {
   potency: number; bloodSurge: number; rouseReroll: number;
   disciplineBonus: number; baneSeverity: number; mendingRouse: number;
 }
-export interface PowerView { level: number; name: string; }
+export interface PowerView { level: number; name: string; en?: string | null; }
+export interface PowerTextResponse { systemId: string; power: string; text: string; }
 export interface DisciplineView { name: string; summary: string; powers: PowerView[]; }
 export interface PredatorView { name: string; summary: string; disciplines: string[]; }
 export interface ResonanceView { name: string; emotion: string; disciplines: string[]; }
