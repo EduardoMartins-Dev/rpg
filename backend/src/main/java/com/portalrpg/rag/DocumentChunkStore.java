@@ -59,14 +59,19 @@ public class DocumentChunkStore {
      *  o nome do poder, agora colado no chunk, casa exato aqui. Prioriza o trecho cujo nome
      *  aparece mais ao início (o corpo do poder, não uma menção solta). */
     public List<RetrievedChunk> searchByKeyword(UUID systemId, String term, int limit) {
-        String like = "%" + term + "%";
+        // Padrão tolerante: apóstrofo (reto/curvo) vira coringa de 1 char e cada bloco de espaço
+        // vira '%', para casar nomes possessivos (Baal's Caress) e nomes que o extrator de PDF
+        // quebrou entre linhas ("Draught of\nEndurance"). Escapa curingas literais do próprio termo.
+        String esc = term.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
+        String flexible = esc.replaceAll("['’‘`´]", "_").replaceAll("\\s+", "%");
+        String like = "%" + flexible + "%";
         return jdbc.query(
                 "SELECT content, system_id FROM document_chunks "
                         + "WHERE system_id = ? AND content ILIKE ? "
-                        + "ORDER BY position(lower(?) in lower(content)) ASC, length(content) ASC "
+                        + "ORDER BY length(content) ASC "
                         + "LIMIT ?",
                 (rs, i) -> new RetrievedChunk(rs.getString("content"), rs.getObject("system_id", UUID.class)),
-                systemId, like, term, limit);
+                systemId, like, limit);
     }
 
     public long countBySystem(UUID systemId) {

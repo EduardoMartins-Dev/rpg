@@ -229,8 +229,13 @@ public class RagQueryService {
         return c.getSystemId();
     }
 
+    /** Normaliza p/ comparação de substring: tira acentos, funde apóstrofos (o PDF usa o curvo
+     *  ’ e a busca o reto ') e colapsa espaços/quebras de linha — assim nomes possessivos
+     *  (Baal's Caress) e nomes que o extrator quebrou entre linhas ainda casam. */
     private static String normalize(String s) {
-        return Normalizer.normalize(s, Normalizer.Form.NFD)
-                .replaceAll("\\p{M}+", "").toLowerCase(Locale.ROOT);
+        String n = Normalizer.normalize(s, Normalizer.Form.NFD).replaceAll("\\p{M}+", "");
+        n = n.replaceAll("['’‘`´]", "");
+        n = n.replaceAll("\\s+", " ").trim();
+        return n.toLowerCase(Locale.ROOT);
     }
 }
