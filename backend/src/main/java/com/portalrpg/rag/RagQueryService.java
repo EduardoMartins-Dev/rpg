@@ -185,8 +185,8 @@ public class RagQueryService {
         if (cached != null) {
             return new PowerTextResponse(systemId, power, cached);
         }
-        RetrievedChunk best = bestChunkFor(systemId, power);
-        if (best == null) {
+        List<RetrievedChunk> ctx = chunksFor(systemId, power);
+        if (ctx.isEmpty()) {
             return new PowerTextResponse(systemId, power, null);
         }
         String question = "Traduza e reorganize para PORTUGUÊS DO BRASIL a informação COMPLETA do "
@@ -202,21 +202,24 @@ public class RagQueryService {
                 + "**Sistema:** (passo a passo de como se usa, completo)\n"
                 + "**Amálgama:** (se o trecho citar disciplina/nível exigidos)\n"
                 + "Não invente nada fora do trecho.";
-        String answer = chat.generate(question, List.of(best), systemId);
+        String answer = chat.generate(question, ctx, systemId);
         explainCache.put(cacheKey, answer);
         return new PowerTextResponse(systemId, power, answer);
     }
 
-    /** Trecho do poder: tenta keyword pelo nome (preciso p/ nomes parecidos) e cai p/ vetorial. */
-    private RetrievedChunk bestChunkFor(UUID systemId, String power) {
-        List<RetrievedChunk> kw = store.searchByKeyword(systemId, power, 1);
-        if (!kw.isEmpty()) {
-            return kw.get(0);
+    /** Trechos do poder: combina keyword pelo nome (preciso p/ nomes parecidos) e vetorial, sem
+     *  duplicar. Traz mais de um chunk porque a entrada de um poder pode atravessar a fronteira
+     *  de chunking — assim a explicação sai COMPLETA, não cortada no meio. */
+    private List<RetrievedChunk> chunksFor(UUID systemId, String power) {
+        java.util.LinkedHashMap<String, RetrievedChunk> dedup = new java.util.LinkedHashMap<>();
+        for (RetrievedChunk c : store.searchByKeyword(systemId, power, 3)) {
+            dedup.putIfAbsent(c.content(), c);
         }
         String needle = normalize(power);
-        return store.search(systemId, embeddings.embed(power), 5).stream()
+        store.search(systemId, embeddings.embed(power), 6).stream()
                 .filter(c -> normalize(c.content()).contains(needle))
-                .findFirst().orElse(null);
+                .forEach(c -> dedup.putIfAbsent(c.content(), c));
+        return new java.util.ArrayList<>(dedup.values());
     }
 
     private UUID systemOf(UUID campaignId) {
