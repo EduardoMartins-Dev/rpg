@@ -1,23 +1,21 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { api, ApiError, type V5Catalog, type PowerView, type PowerTextResponse } from "@/lib/api";
+import { type V5Catalog, type PowerView } from "@/lib/api";
 
 /**
  * Agregador de Disciplinas: lista TODAS as disciplinas do catálogo do sistema (nomes e
- * poderes por nível) e, ao clicar num poder, busca o efeito integral no material indexado
- * da campanha (RAG, retrieval-only — não inventa nem hardcoda texto do livro). Resolve o
- * pedido "ter um aglomerado das disciplinas e já ver tudo que cada uma faz".
+ * poderes por nível) e, para cada poder, mostra em PT-BR o que ele faz — funcionamento,
+ * tipo de ação e custo — escrito manualmente no catálogo. Sempre presente e consistente,
+ * sem depender de retrieval (RAG) ao vivo.
  */
 export function DisciplinesBrowser({
-  campaignId, catalog,
+  catalog,
 }: {
   campaignId: string; catalog?: V5Catalog | null;
 }) {
   const disciplines = catalog?.disciplines ?? [];
   const [sel, setSel] = useState(0);
-  const [openPower, setOpenPower] = useState<string | null>(null);
-  const [cache, setCache] = useState<Record<string, { text?: string; error?: string; loading?: boolean }>>({});
 
   const current = disciplines[sel];
   const byLevel = useMemo(() => groupByLevel(current?.powers ?? []), [current]);
@@ -26,31 +24,12 @@ export function DisciplinesBrowser({
     return <p className="muted" style={{ padding: 18 }}>Catálogo de disciplinas indisponível para este sistema.</p>;
   }
 
-  async function togglePower(p: PowerView) {
-    const key = p.en || p.name;
-    if (openPower === key) { setOpenPower(null); return; }
-    setOpenPower(key);
-    if (cache[key]?.text || cache[key]?.error) return; // já buscado
-    setCache((c) => ({ ...c, [key]: { loading: true } }));
-    try {
-      // O índice é em inglês: busca pelo nome EN quando houver, senão pelo PT.
-      const res = await api.get<PowerTextResponse>(
-        `/campaigns/${campaignId}/disciplines/${encodeURIComponent(p.en || p.name)}`);
-      setCache((c) => ({ ...c, [key]: { text: res.text } }));
-    } catch (err) {
-      const msg = err instanceof ApiError && err.status === 404
-        ? "Este poder não está no material indexado deste sistema."
-        : err instanceof Error ? err.message : "erro ao buscar o poder";
-      setCache((c) => ({ ...c, [key]: { error: msg } }));
-    }
-  }
-
   return (
     <div data-testid="disciplines-browser" style={{ display: "grid", gridTemplateColumns: "240px 1fr", gap: 18 }} className="disc-grid">
       {/* lista de disciplinas */}
       <div className="panel" style={{ margin: 0, padding: 8, alignSelf: "start" }} data-testid="disc-list">
         {disciplines.map((d, i) => (
-          <button key={d.name} data-testid={`disc-pick-${i}`} onClick={() => { setSel(i); setOpenPower(null); }}
+          <button key={d.name} data-testid={`disc-pick-${i}`} onClick={() => setSel(i)}
             className={i === sel ? "" : "secondary"}
             style={{ display: "block", width: "100%", textAlign: "left", marginBottom: 4, padding: "8px 10px" }}>
             {d.name} <span className="muted" style={{ fontSize: 12 }}>· {d.powers.length}</span>
@@ -67,30 +46,16 @@ export function DisciplinesBrowser({
             <div className="kv-label" style={{ marginBottom: 6 }}>Nível {lvl}</div>
             {powers.map((p) => {
               const key = p.en || p.name;
-              const open = openPower === key;
-              const entry = cache[key];
               return (
                 <div key={key} className="panel" style={{ margin: "0 0 6px", padding: "10px 12px" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8 }}>
                     <span style={{ fontWeight: 600 }}>{p.name}
                       {p.en ? <span className="muted" style={{ fontSize: 12, fontWeight: 400 }}> · {p.en}</span> : null}</span>
                   </div>
-                  {/* descrição em PT-BR — sempre presente, vinda do catálogo do sistema */}
-                  <p data-testid={`disc-power-desc-${key}`} style={{ margin: "4px 0 0", fontSize: 14, lineHeight: 1.55 }}>
+                  {/* descrição em PT-BR — funcionamento, tipo de ação e custo, do catálogo do sistema */}
+                  <p data-testid={`disc-power-desc-${key}`} style={{ margin: "4px 0 0", fontSize: 14, lineHeight: 1.6 }}>
                     {p.desc || <span className="muted">Sem descrição resumida.</span>}
                   </p>
-                  {/* opcional: texto integral do material indexado (pode estar em inglês) */}
-                  <button data-testid={`disc-power-${key}`} onClick={() => togglePower(p)}
-                    className="secondary" style={{ marginTop: 8, padding: "2px 10px", fontSize: 12 }}>
-                    {open ? "Ocultar trecho do material" : "Ver trecho do material indexado"}
-                  </button>
-                  {open && (
-                    <div data-testid={`disc-power-text-${key}`} style={{ padding: "10px 2px 2px", fontSize: 14 }}>
-                      {entry?.loading && <span className="muted">Buscando no material…</span>}
-                      {entry?.error && <span className="muted">{entry.error}</span>}
-                      {entry?.text && <p style={{ whiteSpace: "pre-wrap", margin: 0, lineHeight: 1.6 }}>{entry.text}</p>}
-                    </div>
-                  )}
                 </div>
               );
             })}
