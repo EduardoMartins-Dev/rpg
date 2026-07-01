@@ -30,24 +30,24 @@ public class RagQueryService {
     // gerador (Gemini) tem contexto de 1M tokens, então não é mais o gargalo que era no Groq.
     private static final int TOP_K = 40;
 
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(RagQueryService.class);
+
     private final CampaignRepository campaigns;
     private final com.portalrpg.system.RpgSystemRepository systems;
     private final DocumentChunkStore store;
     private final EmbeddingModel embeddings;
     private final ChatModel chat;
-
-    // Cache das explicações PT de poderes (chave: systemId|nome): a tradução integral do trecho
-    // via IA é cara e estável, então gera-se uma vez por poder.
-    private final java.util.Map<String, String> explainCache = new java.util.concurrent.ConcurrentHashMap<>();
+    private final PowerExplanationStore explanations;
 
     public RagQueryService(CampaignRepository campaigns,
             com.portalrpg.system.RpgSystemRepository systems, DocumentChunkStore store,
-            EmbeddingModel embeddings, ChatModel chat) {
+            EmbeddingModel embeddings, ChatModel chat, PowerExplanationStore explanations) {
         this.campaigns = campaigns;
         this.systems = systems;
         this.store = store;
         this.embeddings = embeddings;
         this.chat = chat;
+        this.explanations = explanations;
     }
 
     // Quantos trechos por poder no retrieval direcionado. 3 dá folga p/ nomes parecidos
@@ -177,17 +177,18 @@ public class RagQueryService {
      *  sistema, duração, amálgama), ancorada só no trecho (AiPrompts.SYSTEM proíbe inventar).
      *  Cacheada por sistema+poder. Retorna null em `text` quando o poder não está no índice — o
      *  front cai para a descrição manual do catálogo (nunca fica vazio). */
-    @Transactional(readOnly = true)
+    @Transactional
     public PowerTextResponse powerExplained(UUID campaignId, String power) {
         UUID systemId = systemOf(campaignId);
-        String cacheKey = systemId + "|" + normalize(power);
-        String cached = explainCache.get(cacheKey);
-        if (cached != null) {
-            return new PowerTextResponse(systemId, power, cached);
+        String norm = normalize(power);
+        // Cache persistente: gerado uma vez, servido do banco para sempre (poupa a cota diária).
+        var cached = explanations.find(systemId, norm);
+        if (cached.isPresent()) {
+            return new PowerTextResponse(systemId, power, cached.get());
         }
         List<RetrievedChunk> ctx = chunksFor(systemId, power);
         if (ctx.isEmpty()) {
-            return new PowerTextResponse(systemId, power, null);
+            return new PowerTextResponse(systemId, power, null); // não indexado → front usa a descrição do catálogo
         }
         String question = "Traduza e reorganize para PORTUGUÊS DO BRASIL a informação COMPLETA do "
                 + "poder \"" + power + "\" de Vampiro: A Máscara (V5), usando SOMENTE o trecho "
@@ -203,8 +204,18 @@ public class RagQueryService {
                 + "**Amálgama:** (se o trecho citar disciplina/nível exigidos)\n"
                 + "Não repita o nome do poder como título/cabeçalho (ele já é exibido). "
                 + "Não invente nada fora do trecho.";
-        String answer = chat.generate(question, ctx, systemId);
-        explainCache.put(cacheKey, answer);
+        String answer;
+        try {
+            answer = chat.generate(question, ctx, systemId);
+        } catch (ApiException e) {
+            // Erro do provedor (ex.: 429 cota diária). Não cacheia e devolve mensagem curta —
+            // nunca despeja o erro cru do provedor na tela; o front mantém a descrição do catálogo.
+            log.warn("powerExplained: falha do provedor de IA para '{}': {}", power, e.getMessage());
+            throw new ApiException(org.springframework.http.HttpStatus.SERVICE_UNAVAILABLE,
+                    "Serviço de tradução do livro indisponível no momento (limite temporário). "
+                            + "Tente novamente mais tarde.");
+        }
+        explanations.save(systemId, norm, power, answer);
         return new PowerTextResponse(systemId, power, answer);
     }
 

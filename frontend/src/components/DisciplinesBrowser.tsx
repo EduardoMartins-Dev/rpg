@@ -41,8 +41,11 @@ export function DisciplinesBrowser({
         `/campaigns/${campaignId}/disciplines/${encodeURIComponent(p.en || p.name)}/explicacao`);
       setCache((c) => ({ ...c, [key]: res.text ? { text: res.text } : { missing: true } }));
     } catch (err) {
-      const msg = err instanceof ApiError ? err.message
-        : err instanceof Error ? err.message : "erro ao buscar o poder";
+      // Nunca mostra o erro cru do provedor. Mensagem curta; a descrição do catálogo (acima)
+      // segue visível como referência.
+      const msg = err instanceof ApiError && err.status >= 500
+        ? "Serviço de tradução indisponível no momento. Tente novamente mais tarde — a descrição acima é a referência."
+        : "Não foi possível carregar agora. Tente novamente em instantes.";
       setCache((c) => ({ ...c, [key]: { error: msg } }));
     }
   }
