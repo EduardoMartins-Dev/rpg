@@ -201,6 +201,7 @@ public class RagQueryService {
                 + "**Duração:** (passiva, uma cena, uma noite…)\n"
                 + "**Sistema:** (passo a passo de como se usa, completo)\n"
                 + "**Amálgama:** (se o trecho citar disciplina/nível exigidos)\n"
+                + "Não repita o nome do poder como título/cabeçalho (ele já é exibido). "
                 + "Não invente nada fora do trecho.";
         String answer = chat.generate(question, ctx, systemId);
         explainCache.put(cacheKey, answer);
