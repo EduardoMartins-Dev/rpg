@@ -41,4 +41,11 @@ public class RagController {
     public PowerTextResponse powerText(@PathVariable UUID id, @PathVariable String power) {
         return service.powerText(id, power);
     }
+
+    /** Informação COMPLETA do poder, traduzida e organizada em PT-BR a partir do trecho do livro.
+     *  `text` vem null quando o poder não está no índice — o front usa a descrição do catálogo. */
+    @GetMapping("/disciplines/{power}/explicacao")
+    public PowerTextResponse powerExplained(@PathVariable UUID id, @PathVariable String power) {
+        return service.powerExplained(id, power);
+    }
 }

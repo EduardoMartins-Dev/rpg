@@ -36,6 +36,10 @@ public class RagQueryService {
     private final EmbeddingModel embeddings;
     private final ChatModel chat;
 
+    // Cache das explicações PT de poderes (chave: systemId|nome): a tradução integral do trecho
+    // via IA é cara e estável, então gera-se uma vez por poder.
+    private final java.util.Map<String, String> explainCache = new java.util.concurrent.ConcurrentHashMap<>();
+
     public RagQueryService(CampaignRepository campaigns,
             com.portalrpg.system.RpgSystemRepository systems, DocumentChunkStore store,
             EmbeddingModel embeddings, ChatModel chat) {
@@ -166,6 +170,53 @@ public class RagQueryService {
                 .orElseThrow(() -> ApiException.notFound(
                         "no indexed text found for power: " + power));
         return new PowerTextResponse(systemId, power, best.content());
+    }
+
+    /** Explicação COMPLETA do poder em PT-BR: a IA traduz e organiza o trecho INTEGRAL do livro
+     *  indexado, sem cortar nada relevante (funcionamento, custo, tipo de ação, parada de dados,
+     *  sistema, duração, amálgama), ancorada só no trecho (AiPrompts.SYSTEM proíbe inventar).
+     *  Cacheada por sistema+poder. Retorna null em `text` quando o poder não está no índice — o
+     *  front cai para a descrição manual do catálogo (nunca fica vazio). */
+    @Transactional(readOnly = true)
+    public PowerTextResponse powerExplained(UUID campaignId, String power) {
+        UUID systemId = systemOf(campaignId);
+        String cacheKey = systemId + "|" + normalize(power);
+        String cached = explainCache.get(cacheKey);
+        if (cached != null) {
+            return new PowerTextResponse(systemId, power, cached);
+        }
+        RetrievedChunk best = bestChunkFor(systemId, power);
+        if (best == null) {
+            return new PowerTextResponse(systemId, power, null);
+        }
+        String question = "Traduza e reorganize para PORTUGUÊS DO BRASIL a informação COMPLETA do "
+                + "poder \"" + power + "\" de Vampiro: A Máscara (V5), usando SOMENTE o trecho "
+                + "fornecido. NÃO resuma: traga TODOS os detalhes mecânicos presentes no trecho. "
+                + "Responda em Markdown com as seções abaixo, cada rótulo em negrito; omita a seção "
+                + "só se o trecho realmente não trouxer aquilo:\n"
+                + "**Descrição:** (o que o poder é e faz, texto integral traduzido)\n"
+                + "**Custo:** (ex.: um Rouse Check, gratuito, etc.)\n"
+                + "**Tipo de ação:** (simples, livre, reflexa, prolongada…)\n"
+                + "**Parada de dados:** (o teste/disputa exato, traduzido)\n"
+                + "**Duração:** (passiva, uma cena, uma noite…)\n"
+                + "**Sistema:** (passo a passo de como se usa, completo)\n"
+                + "**Amálgama:** (se o trecho citar disciplina/nível exigidos)\n"
+                + "Não invente nada fora do trecho.";
+        String answer = chat.generate(question, List.of(best), systemId);
+        explainCache.put(cacheKey, answer);
+        return new PowerTextResponse(systemId, power, answer);
+    }
+
+    /** Trecho do poder: tenta keyword pelo nome (preciso p/ nomes parecidos) e cai p/ vetorial. */
+    private RetrievedChunk bestChunkFor(UUID systemId, String power) {
+        List<RetrievedChunk> kw = store.searchByKeyword(systemId, power, 1);
+        if (!kw.isEmpty()) {
+            return kw.get(0);
+        }
+        String needle = normalize(power);
+        return store.search(systemId, embeddings.embed(power), 5).stream()
+                .filter(c -> normalize(c.content()).contains(needle))
+                .findFirst().orElse(null);
     }
 
     private UUID systemOf(UUID campaignId) {
