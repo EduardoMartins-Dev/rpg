@@ -44,8 +44,9 @@ async function isV5(systemId: string): Promise<boolean> {
   return (s?.ruleset ?? "").toLowerCase() === "v5";
 }
 
-/** Normalizes for substring comparison: strips accents, merges apostrophe variants (the
- * PDF uses curly ’, search uses straight '), collapses whitespace/line breaks. */
+/** Cache key for power_explanations: strips accents, drops apostrophe variants,
+ * collapses whitespace. Keep this stable — changing it orphans every explanation
+ * already cached in production (each one costs LLM quota to regenerate). */
 function normalize(s: string): string {
   let n = s
     .normalize("NFD")
@@ -53,6 +54,23 @@ function normalize(s: string): string {
   n = n.replace(/['’‘`´]/g, "");
   n = n.replace(/\s+/g, " ").trim();
   return n.toLowerCase();
+}
+
+/**
+ * Normalization for matching a power name INSIDE extracted book text. Unlike the cache
+ * key above, apostrophes collapse to a space rather than vanishing, so all the spacing
+ * variants text extraction produces line up: "Cat's Grace", "cat’s grace" and
+ * "cat ’s grace" all become "cat s grace". Dropping the apostrophe outright made the
+ * first two normalize to "cats grace" and the third to "cat s grace" — never equal.
+ */
+function normalizeForMatch(s: string): string {
+  return s
+    .normalize("NFD")
+    .replace(/\p{M}+/gu, "")
+    .replace(/['’‘`´]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
 }
 
 /** Search the passage for each power of the discipline(s) mentioned. Combines (a) keyword
@@ -135,10 +153,18 @@ export async function retrieve(campaignId: string, question: string): Promise<Gr
 /** The FULL text of a discipline power, read straight from the indexed PDF. */
 export async function powerText(campaignId: string, power: string): Promise<PowerTextResponse> {
   const systemId = await systemOf(campaignId);
+  // Keyword search first: a bare power name is a 1-token query, and the lexical
+  // embedding ranks it poorly against a large corpus (long chunks lose to short ones
+  // under L2 normalization), so pure vector search missed powers that are plainly
+  // present in the book. Vector search stays as the fallback for inexact names.
+  const byKeyword = await chunkStore.searchByKeyword(systemId, power, 1);
+  if (byKeyword.length > 0) {
+    return { systemId, power, text: byKeyword[0].content };
+  }
   const embeddings = embeddingModel();
   const chunks = await chunkStore.search(systemId, await embeddings.embed(power), 5);
-  const needle = normalize(power);
-  const best = chunks.find((c) => normalize(c.content).includes(needle));
+  const needle = normalizeForMatch(power);
+  const best = chunks.find((c) => normalizeForMatch(c.content).includes(needle));
   if (!best) {
     throw ApiError.notFound(`no indexed text found for power: ${power}`);
   }
@@ -152,10 +178,10 @@ async function chunksFor(systemId: string, power: string): Promise<RetrievedChun
   for (const c of await chunkStore.searchByKeyword(systemId, power, 3)) {
     if (!dedup.has(c.content)) dedup.set(c.content, c);
   }
-  const needle = normalize(power);
+  const needle = normalizeForMatch(power);
   const embeddings = embeddingModel();
   const vectorHits = await chunkStore.search(systemId, await embeddings.embed(power), 6);
-  for (const c of vectorHits.filter((c) => normalize(c.content).includes(needle))) {
+  for (const c of vectorHits.filter((c) => normalizeForMatch(c.content).includes(needle))) {
     if (!dedup.has(c.content)) dedup.set(c.content, c);
   }
   return [...dedup.values()];

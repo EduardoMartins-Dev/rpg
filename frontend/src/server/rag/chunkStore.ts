@@ -52,12 +52,18 @@ export async function search(systemId: string, queryEmbedding: number[], k: numb
  * appears closest to the start (the power's own body, not a passing mention).
  */
 export async function searchByKeyword(systemId: string, term: string, limit: number): Promise<RetrievedChunk[]> {
-  // Tolerant pattern: apostrophe (straight or curly) becomes a 1-char wildcard and each
-  // run of whitespace becomes '%', to match possessive names (Baal's Caress) and names
-  // the PDF extractor split across a line break ("Draught of\nEndurance"). Escapes the
-  // term's own literal wildcards first.
+  // Tolerant pattern: each apostrophe (straight or curly) and each run of whitespace
+  // becomes '%', to match possessive names (Baal's Caress) and names the PDF extractor
+  // split across a line break ("Draught of\nEndurance"). Escapes the term's own literal
+  // wildcards first.
+  //
+  // The apostrophe MUST map to '%' (any run), not '_' (exactly one char): text
+  // extraction is inconsistent about spacing around apostrophes even within one book —
+  // this corpus yields "baal’s caress" but "cat ’s grace", and a 1-char wildcard misses
+  // the latter. Measured on the V5 corebook: '_' found 93/95 catalog powers, '%' finds
+  // all 95.
   const esc = term.replace(/\\/g, "\\\\").replace(/%/g, "\\%").replace(/_/g, "\\_");
-  const flexible = esc.replace(/['’‘`´]/g, "_").replace(/\s+/g, "%");
+  const flexible = esc.replace(/['’‘`´]/g, "%").replace(/\s+/g, "%");
   const like = `%${flexible}%`;
   const rows = await sqlRaw<{ content: string; system_id: string }[]>`
     SELECT content, system_id FROM document_chunks
