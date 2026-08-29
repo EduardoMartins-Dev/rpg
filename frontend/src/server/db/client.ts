@@ -9,7 +9,7 @@ declare global {
   var __portalrpgSql: postgres.Sql | undefined;
 }
 
-function createClient() {
+function createClient(): postgres.Sql {
   const url = process.env.DATABASE_URL;
   if (!url) {
     throw new Error("DATABASE_URL is not set");
@@ -25,10 +25,50 @@ function createClient() {
   });
 }
 
-const sqlClient = globalThis.__portalrpgSql ?? createClient();
-if (process.env.NODE_ENV !== "production") {
-  globalThis.__portalrpgSql = sqlClient;
+function getClient(): postgres.Sql {
+  if (!globalThis.__portalrpgSql) {
+    globalThis.__portalrpgSql = createClient();
+  }
+  return globalThis.__portalrpgSql;
 }
 
-export const sqlRaw = sqlClient;
-export const db = drizzle(sqlClient, { schema });
+function makeDb(client: postgres.Sql) {
+  return drizzle(client, { schema });
+}
+type Db = ReturnType<typeof makeDb>;
+
+let dbInstance: Db | undefined;
+function getDb(): Db {
+  if (!dbInstance) {
+    dbInstance = makeDb(getClient());
+  }
+  return dbInstance;
+}
+
+/**
+ * `sqlRaw`/`db` are lazy proxies: the actual postgres connection (and the
+ * DATABASE_URL read that can throw) only happens on first real use — a query,
+ * `.begin()`, `.end()`, etc. — never just from importing this module.
+ *
+ * This matters because `next build` evaluates route handler modules while
+ * collecting page data, even for fully dynamic routes; connecting eagerly at
+ * module scope broke the build in any environment where DATABASE_URL isn't
+ * present at build time (only at runtime), which is a normal Vercel setup.
+ */
+export const sqlRaw = new Proxy((() => undefined) as unknown as postgres.Sql, {
+  apply(_target, _thisArg, args: unknown[]) {
+    const client = getClient() as unknown as (...a: unknown[]) => unknown;
+    return client(...args);
+  },
+  get(_target, prop, _receiver) {
+    const value = Reflect.get(getClient(), prop);
+    return typeof value === "function" ? value.bind(getClient()) : value;
+  },
+});
+
+export const db = new Proxy({} as Db, {
+  get(_target, prop, _receiver) {
+    const value = Reflect.get(getDb(), prop);
+    return typeof value === "function" ? value.bind(getDb()) : value;
+  },
+});
