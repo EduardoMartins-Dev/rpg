@@ -9,6 +9,29 @@ declare global {
   var __portalrpgSql: postgres.Sql | undefined;
 }
 
+/**
+ * SSL: required by default (Supabase — and most managed Postgres — rejects
+ * plain connections). Only skipped for localhost (docker-compose, no TLS
+ * configured there) or when the URL explicitly opts out
+ * (`sslmode=disable`/`sslmode=allow`). Relying on `sslmode=require` being
+ * literally present in the URL was fragile — a connection string copied
+ * straight from Supabase's dashboard doesn't include it by default, and the
+ * connection was then silently attempted without TLS and rejected.
+ */
+function resolveSsl(url: string): "require" | undefined {
+  let parsed: URL;
+  try {
+    parsed = new URL(url);
+  } catch {
+    return "require";
+  }
+  const mode = parsed.searchParams.get("sslmode");
+  if (mode === "disable" || mode === "allow") return undefined;
+  const host = parsed.hostname;
+  if (host === "localhost" || host === "127.0.0.1") return undefined;
+  return "require";
+}
+
 function createClient(): postgres.Sql {
   const url = process.env.DATABASE_URL;
   if (!url) {
@@ -21,7 +44,7 @@ function createClient(): postgres.Sql {
   return postgres(url, {
     max: 5,
     idle_timeout: 20,
-    ssl: url.includes("sslmode=require") ? "require" : undefined,
+    ssl: resolveSsl(url),
   });
 }
 
