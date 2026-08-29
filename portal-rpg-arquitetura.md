@@ -33,16 +33,22 @@ Cada sistema tem o PDF do livro indexado. Dentro de uma campanha, mestre/player 
 
 ## 3. Stack tecnológico
 
+> **Nota**: este documento descrevia originalmente um backend Java/Spring Boot separado
+> (Railway/Render). Migrado para Next.js Route Handlers — ver `DEPLOY.md` para o
+> racional (JVM+free tier caindo por OOM/hibernação) e o passo a passo de cutover.
+
 | Camada | Tecnologia | Deploy |
 |---|---|---|
-| Front-end | **Next.js** (React + TypeScript) | **Vercel** |
-| Back-end | **Java + Spring Boot** | **Railway** (free tier inicial) |
-| Banco | **PostgreSQL** | Railway (managed) |
+| Front-end + Back-end | **Next.js** (React + TypeScript), API como Route Handlers | **Vercel** |
+| Banco | **PostgreSQL** | Supabase (managed) |
+| Acesso ao banco | **Drizzle ORM** | — |
 | Vetores (IA) | **pgvector** (extensão do Postgres) | mesmo banco |
-| IA / RAG | **Spring AI** + LLM via API (Groq/OpenAI) | — |
-| Migrações | **Flyway** | versionado no repo |
+| IA / RAG | pipeline próprio (embedding local ou Jina) + LLM via API (Groq/Gemini) | — |
+| Storage | **Supabase Storage** (PDFs enviados) | — |
+| Migrações | **Drizzle Kit** (schema já existente, criado originalmente via Flyway) | versionado no repo |
 
-Escala alvo: pequena (uso entre amigos). Free tier resolve. Se crescer, migração pro Hetzner CX22 é tranquila.
+Escala alvo: pequena (uso de fim de semana entre amigos, ~10 pessoas simultâneas) — cenário
+ideal pra serverless: escala a zero fora do uso, sem custo/hibernação ociosa pra gerenciar.
 
 ---
 
@@ -50,27 +56,27 @@ Escala alvo: pequena (uso entre amigos). Free tier resolve. Se crescer, migraç�
 
 ```mermaid
 flowchart TB
-    subgraph Cliente
-        A[Next.js / Vercel]
-    end
-    subgraph Backend["Spring Boot / Railway"]
-        B[API REST + Auth JWT]
+    subgraph App["Next.js / Vercel"]
+        A[UI React]
+        B[Route Handlers - API REST + Auth JWT]
         C[Serviço de Campanhas]
         D[Serviço de Fichas]
         E[Serviço de IA / RAG]
     end
-    subgraph Dados
+    subgraph Dados["Supabase"]
         F[(PostgreSQL)]
         G[(pgvector)]
+        S[(Storage - PDFs)]
     end
-    H[LLM API - Groq/OpenAI]
+    H[LLM API - Groq/Gemini]
 
-    A -->|HTTPS| B
+    A -->|same-origin| B
     B --> C --> F
     B --> D --> F
     B --> E
     E -->|busca semântica| G
     E -->|geração| H
+    B --> S
 ```
 
 **Fluxo de indexação do PDF (feito pelo Admin):**
@@ -229,21 +235,18 @@ Body: `{ "question": "..." }` → resposta filtra os chunks por `system_id` da c
 
 ---
 
-## 7. Estratégia de ambientes (dev / staging / prod)
+## 7. Estratégia de ambientes (dev / preview / prod)
 
-Spring Boot com **profiles**:
+Config 100% por variáveis de ambiente (ver `frontend/.env.example`) — sem arquivos de
+profile: `.env.local` em dev, env vars do projeto na Vercel em preview/produção.
 
-```
-application.yml             # config comum
-application-dev.yml         # localhost, banco local
-application-staging.yml     # staging
-application-prod.yml        # produção
-```
-
-- Ativação: `SPRING_PROFILES_ACTIVE=dev|staging|prod` (variável de ambiente, injetada no Docker/Railway).
-- **Secrets** (senhas de banco, API key do LLM, segredo JWT): variáveis de ambiente no Railway — nunca commitadas.
-- **Migrações de schema**: Flyway roda automático no boot, versionando o banco igual entre os três ambientes (`V1__init.sql`, `V2__add_characters.sql`, ...).
-- Front no Vercel: usa Preview Deployments (cada PR vira um ambiente) + Production.
+- **Secrets** (senha de banco, API key do LLM, segredo JWT): variáveis de ambiente na
+  Vercel — nunca commitadas.
+- **Migrações de schema**: Drizzle Kit (`npm run db:generate` / `db:migrate`) para banco
+  novo (dev/CI); o banco de produção já existe com este schema (criado originalmente via
+  Flyway) e não recebe migrations da nova stack — ver `DEPLOY.md`.
+- Vercel: Preview Deployments (cada PR vira um ambiente) + Production, tudo no mesmo
+  projeto (front + API).
 
 ---
 

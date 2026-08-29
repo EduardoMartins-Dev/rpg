@@ -72,9 +72,12 @@ export default function AiChat({ campaignId, systemName }: { campaignId: string;
     setSending(true);
     setError(null);
 
-    // mostra a pergunta de imediato (otimista)
+    // mostra a pergunta de imediato (otimista). Precisa de um id sempre único: o id real
+    // da mensagem do usuário não volta na resposta (só a do assistente), então este id
+    // otimista nunca é substituído — usar Date.now() colidia (mesma key React) quando
+    // duas mensagens eram enviadas no mesmo milissegundo, sumindo uma bolha do histórico.
     const optimistic: AiChatMessage = {
-      id: `tmp-${Date.now()}`, role: "user", content: q,
+      id: `tmp-${crypto.randomUUID()}`, role: "user", content: q,
       grounded: false, sourceCount: 0, createdAt: null,
     };
     setMessages((m) => [...m, optimistic]);

@@ -6,14 +6,21 @@ Portal web para mestres e jogadores de RPG de mesa: campanhas, fichas dinâmicas
 Documentação: `portal-rpg-arquitetura.md` (arquitetura) · `prompt.md` (spec + matriz E2E) ·
 `E2E-REPORT.md` (status dos cenários) · `DEPLOY.md` (produção).
 
+> **Migração em andamento**: o backend original era Java/Spring Boot (`backend/`), hoje
+> substituído por Route Handlers dentro do próprio Next.js (`frontend/src/app/api/**`).
+> `backend/` fica no repositório só como referência histórica até o cutover de produção
+> ser concluído (ver `DEPLOY.md`) — não use para desenvolvimento novo.
+
 ## Stack
-- **Front:** Next.js (React + TS) — `frontend/`
-- **Back:** Java 21 + Spring Boot 3.5 — `backend/`
-- **Banco:** PostgreSQL + `pgvector`
-- **Migrações:** Flyway
-- **IA/RAG:** pipeline próprio (embedding local + busca vetorial em `pgvector`); geração
-  mockada nos testes e LLM real (Groq, compatível com OpenAI) em produção via env var
-- **Testes:** Testcontainers (`pgvector/pgvector:pg16`), REST-assured/JUnit 5, Playwright (UI E2E)
+- **Front + API:** Next.js (React + TS), Route Handlers como backend — `frontend/`
+- **Banco:** PostgreSQL + `pgvector`, acessado via **Drizzle ORM**
+- **IA/RAG:** pipeline próprio (embedding local determinístico ou Jina + busca vetorial em
+  `pgvector`); geração mockada nos testes (`AI_PROVIDER=echo`) e LLM real (Groq ou Gemini)
+  em produção via env var
+- **Storage:** Supabase Storage para os PDFs enviados (upload direto via signed URL, ou
+  indexado a partir dos bytes em memória quando Storage não está configurado — sem disco
+  local, já que o deploy é serverless)
+- **Testes:** Vitest (unit/integração), Playwright (UI E2E)
 
 ## Material de regras
 Os documentos-fonte de regras (PDF/DOCX) **não** fazem parte do repositório — ficam fora do
@@ -22,52 +29,42 @@ controle de versão (`.gitignore`). Para usar a IA, o material é enviado pela p
 As fixtures de teste usam textos curtos próprios — nenhum conteúdo externo é versionado.
 
 ## Pré-requisitos
-Ambiente sem Docker/JDK completo é contornado por scripts: Podman (rootless) para containers e
-um JDK 21 local. Carregue antes de mexer no backend:
-```bash
-source scripts/env.sh
-```
+- Node.js 22+ (LTS)
+- Docker (ou Podman) para o Postgres/pgvector local
 
 ## Rodar localmente
 
 ### Banco (dev)
 ```bash
-podman-compose up -d        # sobe pgvector/pgvector:pg16 em localhost:5432
-# sem compose? fallback em podman puro:
-scripts/db.sh up            # (down|logs)
+docker compose up -d      # sobe pgvector/pgvector:pg16 em localhost:5432
+```
+Na primeira vez, crie as extensões e o schema:
+```bash
+docker exec portalrpg-db psql -U portalrpg -d portalrpg \
+  -c "CREATE EXTENSION IF NOT EXISTS vector; CREATE EXTENSION IF NOT EXISTS pgcrypto;"
+cd frontend
+npm run db:migrate                     # aplica o schema (drizzle-kit)
+docker exec -i portalrpg-db psql -U portalrpg -d portalrpg < drizzle/0001_ivfflat_index.sql
+npm run db:seed                        # 5 contas fixas (admin@test / Sup3rSenha!, etc.)
 ```
 
-### Backend
+### App (front + API no mesmo processo)
 ```bash
-source scripts/env.sh
-cd backend && ./mvnw spring-boot:run     # profile dev por padrão
-# health: curl localhost:8080/actuator/health
-```
-
-### Frontend
-```bash
-cd frontend && npm run dev               # http://localhost:3000
+cd frontend
+cp .env.example .env.local             # ajuste se necessário
+npm install
+npm run dev                            # http://localhost:3000
 ```
 
 ## Testes
 ```bash
-source scripts/env.sh
-cd backend && ./mvnw test                # sobe pgvector efêmero via Testcontainers
-```
-A suíte **não** usa banco externo nem LLM real — o `pgvector` é efêmero e a geração é mockada
-(só o retrieval é validado de verdade).
-
-E2E de UI (sobe banco + backend + frontend + Playwright):
-```bash
-scripts/e2e.sh                           # 1ª vez: cd frontend && npx playwright install chromium
+cd frontend
+npm test                               # Vitest (unit — inclui paridade do embedding com o Java antigo)
+npm run test:e2e                       # Playwright (banco local rodando + seed aplicado)
 ```
 
 ## Ambientes
-Config 100% por variáveis de ambiente: `backend/src/main/resources/application-{dev,staging,prod}.yml`,
-ativadas por `SPRING_PROFILES_ACTIVE`. Secrets (`DB_*`, `JWT_SECRET`, `GROQ_API_KEY`, …) nunca
-são commitados. Em banco gerenciado, garanta `CREATE EXTENSION vector;`. Passo a passo de produção
-(Render + Supabase + Vercel) em **`DEPLOY.md`**.
-
-## Fases
-`F0` scaffolding · `F1` auth · `F2` sistemas · `F3` campanhas+authz · `F4` ficha+motor de regras ·
-`F5` RAG · `F6` front. Cada fase fecha com seus cenários E2E verdes (ver `prompt.md` §10).
+Config 100% por variáveis de ambiente — ver `frontend/.env.example` para a lista completa
+(`DATABASE_URL`, `JWT_SECRET`, `AI_PROVIDER`, `EMBEDDINGS_PROVIDER`, `SUPABASE_*`, etc.).
+Secrets nunca são commitados. Em banco gerenciado, garanta `CREATE EXTENSION vector;`.
+Passo a passo de produção em **`DEPLOY.md`**.

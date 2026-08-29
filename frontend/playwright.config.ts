@@ -17,7 +17,11 @@ export default defineConfig({
   },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
   webServer: {
-    command: "npm run dev",
+    // Production build: `next dev`'s on-demand (Turbopack) compilation was causing
+    // mid-interaction Fast Refresh remounts that looked like app bugs (elements
+    // detaching, dropped state) but were purely a cold-dev-server artifact — see
+    // e2e/journey.spec.ts / disciplines.spec.ts / ai-chat.spec.ts history.
+    command: "npm run start",
     url: "http://localhost:3000",
     reuseExistingServer: true,
     timeout: 120_000,

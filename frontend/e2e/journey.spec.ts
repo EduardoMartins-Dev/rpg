@@ -38,7 +38,7 @@ test("jornada: admin → sistema → campanha → ficha dinâmica → IA", async
 
   // --- MESTRE: cria campanha nesse sistema e pega o convite ---
   await login(page, "mestre@test");
-  await page.getByTestId("campaign-name").fill(campName);
+  await page.locator("#camp-name").fill(campName);
   await page.getByTestId("campaign-system").selectOption({ label: systemName });
   await page.getByTestId("campaign-create").click();
   await openCampaign(page, campName);

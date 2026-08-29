@@ -60,9 +60,9 @@ export class ApiError extends Error {
 }
 
 /**
- * Lê a resposta com tolerância a corpos não-JSON. O backend sempre responde JSON,
- * mas o proxy/Render pode devolver HTML (ex.: página 502 enquanto a instância acorda)
- * ou texto vazio. Nesses casos NÃO estouramos JSON.parse cru ("unexpected character");
+ * Lê a resposta com tolerância a corpos não-JSON. A API sempre responde JSON, mas a
+ * plataforma pode devolver HTML (ex.: página de erro) ou texto vazio em falhas fora do
+ * nosso controle. Nesses casos NÃO estouramos JSON.parse cru ("unexpected character");
  * lançamos um ApiError com mensagem legível.
  */
 async function readJson(res: Response): Promise<unknown> {

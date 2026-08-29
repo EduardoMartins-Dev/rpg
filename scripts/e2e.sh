@@ -1,37 +1,31 @@
 #!/usr/bin/env bash
-# F6 — UI E2E ponta a ponta (Playwright) contra back+front reais.
-# Sobe: pgvector (podman) -> backend Spring Boot (perfil dev, seed §8) -> Playwright
-# (que sobe o frontend). Tudo derrubado ao final. Usage: scripts/e2e.sh
+# F6 — UI E2E ponta a ponta (Playwright) contra o app Next.js (API + front no mesmo
+# processo desde a migração pra Route Handlers — sem backend Java separado).
+# Sobe: Postgres/pgvector (docker) -> seed dev -> build de produção -> Playwright
+# (que sobe via `next start`). Rodar contra `next dev` foi descartado: o Turbopack
+# recompila sob demanda a cada rota tocada pela primeira vez, e isso remonta
+# componentes NO MEIO da interação do teste (perde estado, solta refs do DOM) —
+# parecia bug de app, mas era só o dev server frio.
+# Tudo derrubado ao final. Usage: scripts/e2e.sh
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-# shellcheck disable=SC1091
-source "$ROOT/scripts/env.sh"
 
 cleanup() {
-  [ -n "${BACK_PID:-}" ] && kill "$BACK_PID" 2>/dev/null || true
-  "$ROOT/scripts/db.sh" down 2>/dev/null || true
+  (cd "$ROOT" && docker compose down 2>/dev/null) || true
 }
 trap cleanup EXIT
 
-echo "== 1/4 banco (pgvector) =="
-"$ROOT/scripts/db.sh" up
+echo "== 1/5 banco (pgvector) =="
+(cd "$ROOT" && docker compose up -d)
 
-echo "== 2/4 backend (perfil dev) =="
-( cd "$ROOT/backend" && SPRING_PROFILES_ACTIVE=dev ./mvnw -q -B spring-boot:run ) \
-  > /tmp/portalrpg-backend.log 2>&1 &
-BACK_PID=$!
+echo "== 2/5 seed dev (contas fixas §8) =="
+(cd "$ROOT/frontend" && npm run db:seed)
 
-echo "aguardando backend em :8080 ..."
-for _ in $(seq 1 90); do
-  if curl -sf http://localhost:8080/actuator/health >/dev/null 2>&1; then
-    echo "backend UP"; break
-  fi
-  sleep 2
-done
-curl -sf http://localhost:8080/actuator/health >/dev/null || { echo "backend não subiu; veja /tmp/portalrpg-backend.log" >&2; exit 1; }
+echo "== 3/5 build de produção =="
+(cd "$ROOT/frontend" && npm run build)
 
-echo "== 3/4 navegador Playwright =="
-( cd "$ROOT/frontend" && npx playwright install chromium )
+echo "== 4/5 navegador Playwright =="
+(cd "$ROOT/frontend" && npx playwright install chromium)
 
-echo "== 4/4 testes E2E de UI =="
-( cd "$ROOT/frontend" && npm run test:e2e )
+echo "== 5/5 testes E2E de UI =="
+(cd "$ROOT/frontend" && npm run test:e2e)

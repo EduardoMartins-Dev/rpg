@@ -6,30 +6,28 @@ on:
   pull_request:
 
 jobs:
-  backend:
-    name: Backend (Testcontainers + Flyway)
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '21'
-          cache: maven
-      # Docker is preinstalled on ubuntu-latest runners -> Testcontainers works out of the box.
-      - name: Run backend tests
-        working-directory: backend
-        run: ./mvnw -B verify
-      - name: Upload surefire reports
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: backend-test-reports
-          path: backend/target/surefire-reports/
-
   frontend:
-    name: Frontend (build + Playwright E2E)
+    name: Frontend + API (lint, typecheck, unit tests, build, Playwright E2E)
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_DB: portalrpg
+          POSTGRES_USER: portalrpg
+          POSTGRES_PASSWORD: portalrpg
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U portalrpg -d portalrpg"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgres://portalrpg:portalrpg@localhost:5432/portalrpg
+      JWT_SECRET: ci-only-insecure-secret-0123456789-abcdef-0123456789-abcdef
+      AI_PROVIDER: echo
+      EMBEDDINGS_PROVIDER: hashing
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -40,13 +38,39 @@ jobs:
       - name: Install deps
         working-directory: frontend
         run: npm ci
+      - name: Create pgvector/pgcrypto extensions
+        run: |
+          PGPASSWORD=portalrpg psql -h localhost -U portalrpg -d portalrpg \
+            -c "CREATE EXTENSION IF NOT EXISTS vector; CREATE EXTENSION IF NOT EXISTS pgcrypto;"
+      - name: Apply schema (drizzle-kit migrate + ivfflat index)
+        working-directory: frontend
+        run: |
+          npx drizzle-kit migrate
+          PGPASSWORD=portalrpg psql -h localhost -U portalrpg -d portalrpg -f drizzle/0001_ivfflat_index.sql
+      - name: Lint
+        working-directory: frontend
+        run: npm run lint
+      - name: Typecheck
+        working-directory: frontend
+        run: npx tsc --noEmit
+      - name: Unit tests (Vitest)
+        working-directory: frontend
+        run: npm test
       - name: Build
         working-directory: frontend
         run: npm run build
-      # Playwright E2E wired in F6 (needs front+back running). Skeleton step:
+      - name: Seed dev accounts (used by Playwright specs)
+        working-directory: frontend
+        run: npx tsx scripts/dev-seed.ts
       - name: Install Playwright browsers
         working-directory: frontend
-        run: npx playwright install --with-deps || true
-      - name: E2E (placeholder until F6)
+        run: npx playwright install --with-deps chromium
+      - name: E2E (Playwright)
         working-directory: frontend
-        run: echo "Playwright UI E2E added in F6"
+        run: npm run test:e2e
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: frontend/playwright-report/
