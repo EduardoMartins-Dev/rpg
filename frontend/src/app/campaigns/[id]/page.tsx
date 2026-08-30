@@ -167,7 +167,7 @@ export default function CampaignDetailPage() {
 
 
   async function deleteCharacter(ch: Character) {
-    if (!confirm(`Excluir a ficha "${ch.name}"? Ação permanente.`)) return;
+    if (!confirm(`Remover a ficha "${ch.name}" desta campanha? Se você a criou em "Personagens", o original continua lá.`)) return;
     setError(null);
     try { await api.del(`/campaigns/${id}/characters/${ch.id}`); await load(); }
     catch (err) { setError(err instanceof Error ? err.message : "erro ao excluir ficha"); }
@@ -383,7 +383,7 @@ export default function CampaignDetailPage() {
                       <Link key={c.id} href={`/campaigns/${id}/characters/${c.id}`}
                         data-testid={`character-open-${c.id}`} style={{ color: "inherit" }}>
                         <div className="sheet-card" data-testid="character-row" style={{ position: "relative" }}>
-                          <button className="ghost" title="Excluir ficha" data-testid={`character-delete-${c.id}`}
+                          <button className="ghost" title="Remover da campanha" data-testid={`character-delete-${c.id}`}
                             style={{ position: "absolute", top: 8, right: 8, padding: "2px 8px", color: "var(--err)" }}
                             onClick={(e) => { e.preventDefault(); e.stopPropagation(); deleteCharacter(c); }}>✕</button>
                           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -412,7 +412,7 @@ export default function CampaignDetailPage() {
                         <Link href={`/campaigns/${id}/characters/${c.id}`} data-testid={`character-open-${c.id}`}>
                           <button>Editar ficha →</button>
                         </Link>
-                        <button className="ghost" title="Excluir ficha" data-testid={`character-delete-${c.id}`}
+                        <button className="ghost" title="Remover da campanha" data-testid={`character-delete-${c.id}`}
                           style={{ padding: "2px 8px", color: "var(--err)" }}
                           onClick={() => deleteCharacter(c)}>✕</button>
                       </div>

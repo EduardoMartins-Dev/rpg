@@ -101,9 +101,12 @@ export function V5Roller({ bloodPotency, traits, initialHunger, initialBp, onRol
     const tens = dice.filter((d) => d.v === 10).length;
     const crits = Math.floor(tens / 2);
     const successes = base + crits * 2;
-    const win = successes >= difficulty;
+    // Dificuldade 0 = "sem dificuldade": o mestre nem sempre a informa, então só
+    // reportamos a contagem de sucessos e deixamos o veredito para a mesa.
+    const hasDiff = difficulty > 0;
+    const win = hasDiff ? successes >= difficulty : successes > 0;
     const messy = crits >= 1 && dice.some((d) => d.hunger && d.v === 10);
-    const bestial = !win && dice.some((d) => d.hunger && d.v === 1);
+    const bestial = dice.some((d) => d.hunger && d.v === 1) && (hasDiff ? !win : successes === 0);
     setRes({ dice, successes, crits, messy, bestial, win, difficulty });
 
     // Rótulo do que foi rolado: usa os traços escolhidos quando o teste veio do
@@ -122,12 +125,12 @@ export function V5Roller({ bloodPotency, traits, initialHunger, initialBp, onRol
     });
   }
 
-  const num = (v: number, set: (n: number) => void, min: number, max: number, label: string, tid?: string) => (
+  const num = (v: number, set: (n: number) => void, min: number, max: number, label: string, tid?: string, fmt?: (n: number) => string) => (
     <div>
       <label style={{ fontSize: 12 }}>{label}</label>
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
         <button className="secondary" onClick={() => set(Math.max(min, v - 1))} style={{ padding: "2px 9px" }}>−</button>
-        <span className="mono" data-testid={tid} style={{ minWidth: 18, textAlign: "center", fontWeight: 600 }}>{v}</span>
+        <span className="mono" data-testid={tid} style={{ minWidth: 18, textAlign: "center", fontWeight: 600 }}>{fmt ? fmt(v) : v}</span>
         <button className="secondary" onClick={() => set(Math.min(max, v + 1))} style={{ padding: "2px 9px" }}>+</button>
       </div>
     </div>
@@ -136,8 +139,9 @@ export function V5Roller({ bloodPotency, traits, initialHunger, initialBp, onRol
   function outcome(r: Result): { label: string; color: string } {
     if (r.win && r.messy) return { label: "Crítico Confuso", color: "var(--warn)" };
     if (r.win && r.crits >= 1) return { label: "Crítico!", color: "var(--accent)" };
-    if (r.win) return { label: "Sucesso", color: "var(--ok)" };
     if (r.bestial) return { label: "Falha Bestial", color: "var(--err)" };
+    if (r.difficulty === 0) return { label: "sem dificuldade", color: "var(--muted)" };
+    if (r.win) return { label: "Sucesso", color: "var(--ok)" };
     return { label: "Falha", color: "var(--muted)" };
   }
 
@@ -200,7 +204,7 @@ export function V5Roller({ bloodPotency, traits, initialHunger, initialBp, onRol
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
         {num(pool, setPool, 1, 20, "Parada (Atrib+Perícia)", "roll-pool")}
         {num(hunger, setHunger, 0, 5, "Fome", "roll-hunger")}
-        {num(difficulty, setDifficulty, 0, 10, "Dificuldade")}
+        {num(difficulty, setDifficulty, 0, 10, "Dificuldade (opcional)", "roll-diff", (v) => (v === 0 ? "—" : String(v)))}
         {num(bp, setBp, 0, 6, "Potência de Sangue")}
       </div>
 
@@ -250,7 +254,7 @@ export function V5Roller({ bloodPotency, traits, initialHunger, initialBp, onRol
             <div style={{ textAlign: "right" }}>
               <div className="kv-label">Sucessos</div>
               <div className="mono" style={{ fontSize: 22, fontWeight: 700, color: "var(--accent)" }} data-testid="roll-successes">
-                {res.successes} <span className="muted" style={{ fontSize: 13 }}>/ {res.difficulty}</span>
+                {res.successes}{res.difficulty > 0 && <span className="muted" style={{ fontSize: 13 }}> / {res.difficulty}</span>}
               </div>
             </div>
           </div>
