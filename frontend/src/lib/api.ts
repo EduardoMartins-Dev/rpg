@@ -171,11 +171,11 @@ export interface Campaign {
 }
 export interface Member { userId: string; email: string; displayName: string; role: string; }
 export interface MyCharacter {
-  id: string; name: string; campaignId: string; campaignName: string;
+  id: string; name: string; campaignId: string | null; campaignName: string | null;
   systemId: string | null; systemName: string;
 }
 export interface Character {
-  id: string; campaignId: string; playerId: string; name: string;
+  id: string; campaignId: string | null; playerId: string; systemId: string | null; name: string;
   sheetData: Record<string, unknown>;
 }
 export interface AskResponse {

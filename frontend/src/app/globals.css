@@ -471,6 +471,9 @@ th { font-size: .72rem; text-transform: uppercase; letter-spacing: .5px; color: 
 .review .panel p { margin: .2rem 0 .6rem; }
 .card-menu { position: absolute; top: 34px; right: 8px; z-index: 30; background: var(--elev); border: 1px solid var(--border); border-radius: 9px; padding: 4px; min-width: 130px; box-shadow: 0 10px 30px rgba(0,0,0,.45); }
 .card-menu button { padding: 8px 10px; font-size: 14px; border-radius: 6px; }
+.card-menu-label { font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); padding: 6px 8px 2px; }
+.card-menu-sep { height: 1px; background: var(--border); margin: 4px 2px; }
+.card-menu { max-width: 240px; max-height: 300px; overflow-y: auto; }
 .menu-backdrop { position: fixed; inset: 0; z-index: 20; }
 .radial { display: block; }
 .radial-ring { fill: none; stroke: var(--border); stroke-width: 1; }

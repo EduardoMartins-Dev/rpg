@@ -141,12 +141,16 @@ export const characters = pgTable(
   "characters",
   {
     id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
-    campaignId: uuid("campaign_id")
-      .notNull()
-      .references(() => campaigns.id, { onDelete: "cascade" }),
+    // Nulo = ficha "avulsa" do jogador (fica em Personagens, fora de qualquer mesa).
+    // Ao adicionar a uma campanha, criamos uma CÓPIA com este campo preenchido —
+    // o template avulso continua do jogador, reutilizável em outras mesas.
+    campaignId: uuid("campaign_id").references(() => campaigns.id, { onDelete: "cascade" }),
     playerId: uuid("player_id")
       .notNull()
       .references(() => users.id),
+    // Sistema da ficha. Usado para o schema/ruleset quando não há campanha (avulsa);
+    // nas fichas de campanha o sistema também vem daqui (preenchido = o da campanha).
+    systemId: uuid("system_id").references(() => rpgSystems.id),
     name: varchar("name", { length: 255 }).notNull(),
     sheetData: jsonb("sheet_data").notNull().default({}),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().default(sql`now()`),
