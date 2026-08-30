@@ -37,13 +37,20 @@ function createClient(): postgres.Sql {
   if (!url) {
     throw new Error("DATABASE_URL is not set");
   }
-  // Low `max`: each serverless function instance keeps a tiny pool of its
-  // own, and the real pooling happens upstream (Supabase Session Pooler).
-  // Reused across warm invocations via the global singleton below so we
-  // don't open a fresh connection per request in dev (hot reload) either.
+  // Serverless: cada instância da função abre no MÁXIMO 1 conexão. Muitas instâncias
+  // concorrentes com um pool maior saturam o limite do pooler do Supabase e os requests
+  // ficam presos esperando conexão. Com max:1 o pooling de verdade fica a cargo do
+  // Supabase (idealmente o pooler de TRANSAÇÃO, porta 6543 — para serverless). O
+  // singleton global abaixo reaproveita a conexão entre invocações "quentes".
+  //
+  // prepare:false é obrigatório no pooler de Transação (pooling por statement não
+  // suporta prepared statements) e inofensivo no de Sessão — deixa o app compatível
+  // com os dois, então dá para trocar a DATABASE_URL para a 6543 sem mexer no código.
   return postgres(url, {
-    max: 5,
+    max: 1,
     idle_timeout: 20,
+    connect_timeout: 15,
+    prepare: false,
     ssl: resolveSsl(url),
   });
 }
