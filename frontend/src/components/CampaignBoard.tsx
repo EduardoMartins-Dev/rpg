@@ -1,44 +1,75 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { api, uploadFile, type BoardItem } from "@/lib/api";
+import { api, uploadFile, type BoardItem, type Folder } from "@/lib/api";
 import { compressImage } from "@/lib/image";
 import { AuthImage } from "@/components/AuthImage";
 
 type Draft = { title: string; body: string; imageUrl: string };
 const EMPTY: Draft = { title: "", body: "", imageUrl: "" };
 
+/** Caminho da raiz até a pasta `id` (para a trilha de navegação). */
+function pathTo(folders: Folder[], id: string | null): Folder[] {
+  const byId = new Map(folders.map((f) => [f.id, f]));
+  const out: Folder[] = [];
+  let cur = id ? byId.get(id) : undefined;
+  const seen = new Set<string>();
+  while (cur && !seen.has(cur.id)) {
+    seen.add(cur.id);
+    out.unshift(cur);
+    cur = cur.parentId ? byId.get(cur.parentId) : undefined;
+  }
+  return out;
+}
+
 /**
- * Mural da campanha. Qualquer membro lê; só o mestre cria/edita/exclui cards.
- * Card = título/texto/imagem opcionais. A imagem pode vir do dispositivo (upload,
- * comprimido no navegador) ou de uma URL colada. Ordenável (subir/descer).
+ * Mural da campanha, organizado em PASTAS aninhadas (só o mestre cria/organiza; qualquer
+ * membro navega e lê). Cada card vive numa pasta (ou na raiz). Navega-se como um explorador
+ * de arquivos: trilha no topo, subpastas como blocos, cards da pasta atual abaixo.
  */
 export function CampaignBoard({ campaignId, isMaster }: { campaignId: string; isMaster: boolean }) {
   const [items, setItems] = useState<BoardItem[]>([]);
+  const [folders, setFolders] = useState<Folder[]>([]);
+  const [current, setCurrent] = useState<string | null>(null); // pasta atual (null = raiz)
   const [error, setError] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [draft, setDraft] = useState<Draft>(EMPTY);
   const [editing, setEditing] = useState<string | null>(null);
   const [editDraft, setEditDraft] = useState<Draft>(EMPTY);
+  const [addingFolder, setAddingFolder] = useState(false);
+  const [folderName, setFolderName] = useState("");
   // Imagem aberta em tela cheia (lightbox). Qualquer membro pode ampliar para usar na mesa.
   const [zoom, setZoom] = useState<{ src: string; alt: string } | null>(null);
 
   const load = useCallback(async () => {
     setError(null);
-    try { setItems(await api.get<BoardItem[]>(`/campaigns/${campaignId}/board`)); }
-    catch (err) { setError(err instanceof Error ? err.message : "erro ao carregar o mural"); }
+    try {
+      const [its, fs] = await Promise.all([
+        api.get<BoardItem[]>(`/campaigns/${campaignId}/board`),
+        api.get<Folder[]>(`/campaigns/${campaignId}/folders?kind=board`),
+      ]);
+      setItems(its);
+      setFolders(fs);
+    } catch (err) { setError(err instanceof Error ? err.message : "erro ao carregar o mural"); }
   }, [campaignId]);
 
   useEffect(() => { load(); }, [load]);
 
   const empty = (d: Draft) => !d.title.trim() && !d.body.trim() && !d.imageUrl.trim();
 
+  const subfolders = folders.filter((f) => (f.parentId ?? null) === current);
+  const folderItems = items.filter((it) => (it.folderId ?? null) === current);
+  const crumbs = pathTo(folders, current);
+  const countIn = (fid: string) =>
+    items.filter((it) => it.folderId === fid).length + folders.filter((f) => f.parentId === fid).length;
+  const folderLabel = (f: Folder) => pathTo(folders, f.id).map((x) => x.name).join(" / ");
+
   async function add(e: React.FormEvent) {
     e.preventDefault();
     if (empty(draft)) return;
     setError(null);
     try {
-      await api.post(`/campaigns/${campaignId}/board`, draft);
+      await api.post(`/campaigns/${campaignId}/board`, { ...draft, folderId: current });
       setDraft(EMPTY); setCreating(false); await load();
     } catch (err) { setError(err instanceof Error ? err.message : "erro ao publicar card"); }
   }
@@ -64,33 +95,91 @@ export function CampaignBoard({ campaignId, isMaster }: { campaignId: string; is
     catch (err) { setError(err instanceof Error ? err.message : "erro ao excluir card"); }
   }
 
-  // Troca a ordem com o vizinho persistindo o sort_order de ambos.
-  async function move(idx: number, dir: -1 | 1) {
-    const j = idx + dir;
-    if (j < 0 || j >= items.length) return;
-    const a = items[idx], b = items[j];
+  async function moveItem(it: BoardItem, folderId: string | null) {
     setError(null);
     try {
-      await api.put(`/campaigns/${campaignId}/board/${a.id}`, {
-        title: a.title, body: a.body, imageUrl: a.imageUrl, sortOrder: b.sortOrder,
-      });
-      await api.put(`/campaigns/${campaignId}/board/${b.id}`, {
-        title: b.title, body: b.body, imageUrl: b.imageUrl, sortOrder: a.sortOrder,
+      await api.put(`/campaigns/${campaignId}/board/${it.id}`, {
+        title: it.title, body: it.body, imageUrl: it.imageUrl, sortOrder: it.sortOrder, folderId,
       });
       await load();
+    } catch (err) { setError(err instanceof Error ? err.message : "erro ao mover card"); }
+  }
+
+  // Troca a ordem com o vizinho DENTRO da pasta atual (sem tocar na pasta).
+  async function reorder(idx: number, dir: -1 | 1) {
+    const j = idx + dir;
+    if (j < 0 || j >= folderItems.length) return;
+    const a = folderItems[idx], b = folderItems[j];
+    setError(null);
+    try {
+      await api.put(`/campaigns/${campaignId}/board/${a.id}`, { title: a.title, body: a.body, imageUrl: a.imageUrl, sortOrder: b.sortOrder });
+      await api.put(`/campaigns/${campaignId}/board/${b.id}`, { title: b.title, body: b.body, imageUrl: b.imageUrl, sortOrder: a.sortOrder });
+      await load();
     } catch (err) { setError(err instanceof Error ? err.message : "erro ao reordenar"); }
+  }
+
+  async function createFolder(e: React.FormEvent) {
+    e.preventDefault();
+    if (!folderName.trim()) return;
+    setError(null);
+    try {
+      await api.post(`/campaigns/${campaignId}/folders`, { kind: "board", name: folderName.trim(), parentId: current });
+      setFolderName(""); setAddingFolder(false); await load();
+    } catch (err) { setError(err instanceof Error ? err.message : "erro ao criar pasta"); }
+  }
+
+  async function renameFolder(f: Folder) {
+    const name = prompt("Novo nome da pasta:", f.name);
+    if (name == null || !name.trim()) return;
+    setError(null);
+    try { await api.put(`/campaigns/${campaignId}/folders/${f.id}`, { name: name.trim() }); await load(); }
+    catch (err) { setError(err instanceof Error ? err.message : "erro ao renomear pasta"); }
+  }
+
+  async function removeFolder(f: Folder) {
+    if (!confirm(`Excluir a pasta "${f.name}"? As subpastas somem e os itens dentro voltam para "sem pasta".`)) return;
+    setError(null);
+    try {
+      await api.del(`/campaigns/${campaignId}/folders/${f.id}`);
+      // se a pasta atual estava dentro da excluída, sobe para a pasta-mãe dela
+      if (current === f.id || crumbs.some((c) => c.id === f.id)) setCurrent(f.parentId ?? null);
+      await load();
+    } catch (err) { setError(err instanceof Error ? err.message : "erro ao excluir pasta"); }
   }
 
   return (
     <div data-testid="campaign-board">
       <div className="board-head">
         <span className="muted" style={{ fontSize: 14 }}>
-          {isMaster ? "Publique cards com lore, ganchos, mapas e imagens para a mesa." : "Mural da crônica — publicado pelo mestre."}
+          {isMaster ? "Organize em pastas: lore, mapas, locais, documentos da sessão…" : "Mural da crônica — organizado pelo mestre."}
         </span>
-        {isMaster && !creating && (
-          <button data-testid="board-new" onClick={() => setCreating(true)}>+ Novo card</button>
+        {isMaster && (
+          <div style={{ display: "flex", gap: 8 }}>
+            {!addingFolder && <button className="secondary" data-testid="folder-new" onClick={() => setAddingFolder(true)}>+ Nova pasta</button>}
+            {!creating && <button data-testid="board-new" onClick={() => setCreating(true)}>+ Novo card</button>}
+          </div>
         )}
       </div>
+
+      {/* Trilha de navegação (raiz → … → pasta atual) */}
+      <div className="folder-crumbs" data-testid="folder-crumbs">
+        <button className={`crumb${current === null ? " on" : ""}`} onClick={() => setCurrent(null)}>Mural</button>
+        {crumbs.map((f) => (
+          <span key={f.id} className="crumb-group">
+            <span className="crumb-sep">›</span>
+            <button className={`crumb${current === f.id ? " on" : ""}`} onClick={() => setCurrent(f.id)}>{f.name}</button>
+          </span>
+        ))}
+      </div>
+
+      {isMaster && addingFolder && (
+        <form className="panel board-form" onSubmit={createFolder} data-testid="folder-form" style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+          <input data-testid="folder-name" value={folderName} placeholder={`Nome da pasta em "${crumbs.length ? crumbs[crumbs.length - 1].name : "Mural"}"`}
+            onChange={(e) => setFolderName(e.target.value)} autoFocus style={{ flex: 1 }} />
+          <button type="submit" data-testid="folder-create" disabled={!folderName.trim()}>Criar pasta</button>
+          <button type="button" className="secondary" onClick={() => { setAddingFolder(false); setFolderName(""); }}>Cancelar</button>
+        </form>
+      )}
 
       {isMaster && creating && (
         <form className="panel board-form" onSubmit={add} data-testid="board-form">
@@ -106,14 +195,35 @@ export function CampaignBoard({ campaignId, isMaster }: { campaignId: string; is
             testid="board-image"
           />
           <div className="board-form-actions">
-            <button type="submit" data-testid="board-publish" disabled={empty(draft)}>Publicar</button>
+            <button type="submit" data-testid="board-publish" disabled={empty(draft)}>Publicar em “{crumbs.length ? crumbs[crumbs.length - 1].name : "Mural"}”</button>
             <button type="button" className="secondary" onClick={() => { setCreating(false); setDraft(EMPTY); }}>Cancelar</button>
           </div>
         </form>
       )}
 
+      {/* Subpastas da pasta atual */}
+      {subfolders.length > 0 && (
+        <div className="folder-tiles" data-testid="folder-tiles">
+          {subfolders.map((f) => (
+            <div key={f.id} className="folder-tile" data-testid="folder-tile">
+              <button className="folder-tile-open" onClick={() => setCurrent(f.id)} data-testid={`folder-open-${f.id}`}>
+                <span className="folder-ico">📁</span>
+                <span className="folder-tile-name">{f.name}</span>
+                <span className="folder-tile-count">{countIn(f.id)} item(s)</span>
+              </button>
+              {isMaster && (
+                <div className="folder-tile-actions">
+                  <button className="ghost" title="Renomear" data-testid={`folder-rename-${f.id}`} onClick={() => renameFolder(f)}>✎</button>
+                  <button className="ghost" title="Excluir pasta" data-testid={`folder-delete-${f.id}`} onClick={() => removeFolder(f)} style={{ color: "var(--err)" }}>✕</button>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
       <div className="board-grid" data-testid="board-list">
-        {items.map((it, idx) => (
+        {folderItems.map((it, idx) => (
           <div key={it.id} className="panel board-card" data-testid="board-card">
             {editing === it.id ? (
               <div className="board-card-edit">
@@ -148,10 +258,15 @@ export function CampaignBoard({ campaignId, isMaster }: { campaignId: string; is
                   {it.body && <p className="muted" style={{ margin: 0, lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{it.body}</p>}
                   {isMaster && (
                     <div className="board-card-actions">
-                      <button className="ghost" title="Subir" aria-label="Subir card" onClick={() => move(idx, -1)} disabled={idx === 0}>↑</button>
-                      <button className="ghost" title="Descer" aria-label="Descer card" onClick={() => move(idx, 1)} disabled={idx === items.length - 1}>↓</button>
+                      <button className="ghost" title="Subir" aria-label="Subir card" onClick={() => reorder(idx, -1)} disabled={idx === 0}>↑</button>
+                      <button className="ghost" title="Descer" aria-label="Descer card" onClick={() => reorder(idx, 1)} disabled={idx === folderItems.length - 1}>↓</button>
                       <button className="ghost" data-testid={`board-edit-${it.id}`} onClick={() => startEdit(it)}>Editar</button>
                       <button className="ghost" data-testid={`board-delete-${it.id}`} onClick={() => remove(it)} style={{ color: "var(--err)" }}>Excluir</button>
+                      <select className="board-move" data-testid={`board-move-${it.id}`} title="Mover para pasta"
+                        value={it.folderId ?? ""} onChange={(e) => moveItem(it, e.target.value || null)}>
+                        <option value="">📂 Mural (raiz)</option>
+                        {folders.map((f) => <option key={f.id} value={f.id}>📁 {folderLabel(f)}</option>)}
+                      </select>
                     </div>
                   )}
                 </div>
@@ -161,9 +276,11 @@ export function CampaignBoard({ campaignId, isMaster }: { campaignId: string; is
         ))}
       </div>
 
-      {items.length === 0 && (
+      {subfolders.length === 0 && folderItems.length === 0 && (
         <p className="empty" style={{ marginTop: 12 }} data-testid="board-empty">
-          {isMaster ? "Mural vazio. Crie o primeiro card." : "O mestre ainda não publicou nada no mural."}
+          {isMaster
+            ? (current === null ? "Mural vazio. Crie uma pasta ou um card." : "Pasta vazia. Adicione um card ou uma subpasta.")
+            : "Nada por aqui ainda."}
         </p>
       )}
       {error && <p className="error" data-testid="board-error" style={{ marginTop: 14 }}>⚠ {error}</p>}

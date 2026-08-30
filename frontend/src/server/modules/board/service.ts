@@ -1,6 +1,6 @@
-import { asc, count, eq } from "drizzle-orm";
+import { and, asc, count, eq } from "drizzle-orm";
 import { db } from "@/server/db/client";
-import { campaignBoardItems } from "@/server/db/schema";
+import { campaignBoardItems, campaignFolders } from "@/server/db/schema";
 import { ApiError } from "@/server/http/errors";
 import type { z } from "zod";
 import type { boardItemRequestSchema } from "./schemas";
@@ -8,6 +8,7 @@ import type { boardItemRequestSchema } from "./schemas";
 export type BoardItemResponse = {
   id: string;
   campaignId: string;
+  folderId: string | null;
   title: string | null;
   body: string | null;
   imageUrl: string | null;
@@ -20,6 +21,7 @@ function toResponse(i: typeof campaignBoardItems.$inferSelect): BoardItemRespons
   return {
     id: i.id,
     campaignId: i.campaignId,
+    folderId: i.folderId,
     title: i.title,
     body: i.body,
     imageUrl: i.imageUrl,
@@ -27,6 +29,17 @@ function toResponse(i: typeof campaignBoardItems.$inferSelect): BoardItemRespons
     createdAt: i.createdAt.toISOString(),
     updatedAt: i.updatedAt.toISOString(),
   };
+}
+
+/** Garante que a pasta (se informada) é deste mural (mesma campanha, kind=board). */
+async function assertFolder(campaignId: string, folderId: string | null | undefined): Promise<void> {
+  if (!folderId) return;
+  const [f] = await db
+    .select({ id: campaignFolders.id })
+    .from(campaignFolders)
+    .where(and(eq(campaignFolders.id, folderId), eq(campaignFolders.campaignId, campaignId), eq(campaignFolders.kind, "board")))
+    .limit(1);
+  if (!f) throw ApiError.badRequest("folder not found in this campaign");
 }
 
 function trim(s: string | null | undefined): string | null {
@@ -61,6 +74,7 @@ export async function list(campaignId: string): Promise<BoardItemResponse[]> {
 
 export async function create(campaignId: string, req: z.infer<typeof boardItemRequestSchema>): Promise<BoardItemResponse> {
   validateContent(req);
+  await assertFolder(campaignId, req.folderId);
   let order = req.sortOrder ?? null;
   if (order == null) {
     const [row] = await db.select({ n: count() }).from(campaignBoardItems).where(eq(campaignBoardItems.campaignId, campaignId));
@@ -68,7 +82,7 @@ export async function create(campaignId: string, req: z.infer<typeof boardItemRe
   }
   const [item] = await db
     .insert(campaignBoardItems)
-    .values({ campaignId, title: trim(req.title), body: trim(req.body), imageUrl: trim(req.imageUrl), sortOrder: order })
+    .values({ campaignId, folderId: req.folderId ?? null, title: trim(req.title), body: trim(req.body), imageUrl: trim(req.imageUrl), sortOrder: order })
     .returning();
   return toResponse(item);
 }
@@ -76,6 +90,8 @@ export async function create(campaignId: string, req: z.infer<typeof boardItemRe
 export async function update(campaignId: string, itemId: string, req: z.infer<typeof boardItemRequestSchema>): Promise<BoardItemResponse> {
   validateContent(req);
   await load(campaignId, itemId);
+  // folderId só muda quando a chave vem no corpo (undefined = mantém; null = tira da pasta).
+  if (req.folderId !== undefined) await assertFolder(campaignId, req.folderId);
   const [updated] = await db
     .update(campaignBoardItems)
     .set({
@@ -84,6 +100,7 @@ export async function update(campaignId: string, itemId: string, req: z.infer<ty
       imageUrl: trim(req.imageUrl),
       updatedAt: new Date(),
       ...(req.sortOrder != null ? { sortOrder: req.sortOrder } : {}),
+      ...(req.folderId !== undefined ? { folderId: req.folderId } : {}),
     })
     .where(eq(campaignBoardItems.id, itemId))
     .returning();

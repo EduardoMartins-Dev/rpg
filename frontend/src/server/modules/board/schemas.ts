@@ -5,4 +5,5 @@ export const boardItemRequestSchema = z.object({
   body: z.string().nullish(),
   imageUrl: z.string().max(2048, "size must be between 0 and 2048").nullish(),
   sortOrder: z.number().int().nullish(),
+  folderId: z.string().uuid("must be a valid id").nullish(),
 });

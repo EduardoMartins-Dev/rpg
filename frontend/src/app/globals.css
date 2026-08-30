@@ -192,6 +192,26 @@ th { font-size: .72rem; text-transform: uppercase; letter-spacing: .5px; color: 
 @media (max-width: 860px) { .camp-grid { grid-template-columns: 1fr; } }
 .board-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 18px; align-items: start; }
 
+/* Pastas do mural/anotações: trilha, blocos de pasta e o seletor "mover". */
+.folder-crumbs { display: flex; align-items: center; flex-wrap: wrap; gap: 2px; margin: 0 0 14px; }
+.folder-crumbs .crumb { background: none; border: 0; padding: 3px 8px; border-radius: 7px; color: var(--muted); font-size: 14px; cursor: pointer; }
+.folder-crumbs .crumb:hover { background: var(--elev); color: var(--text); }
+.folder-crumbs .crumb.on { color: var(--text); font-weight: 600; }
+.folder-crumbs .crumb-sep { color: var(--border); padding: 0 1px; }
+.folder-crumbs .crumb-group { display: inline-flex; align-items: center; }
+.folder-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; margin: 0 0 18px; }
+.folder-tile { display: flex; align-items: stretch; gap: 6px; }
+.folder-tile-open { flex: 1; display: flex; align-items: center; gap: 10px; text-align: left; padding: 14px 15px; border: 1px solid var(--border); border-radius: 11px; background: var(--surface); cursor: pointer; transition: border-color .15s, background .15s; min-width: 0; }
+.folder-tile-open:hover { border-color: var(--accent); background: var(--elev); }
+.folder-ico { font-size: 20px; line-height: 1; }
+.folder-tile-name { flex: 1; font-family: var(--serif); font-weight: 600; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.folder-tile-count { font-size: 11px; color: var(--muted); white-space: nowrap; }
+/* Em fluxo, ao lado do bloco — sempre visíveis (em toque/celular não há hover). */
+.folder-tile-actions { display: flex; flex-direction: column; justify-content: center; gap: 4px; }
+.folder-tile-actions .ghost { padding: 4px 8px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; font-size: 13px; line-height: 1; }
+.folder-tile-actions .ghost:hover { border-color: var(--accent); }
+.board-move { max-width: 150px; padding: 2px 6px; font-size: 12px; }
+
 /* Anotações: cartão estilo diário/pergaminho, distinto dos cards do mural. */
 .notes-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; align-items: start; }
 .note-card {

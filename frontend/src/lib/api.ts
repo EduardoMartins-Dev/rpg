@@ -197,14 +197,18 @@ export interface SendMessageResponse { conversationId: string; title: string; an
 
 // --- anotações da campanha (player escreve; mestre vê todas) -----------------
 export interface CampaignNote {
-  id: string; authorId: string; authorName: string; title: string | null;
+  id: string; authorId: string; authorName: string; folderId: string | null; title: string | null;
   body: string; canEdit: boolean; createdAt: string | null; updatedAt: string | null;
 }
 
 // --- mural da campanha (cards livres do mestre) ------------------------------
 export interface BoardItem {
-  id: string; campaignId: string; title: string | null; body: string | null;
+  id: string; campaignId: string; folderId: string | null; title: string | null; body: string | null;
   imageUrl: string | null; sortOrder: number; createdAt: string | null; updatedAt: string | null;
+}
+export interface Folder {
+  id: string; campaignId: string; kind: "board" | "notes"; parentId: string | null;
+  name: string; sortOrder: number; createdAt: string;
 }
 export interface CampaignRoll {
   id: string; userId: string; playerName: string; characterName: string | null;

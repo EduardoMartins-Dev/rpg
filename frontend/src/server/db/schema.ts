@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import {
+  type AnyPgColumn,
   boolean,
   customType,
   index,
@@ -159,6 +160,28 @@ export const characters = pgTable(
 );
 
 // V3
+/**
+ * Pastas (aninháveis) para organizar o Mural e as Anotações. kind separa as duas
+ * árvores por campanha; parentId aponta para a pasta-mãe (nulo = raiz). Excluir uma
+ * pasta apaga suas subpastas (cascade); os itens dentro dela voltam para "sem pasta"
+ * (folder_id vira nulo), nunca são perdidos.
+ */
+export const campaignFolders = pgTable(
+  "campaign_folders",
+  {
+    id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+    campaignId: uuid("campaign_id")
+      .notNull()
+      .references(() => campaigns.id, { onDelete: "cascade" }),
+    kind: varchar("kind", { length: 16 }).notNull(), // "board" | "notes"
+    parentId: uuid("parent_id").references((): AnyPgColumn => campaignFolders.id, { onDelete: "cascade" }),
+    name: varchar("name", { length: 255 }).notNull(),
+    sortOrder: integer("sort_order").notNull().default(0),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().default(sql`now()`),
+  },
+  (t) => [index("idx_campaign_folders").on(t.campaignId, t.kind, t.parentId, t.sortOrder)],
+);
+
 export const campaignBoardItems = pgTable(
   "campaign_board_items",
   {
@@ -166,6 +189,7 @@ export const campaignBoardItems = pgTable(
     campaignId: uuid("campaign_id")
       .notNull()
       .references(() => campaigns.id, { onDelete: "cascade" }),
+    folderId: uuid("folder_id").references(() => campaignFolders.id, { onDelete: "set null" }),
     title: varchar("title", { length: 255 }),
     body: text("body"),
     imageUrl: text("image_url"),
@@ -252,6 +276,7 @@ export const campaignNotes = pgTable(
     authorId: uuid("author_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
+    folderId: uuid("folder_id").references(() => campaignFolders.id, { onDelete: "set null" }),
     title: varchar("title", { length: 255 }),
     body: text("body").notNull().default(""),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().default(sql`now()`),
