@@ -126,7 +126,11 @@ export function DynamicSheet({
   function setNumGroup(group: "attributes" | "skills", key: string, raw: string) {
     const current = (sheet[group] as Record<string, number>) ?? {};
     const next = { ...current };
-    if (raw === "") delete next[key]; else next[key] = Number(raw);
+    // Trava em 1–5 no cliente (o servidor também valida): sem isto, digitar 9 no campo só
+    // falhava no salvar. Vazio ou ≤0 = traço não comprado (perícia destreinada), então remove.
+    const n = Math.floor(Number(raw));
+    if (raw === "" || !Number.isFinite(n) || n <= 0) delete next[key];
+    else next[key] = Math.min(5, n);
     onChange({ ...sheet, [group]: next });
   }
   const set = <T,>(key: string, v: T) => setTop(key, v);
@@ -336,7 +340,8 @@ export function DynamicSheet({
               <div>
                 <label htmlFor="sheet-hunger">Fome (0–5)</label>
                 <input id="sheet-hunger" data-testid="sheet-hunger" type="number" min={0} max={5}
-                  value={(sheet.hunger as number) ?? 0} onChange={(e) => setTop("hunger", Number(e.target.value))} />
+                  value={(sheet.hunger as number) ?? 0}
+                  onChange={(e) => setTop("hunger", Math.max(0, Math.min(5, Math.floor(Number(e.target.value)) || 0)))} />
               </div>
             </div>
             <h3>Atributos <span className="muted" style={{ fontSize: ".8rem" }}>(1 com 4 · 3 com 3 · 4 com 2 · 1 com 1)</span></h3>

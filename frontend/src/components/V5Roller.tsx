@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { BloodPotencyView } from "@/lib/api";
 
 /**
@@ -58,6 +58,13 @@ export function V5Roller({ bloodPotency, traits, initialHunger, initialBp, onRol
   const [rouse, setRouse] = useState<{ v: number; ok: boolean } | null>(null);
   const [selAttr, setSelAttr] = useState("");
   const [selSkill, setSelSkill] = useState("");
+
+  // Ressincroniza com a ficha quando ela muda na mesma sessão: um Rouse/Alimentar (Fome)
+  // ou uma mudança de Potência de Sangue tem de refletir aqui, senão a reserva rola com
+  // um número de dados de Fome defasado. O jogador ainda pode ajustar manualmente entre
+  // mudanças — o efeito só dispara quando o valor vindo da ficha realmente muda.
+  useEffect(() => { if (initialHunger != null) setHunger(initialHunger); }, [initialHunger]);
+  useEffect(() => { if (initialBp != null) setBp(initialBp); }, [initialBp]);
 
   // Monta a reserva a partir dos traços escolhidos: Atributo + Perícia (regra V5).
   function buildPool(attrKey: string, skillKey: string) {

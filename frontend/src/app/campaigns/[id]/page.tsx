@@ -420,7 +420,7 @@ export default function CampaignDetailPage() {
             <div>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16, flexWrap: "wrap", gap: 10 }}>
                 <span className="muted" style={{ fontSize: 14 }}>
-                  {isMaster ? "Você é Mestre — vê todas as fichas." : "Sua ficha nesta campanha."}
+                  {isMaster ? "Você é Mestre — vê todas as fichas." : "Suas fichas nesta campanha."}
                 </span>
                 <form onSubmit={createCharacter} style={{ display: "flex", gap: 8 }}>
                   <input data-testid="char-name" value={charName} placeholder="nome do personagem"
