@@ -1,5 +1,6 @@
 import { ApiError } from "@/server/http/errors";
 import { SYSTEM_PROMPT } from "../prompts";
+import { providerErrorDetail } from "./providerError";
 import type { ChatModel, RetrievedChunk, Turn } from "../types";
 
 /**
@@ -13,7 +14,10 @@ export const groqChatModel: ChatModel = {
       throw new Error("AI_PROVIDER=groq requires GROQ_API_KEY");
     }
     const baseUrl = process.env.GROQ_BASE_URL ?? "https://api.groq.com/openai/v1";
-    const model = process.env.GROQ_MODEL ?? "llama-3.3-70b-versatile";
+    // llama-3.3-70b-versatile era o padrão herdado do backend Java, mas passou a ser
+    // Enterprise ("Contact Sales") na Groq: chave comum recebe 404 "model does not
+    // exist or you do not have access to it". gpt-oss-120b é disponibilidade geral.
+    const model = process.env.GROQ_MODEL ?? "openai/gpt-oss-120b";
 
     const context = sources.map((s) => s.content).join("\n---\n");
     const messages: Array<{ role: string; content: string }> = [{ role: "system", content: SYSTEM_PROMPT }];
@@ -36,7 +40,9 @@ export const groqChatModel: ChatModel = {
       throw ApiError.badGateway(`AI provider error: ${e instanceof Error ? e.message : "network error"}`);
     }
     if (!res.ok) {
-      throw ApiError.badGateway(`AI provider error: groq returned ${res.status}`);
+      const detalhe = await providerErrorDetail(res, "groq");
+      console.error(`[groq] modelo="${model}" ${detalhe}`);
+      throw ApiError.badGateway(`Erro do provedor de IA — ${detalhe} (modelo: ${model})`);
     }
     const body = (await res.json()) as { choices?: Array<{ message?: { content?: string } }> };
     const content = body.choices?.[0]?.message?.content;

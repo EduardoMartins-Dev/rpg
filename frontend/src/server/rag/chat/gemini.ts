@@ -1,5 +1,6 @@
 import { ApiError } from "@/server/http/errors";
 import { SYSTEM_PROMPT } from "../prompts";
+import { providerErrorDetail } from "./providerError";
 import type { ChatModel, RetrievedChunk, Turn } from "../types";
 
 // Generous output cap — avoids an accidental giant response without truncating real ones.
@@ -70,12 +71,14 @@ export const geminiChatModel: ChatModel = {
         throw ApiError.badGateway(`AI provider error: ${e instanceof Error ? e.message : "network error"}`);
       }
       if (!res.ok) {
+        const detalhe = await providerErrorDetail(res, "gemini");
         if ((res.status === 429 || res.status >= 500) && attempt < MAX_RETRIES - 1) {
-          lastMessage = `gemini returned ${res.status}`;
+          lastMessage = detalhe;
           await sleep(RETRY_WAIT_MS * (attempt + 1));
           continue;
         }
-        throw ApiError.badGateway(`AI provider error: gemini returned ${res.status}`);
+        console.error(`[gemini] modelo="${model}" ${detalhe}`);
+        throw ApiError.badGateway(`Erro do provedor de IA — ${detalhe} (modelo: ${model})`);
       }
       const json = (await res.json()) as GeminiResponse;
       const text = firstText(json);

@@ -15,8 +15,18 @@ import * as V5CatalogText from "@/server/rules/v5/catalogText";
 import type { RetrievedChunk } from "./types";
 
 export const FALLBACK = "Não há material indexado para este sistema; não posso responder com base no livro.";
-// High TOP_K to cover every power of a discipline (each power is its own chunk).
-const TOP_K = 40;
+
+/**
+ * Quantos trechos vão para o gerador. Alto por padrão para cobrir todos os poderes de
+ * uma disciplina (cada poder é um trecho) — dimensionado para modelos de contexto
+ * grande, como o Gemini.
+ *
+ * Configurável porque é o que decide se o prompt cabe no limite do provedor: 40 trechos
+ * de até 1100 caracteres passam de 12 mil tokens, o que estoura o teto por minuto de
+ * planos menores (a Groq, por exemplo, dá 8 mil tokens/min nos modelos de uso geral) e
+ * derruba a pergunta com erro de limite. Baixe RAG_TOP_K nesses casos.
+ */
+const TOP_K = Math.max(1, Number(process.env.RAG_TOP_K ?? 40) || 40);
 // Passages per power in targeted retrieval. 3 gives slack for similar names (e.g.
 // Draught of Elegance vs Draught of Endurance) — the right body comes along too.
 const PER_POWER_K = 3;
