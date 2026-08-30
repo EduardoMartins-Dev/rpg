@@ -108,9 +108,9 @@ export function CampaignNotes({ campaignId, isMaster }: { campaignId: string; is
         </form>
       )}
 
-      <div className="board-grid" data-testid="notes-list">
+      <div className="notes-grid" data-testid="notes-list">
         {shown.map((n) => (
-          <div key={n.id} className="panel board-card" data-testid="note-card" style={{ margin: 0, display: "flex", flexDirection: "column", gap: 8 }}>
+          <div key={n.id} className="note-card" data-testid="note-card">
             {editing === n.id ? (
               <>
                 <input value={editDraft.title} placeholder="Título"
@@ -124,15 +124,15 @@ export function CampaignNotes({ campaignId, isMaster }: { campaignId: string; is
               </>
             ) : (
               <>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
-                  {n.title ? <h3 style={{ margin: 0, fontFamily: "var(--serif)", fontSize: 16 }}>{n.title}</h3> : <span className="muted" style={{ fontSize: 13 }}>sem título</span>}
+                <div className="note-card__head">
+                  {n.title ? <h3 className="note-card__title">{n.title}</h3> : <span className="muted" style={{ fontSize: 13 }}>sem título</span>}
                   {isMaster && <span className="badge" data-testid="note-author">{n.authorName}</span>}
                 </div>
-                <p style={{ margin: 0, lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{n.body || <span className="muted">—</span>}</p>
+                <p className="note-card__body">{n.body || <span className="muted">—</span>}</p>
                 {n.canEdit && (
-                  <div style={{ display: "flex", gap: 6, marginTop: "auto", paddingTop: 8, borderTop: "1px solid var(--border)" }}>
-                    <button className="ghost" data-testid={`note-edit-${n.id}`} onClick={() => startEdit(n)} style={{ padding: "2px 8px" }}>Editar</button>
-                    <button className="ghost" data-testid={`note-delete-${n.id}`} onClick={() => remove(n)} style={{ padding: "2px 8px", color: "var(--err)" }}>Excluir</button>
+                  <div className="note-card__foot">
+                    <button className="ghost" data-testid={`note-edit-${n.id}`} onClick={() => startEdit(n)}>Editar</button>
+                    <button className="ghost" data-testid={`note-delete-${n.id}`} onClick={() => remove(n)} style={{ color: "var(--err)" }}>Excluir</button>
                   </div>
                 )}
               </>

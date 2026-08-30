@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useRequireUser } from "@/lib/guard";
 import { AppShell } from "@/components/AppShell";
-import { V5Roller, type RolledEvent } from "@/components/V5Roller";
 import { CampaignBoard } from "@/components/CampaignBoard";
 import { CampaignNotes } from "@/components/CampaignNotes";
 import { SheetView } from "@/components/SheetView";
@@ -89,8 +88,6 @@ export default function CampaignDetailPage() {
   const [cTheme, setCTheme] = useState("");
 
   // widget de rolagem (cliente)
-  const [pool, setPool] = useState(3);
-  const [roll, setRoll] = useState<number[] | null>(null);
 
   const load = useCallback(async () => {
     setError(null);
@@ -168,23 +165,6 @@ export default function CampaignDetailPage() {
     }
   }
 
-
-  function doRoll() {
-    const dice = Array.from({ length: pool }, () => 1 + Math.floor(Math.random() * 6));
-    setRoll(dice);
-    void recordRoll({
-      label: "Rolagem d6", pool, hunger: 0, difficulty: 0,
-      dice: dice.map((v) => ({ v, hunger: false })),
-      successes: dice.filter((v) => v >= 5).length, outcome: "SUCESSO",
-    });
-  }
-
-  /** Grava a rolagem no histórico da mesa (o mestre vê no Escudo). Silencioso em erro:
-   *  o dado já foi mostrado ao jogador, e perder o registro não pode travar o jogo. */
-  const recordRoll = useCallback(async (e: RolledEvent) => {
-    try { await api.post(`/campaigns/${id}/rolls`, e); }
-    catch { /* histórico é acessório */ }
-  }, [id]);
 
   async function deleteCharacter(ch: Character) {
     if (!confirm(`Excluir a ficha "${ch.name}"? Ação permanente.`)) return;
@@ -279,8 +259,7 @@ export default function CampaignDetailPage() {
         <div className="page">
           {/* OVERVIEW */}
           {tab === "overview" && (
-            <div style={{ display: "grid", gridTemplateColumns: "1.6fr 1fr", gap: 20 }} className="ov-grid">
-              <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 18, maxWidth: 760 }} className="ov-grid">
                 {isMaster && editing && (
                   <form className="panel" data-testid="customize-form" onSubmit={saveCustomize} style={{ margin: 0, display: "flex", flexDirection: "column", gap: 12 }}>
                     <h3 style={{ fontSize: 18, margin: 0 }}>Personalizar campanha</h3>
@@ -346,39 +325,6 @@ export default function CampaignDetailPage() {
                     <button className="danger" data-testid="campaign-delete" onClick={deleteCampaign}>Excluir campanha</button>
                   </div>
                 )}
-              </div>
-
-              {/* rolador: V5 quando ruleset=v5, senão d6 genérico */}
-              {(system?.ruleset ?? "v5") === "v5" ? (
-                <V5Roller bloodPotency={catalog?.bloodPotency} onRolled={recordRoll} />
-              ) : (
-                <div className="dice-widget">
-                  <h3 style={{ fontSize: 17, marginTop: 0 }}>Rolagem de dados</h3>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
-                    <span className="muted" style={{ fontSize: 13 }}>Pool de dados</span>
-                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                      <button className="secondary" onClick={() => setPool((p) => Math.max(1, p - 1))} style={{ padding: "4px 10px" }}>−</button>
-                      <span className="mono" style={{ fontWeight: 600, minWidth: 18, textAlign: "center" }}>{pool}</span>
-                      <button className="secondary" onClick={() => setPool((p) => Math.min(12, p + 1))} style={{ padding: "4px 10px" }}>+</button>
-                    </div>
-                  </div>
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8, minHeight: 44, marginBottom: 14 }}>
-                    {Array.from({ length: pool }).map((_, i) => <span key={i} className="die">d6</span>)}
-                  </div>
-                  <button onClick={doRoll} style={{ width: "100%", marginBottom: 14 }}>Rolar dados</button>
-                  {roll && (
-                    <div style={{ borderTop: "1px solid var(--border)", paddingTop: 14, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                        {roll.map((x, i) => <span key={i} className="die res">{x}</span>)}
-                      </div>
-                      <div style={{ textAlign: "right" }}>
-                        <div className="kv-label">Soma</div>
-                        <div className="mono" style={{ fontWeight: 600, fontSize: 22, color: "var(--accent)" }}>{roll.reduce((a, b) => a + b, 0)}</div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
             </div>
           )}
 
@@ -400,7 +346,7 @@ export default function CampaignDetailPage() {
                       <div className="muted" style={{ fontSize: 13 }}>
                         {charByPlayer.get(m.userId)
                           ? <>interpreta <span style={{ color: "var(--text)" }}>{charByPlayer.get(m.userId)}</span></>
-                          : m.email}
+                          : m.role === "MASTER" ? "conduz a crônica" : "sem personagem ainda"}
                       </div>
                     </div>
                     <span className={`badge role-${m.role}`}>{m.role === "MASTER" ? "Mestre" : "Jogador"}</span>
