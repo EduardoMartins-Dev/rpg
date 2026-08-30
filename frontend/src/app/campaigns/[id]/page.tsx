@@ -7,14 +7,15 @@ import { useRequireUser } from "@/lib/guard";
 import { AppShell } from "@/components/AppShell";
 import { CampaignBoard } from "@/components/CampaignBoard";
 import { CampaignNotes } from "@/components/CampaignNotes";
-import { SheetView } from "@/components/SheetView";
+import { SessionSheet } from "@/components/SessionSheet";
+import type { RolledEvent } from "@/components/V5Roller";
 import { MasterScreen } from "@/components/MasterScreen";
 import { RollFeed } from "@/components/RollFeed";
 import { DisciplinesBrowser } from "@/components/DisciplinesBrowser";
 import AiChat from "@/components/AiChat";
 import {
   api, type Campaign, type Character, type Member, type RpgSystem,
-  type SchemaShape, type SheetSchema, type V5Catalog,
+  type V5Catalog,
 } from "@/lib/api";
 
 type Tab = "overview" | "board" | "notes" | "members" | "sheets" | "disciplines" | "screen" | "ai";
@@ -73,7 +74,6 @@ export default function CampaignDetailPage() {
   const [campaign, setCampaign] = useState<Campaign | null>(null);
   const [system, setSystem] = useState<RpgSystem | null>(null);
   const [catalog, setCatalog] = useState<V5Catalog | null>(null);
-  const [schema, setSchema] = useState<SchemaShape | null>(null);
   const [members, setMembers] = useState<Member[]>([]);
   const [characters, setCharacters] = useState<Character[]>([]);
   const [charName, setCharName] = useState("");
@@ -102,8 +102,6 @@ export default function CampaignDetailPage() {
         if ((sys.ruleset ?? "v5") === "v5") {
           try { setCatalog(await api.get<V5Catalog>("/rules/v5/catalog")); } catch { setCatalog(null); }
         }
-        try { setSchema((await api.get<SheetSchema>(`/systems/${c.systemId}/sheet-schema`)).schema); }
-        catch { setSchema(null); }
       } catch { /* opcional */ }
     } catch (err) {
       setError(err instanceof Error ? err.message : "erro ao carregar campanha");
@@ -171,6 +169,20 @@ export default function CampaignDetailPage() {
     setError(null);
     try { await api.del(`/campaigns/${id}/characters/${ch.id}`); await load(); }
     catch (err) { setError(err instanceof Error ? err.message : "erro ao excluir ficha"); }
+  }
+
+  // Vitais editáveis direto na aba Fichas (sem entrar em "Editar"): cada interação da
+  // SessionSheet do jogador grava a ficha na hora e reconcilia os derivados do servidor.
+  async function persistCharacter(c: Character, next: Record<string, unknown>) {
+    setCharacters((list) => list.map((x) => (x.id === c.id ? { ...x, sheetData: next } : x)));
+    try {
+      const saved = await api.put<Character>(`/campaigns/${id}/characters/${c.id}`, { name: c.name, sheetData: next });
+      setCharacters((list) => list.map((x) => (x.id === c.id ? { ...x, sheetData: saved.sheetData } : x)));
+    } catch { await load(); }
+  }
+  async function recordRollFor(c: Character, e: RolledEvent) {
+    try { await api.post(`/campaigns/${id}/rolls`, { ...e, characterName: c.name || null }); }
+    catch { /* histórico é acessório */ }
   }
 
   async function deleteCampaign() {
@@ -416,9 +428,13 @@ export default function CampaignDetailPage() {
                           style={{ padding: "2px 8px", color: "var(--err)" }}
                           onClick={() => deleteCharacter(c)}>✕</button>
                       </div>
-                      {schema
-                        ? <SheetView schema={schema} sheet={c.sheetData ?? {}} catalog={catalog} />
-                        : <p className="muted">Carregando ficha…</p>}
+                      <SessionSheet sheet={c.sheetData ?? {}} catalog={catalog}
+                        onPersist={(next) => persistCharacter(c, next)}
+                        onRolled={(e) => recordRollFor(c, e)} />
+                      <p className="muted" style={{ fontSize: 12, marginTop: 12 }}>
+                        Vida, Força de Vontade, Fome e Humanidade já editam aqui. Para atributos, perícias e
+                        disciplinas, use <b>Editar ficha →</b>.
+                      </p>
                     </div>
                   ))}
                   {characters.length === 0 && (
