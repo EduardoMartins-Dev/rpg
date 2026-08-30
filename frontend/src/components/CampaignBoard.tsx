@@ -20,6 +20,8 @@ export function CampaignBoard({ campaignId, isMaster }: { campaignId: string; is
   const [draft, setDraft] = useState<Draft>(EMPTY);
   const [editing, setEditing] = useState<string | null>(null);
   const [editDraft, setEditDraft] = useState<Draft>(EMPTY);
+  // Imagem aberta em tela cheia (lightbox). Qualquer membro pode ampliar para usar na mesa.
+  const [zoom, setZoom] = useState<{ src: string; alt: string } | null>(null);
 
   const load = useCallback(async () => {
     setError(null);
@@ -134,7 +136,12 @@ export function CampaignBoard({ campaignId, isMaster }: { campaignId: string; is
             ) : (
               <>
                 {it.imageUrl && (
-                  <AuthImage src={it.imageUrl} alt={it.title ?? ""} className="board-card-img" />
+                  <button type="button" className="board-card-imgbtn"
+                    title="Clique para ampliar" aria-label={`Ampliar imagem${it.title ? `: ${it.title}` : ""}`}
+                    data-testid={`board-zoom-${it.id}`}
+                    onClick={() => setZoom({ src: it.imageUrl!, alt: it.title ?? "Imagem do mural" })}>
+                    <AuthImage src={it.imageUrl} alt={it.title ?? ""} className="board-card-img" />
+                  </button>
                 )}
                 <div className="board-card-body">
                   {it.title && <h3>{it.title}</h3>}
@@ -160,6 +167,34 @@ export function CampaignBoard({ campaignId, isMaster }: { campaignId: string; is
         </p>
       )}
       {error && <p className="error" data-testid="board-error" style={{ marginTop: 14 }}>⚠ {error}</p>}
+
+      {zoom && <Lightbox src={zoom.src} alt={zoom.alt} onClose={() => setZoom(null)} />}
+    </div>
+  );
+}
+
+/**
+ * Imagem do mural em tela cheia. Fecha no ✕, na tecla Esc ou clicando no fundo escuro;
+ * clicar na própria imagem NÃO fecha, para o jogador poder olhar/dar zoom (pinça no
+ * celular) sem sumir com ela. Reaproveita a MESMA blob URL do card (AuthImage memoiza
+ * por caminho), então abrir não rebaixa a imagem.
+ */
+function Lightbox({ src, alt, onClose }: { src: string; alt: string; onClose: () => void }) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    document.addEventListener("keydown", onKey);
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden"; // trava o scroll do fundo enquanto aberto
+    return () => { document.removeEventListener("keydown", onKey); document.body.style.overflow = prevOverflow; };
+  }, [onClose]);
+
+  return (
+    <div className="lightbox-overlay" role="dialog" aria-modal="true" aria-label={alt}
+      data-testid="board-lightbox" onClick={onClose}>
+      <button type="button" className="lightbox-close" aria-label="Fechar" onClick={onClose}>✕</button>
+      <div className="lightbox-stage" onClick={(e) => e.stopPropagation()}>
+        <AuthImage src={src} alt={alt} className="lightbox-img" />
+      </div>
     </div>
   );
 }
