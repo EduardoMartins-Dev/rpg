@@ -5,11 +5,12 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useRequireUser } from "@/lib/guard";
 import { AppShell } from "@/components/AppShell";
-import { V5Roller } from "@/components/V5Roller";
+import { V5Roller, type RolledEvent } from "@/components/V5Roller";
 import { CampaignBoard } from "@/components/CampaignBoard";
 import { CampaignNotes } from "@/components/CampaignNotes";
 import { SheetView } from "@/components/SheetView";
 import { MasterScreen } from "@/components/MasterScreen";
+import { RollFeed } from "@/components/RollFeed";
 import { DisciplinesBrowser } from "@/components/DisciplinesBrowser";
 import AiChat from "@/components/AiChat";
 import {
@@ -169,8 +170,21 @@ export default function CampaignDetailPage() {
 
 
   function doRoll() {
-    setRoll(Array.from({ length: pool }, () => 1 + Math.floor(Math.random() * 6)));
+    const dice = Array.from({ length: pool }, () => 1 + Math.floor(Math.random() * 6));
+    setRoll(dice);
+    void recordRoll({
+      label: "Rolagem d6", pool, hunger: 0, difficulty: 0,
+      dice: dice.map((v) => ({ v, hunger: false })),
+      successes: dice.filter((v) => v >= 5).length, outcome: "SUCESSO",
+    });
   }
+
+  /** Grava a rolagem no histórico da mesa (o mestre vê no Escudo). Silencioso em erro:
+   *  o dado já foi mostrado ao jogador, e perder o registro não pode travar o jogo. */
+  const recordRoll = useCallback(async (e: RolledEvent) => {
+    try { await api.post(`/campaigns/${id}/rolls`, e); }
+    catch { /* histórico é acessório */ }
+  }, [id]);
 
   async function deleteCharacter(ch: Character) {
     if (!confirm(`Excluir a ficha "${ch.name}"? Ação permanente.`)) return;
@@ -336,7 +350,7 @@ export default function CampaignDetailPage() {
 
               {/* rolador: V5 quando ruleset=v5, senão d6 genérico */}
               {(system?.ruleset ?? "v5") === "v5" ? (
-                <V5Roller bloodPotency={catalog?.bloodPotency} />
+                <V5Roller bloodPotency={catalog?.bloodPotency} onRolled={recordRoll} />
               ) : (
                 <div className="dice-widget">
                   <h3 style={{ fontSize: 17, marginTop: 0 }}>Rolagem de dados</h3>
@@ -474,7 +488,13 @@ export default function CampaignDetailPage() {
 
           {/* ESCUDO DO MESTRE (só mestre) */}
           {tab === "screen" && isMaster && (
-            <MasterScreen campaignId={id} characters={characters} members={members} catalog={catalog} onDamage={patchDamage} />
+            <>
+              <MasterScreen campaignId={id} characters={characters} members={members} catalog={catalog} onDamage={patchDamage} />
+              <div style={{ marginTop: 28 }}>
+                <h3 style={{ fontFamily: "var(--serif)", fontSize: 18, margin: "0 0 4px" }}>Dados da mesa</h3>
+                <RollFeed campaignId={id} isMaster />
+              </div>
+            </>
           )}
 
           {/* AI */}

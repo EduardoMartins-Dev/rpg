@@ -458,6 +458,16 @@ th { font-size: .72rem; text-transform: uppercase; letter-spacing: .5px; color: 
 /* navegador de disciplinas: lista fixa + painel do poder */
 .disc-grid { display: grid; grid-template-columns: 240px 1fr; gap: 18px; }
 
+/* histórico de rolagens da mesa */
+.roll-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; align-items: start; }
+.roll-row { border: 1px solid var(--border); border-radius: 12px; background: var(--surface); padding: 12px 14px; display: flex; flex-direction: column; gap: 6px; }
+.roll-row.destaque { border-color: var(--accent); background: var(--elev); }
+.roll-row-head { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; font-size: 14px; }
+.roll-when { margin-left: auto; font-size: 12px; }
+.roll-dice { display: flex; flex-wrap: wrap; gap: 4px; }
+.roll-dice .die { width: 26px; height: 26px; font-size: 12px; border-radius: 6px; }
+.roll-dice .die.hit { border-color: var(--accent); color: var(--accent); background: var(--accent-tint); }
+
 /* trilhas da ficha em sessão (vitalidade/força de vontade, fome/humanidade).
    min-width:0 nos filhos: item de grid tem min-width auto e não encolhe abaixo do
    conteúdo, o que fazia a grade transbordar em telas estreitas. */

@@ -206,6 +206,12 @@ export interface BoardItem {
   id: string; campaignId: string; title: string | null; body: string | null;
   imageUrl: string | null; sortOrder: number; createdAt: string | null; updatedAt: string | null;
 }
+export interface CampaignRoll {
+  id: string; userId: string; playerName: string; characterName: string | null;
+  label: string; pool: number; hunger: number; difficulty: number;
+  dice: { v: number; hunger: boolean }[];
+  successes: number; outcome: string; createdAt: string;
+}
 
 // --- V5 reference catalog (enriquece a ficha; opcional por sistema) ----------
 export interface ClanView {

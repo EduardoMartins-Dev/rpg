@@ -203,6 +203,40 @@ export const campaignMedia = pgTable(
   (t) => [index("idx_campaign_media_campaign").on(t.campaignId, t.createdAt)],
 );
 
+/**
+ * Histórico de rolagens da mesa. Antes a rolagem era só client-side (Math.random no
+ * navegador) e sumia no reload, então o mestre não tinha como conferir o que cada
+ * jogador tirou. Guardamos o RESULTADO já apurado (dados, sucessos, desfecho), não só
+ * a entrada, para o mestre ver exatamente o que o jogador viu.
+ */
+export const campaignRolls = pgTable(
+  "campaign_rolls",
+  {
+    id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+    campaignId: uuid("campaign_id")
+      .notNull()
+      .references(() => campaigns.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    // Personagem usado na rolagem, quando ela partiu de uma ficha. Sem cascade de
+    // exclusão de ficha: o histórico da mesa sobrevive à ficha ser apagada.
+    characterName: varchar("character_name", { length: 255 }),
+    /** O que foi rolado: "Vigor + Briga", "Rouse Check", "Reserva manual"… */
+    label: varchar("label", { length: 255 }).notNull(),
+    pool: integer("pool").notNull(),
+    hunger: integer("hunger").notNull(),
+    difficulty: integer("difficulty").notNull(),
+    /** [{ v: 1..10, hunger: bool }] — as faces exatas que saíram. */
+    dice: jsonb("dice").notNull(),
+    successes: integer("successes").notNull(),
+    /** SUCESSO | CRITICO | CRITICO_CONFUSO | FALHA | FALHA_BESTIAL | ROUSE_OK | ROUSE_FALHA */
+    outcome: varchar("outcome", { length: 32 }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().default(sql`now()`),
+  },
+  (t) => [index("idx_campaign_rolls_campaign").on(t.campaignId, t.createdAt)],
+);
+
 // V5
 export const campaignNotes = pgTable(
   "campaign_notes",

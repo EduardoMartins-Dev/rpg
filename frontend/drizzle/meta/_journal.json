@@ -15,6 +15,13 @@
       "when": 1788057737275,
       "tag": "0001_abnormal_cobalt_man",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1788065048814,
+      "tag": "0002_strange_sue_storm",
+      "breakpoints": true
     }
   ]
 }

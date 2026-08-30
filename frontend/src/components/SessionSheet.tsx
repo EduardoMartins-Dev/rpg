@@ -4,7 +4,7 @@ import { useState } from "react";
 import type { V5Catalog } from "@/lib/api";
 import { DamageTrack } from "@/components/DamageTrack";
 import { HumanityTable, BloodPotencyTable } from "@/components/ReferenceTables";
-import { V5Roller, type TraitItem } from "@/components/V5Roller";
+import { V5Roller, type TraitItem, type RolledEvent } from "@/components/V5Roller";
 
 /**
  * Ficha VIVA de sessão: barras de status grandes e tocáveis para o jogador usar na mesa —
@@ -20,10 +20,12 @@ type Discipline = { name: string; level: number };
 const num = (v: unknown, d = 0): number => (Number.isFinite(Number(v)) ? Number(v) : d);
 
 export function SessionSheet({
-  sheet, catalog, onPersist,
+  sheet, catalog, onPersist, onRolled,
 }: {
   sheet: Sheet; catalog?: V5Catalog | null;
   onPersist: (next: Sheet) => void;
+  /** Registra a rolagem no histórico da mesa (o mestre vê no Escudo do Mestre). */
+  onRolled?: (e: RolledEvent) => void;
 }) {
   const attrs = (sheet.attributes as Record<string, number>) ?? {};
   const derived = (sheet.derived as Record<string, number>) ?? {};
@@ -169,7 +171,7 @@ export function SessionSheet({
       <div className="panel" style={{ margin: 0 }} data-testid="ss-roller">
         <V5Roller bloodPotency={catalog?.bloodPotency}
           traits={{ attributes: attrItems, skills: skillItems }}
-          initialHunger={hunger} initialBp={bp} />
+          initialHunger={hunger} initialBp={bp} onRolled={onRolled} />
       </div>
 
       {/* Tira de referência: Potência de Sangue (consulta rápida na mesa) */}

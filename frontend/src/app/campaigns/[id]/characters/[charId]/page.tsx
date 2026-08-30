@@ -8,6 +8,7 @@ import { AppShell } from "@/components/AppShell";
 import { DynamicSheet } from "@/components/DynamicSheet";
 import { SheetView } from "@/components/SheetView";
 import { SessionSheet } from "@/components/SessionSheet";
+import type { RolledEvent } from "@/components/V5Roller";
 import {
   api, type Campaign, type Character, type SchemaShape, type SheetSchema,
   type RpgSystem, type V5Catalog,
@@ -73,6 +74,13 @@ export default function CharacterSheetPage() {
     }
   }
 
+  /** Grava a rolagem no histórico da mesa, junto com o nome do personagem (o mestre vê
+   *  no Escudo). Silencioso em erro: o dado já apareceu para o jogador. */
+  const recordRoll = useCallback(async (e: RolledEvent) => {
+    try { await api.post(`/campaigns/${id}/rolls`, { ...e, characterName: name || null }); }
+    catch { /* histórico é acessório */ }
+  }, [id, name]);
+
   // Auto-save da SESSÃO: cada interação na barra de status grava na hora (otimista),
   // depois reconcilia com os derivados recalculados no servidor. Em erro, recarrega.
   async function persist(next: Sheet) {
@@ -133,7 +141,7 @@ export default function CharacterSheetPage() {
           ) : mode === "view" ? (
             <SheetView schema={schema} sheet={sheet} catalog={catalog} />
           ) : mode === "session" ? (
-            <SessionSheet sheet={sheet} catalog={catalog} onPersist={persist} />
+            <SessionSheet sheet={sheet} catalog={catalog} onPersist={persist} onRolled={recordRoll} />
           ) : (
             <DynamicSheet schema={schema} sheet={sheet} onChange={setSheet} catalog={catalog} />
           )}

@@ -33,11 +33,20 @@ const d10 = () => 1 + Math.floor(Math.random() * 10);
 /** Traço (atributo ou perícia) para o construtor de teste rápido. */
 export type TraitItem = { key: string; label: string; value: number };
 
-export function V5Roller({ bloodPotency, traits, initialHunger, initialBp }: {
+/** Rolagem já apurada, pronta para o mestre ver no Escudo. */
+export type RolledEvent = {
+  label: string; pool: number; hunger: number; difficulty: number;
+  dice: Die[]; successes: number; outcome: string;
+};
+
+export function V5Roller({ bloodPotency, traits, initialHunger, initialBp, onRolled }: {
   bloodPotency?: BloodPotencyView[];
   /** Quando fornecido, mostra o construtor "Atributo + Perícia" com os traços da ficha. */
   traits?: { attributes: TraitItem[]; skills: TraitItem[] };
   initialHunger?: number; initialBp?: number;
+  /** Registra a rolagem para o histórico da mesa. Falha é silenciosa: o dado já rolou
+   *  na tela do jogador, e perder o registro não pode travar o jogo. */
+  onRolled?: (e: RolledEvent) => void;
 }) {
   const [pool, setPool] = useState(4);
   const [hunger, setHunger] = useState(initialHunger ?? 1);
@@ -62,7 +71,13 @@ export function V5Roller({ bloodPotency, traits, initialHunger, initialBp }: {
 
   function doRouse() {
     const v = d10();
-    setRouse({ v, ok: v >= 6 }); // 6+ = sucesso (não sobe Fome); 1–5 = falha (sobe 1 de Fome)
+    const ok = v >= 6; // 6+ = sucesso (não sobe Fome); 1–5 = falha (sobe 1 de Fome)
+    setRouse({ v, ok });
+    onRolled?.({
+      label: "Rouse Check", pool: 1, hunger: 0, difficulty: 0,
+      dice: [{ v, hunger: false }], successes: ok ? 1 : 0,
+      outcome: ok ? "ROUSE_OK" : "ROUSE_FALHA",
+    });
   }
 
   const eff = bpEffects(bloodPotency, bp);
@@ -83,6 +98,21 @@ export function V5Roller({ bloodPotency, traits, initialHunger, initialBp }: {
     const messy = crits >= 1 && dice.some((d) => d.hunger && d.v === 10);
     const bestial = !win && dice.some((d) => d.hunger && d.v === 1);
     setRes({ dice, successes, crits, messy, bestial, win, difficulty });
+
+    // Rótulo do que foi rolado: usa os traços escolhidos quando o teste veio do
+    // construtor, senão marca como reserva montada na mão.
+    const attrLabel = traits?.attributes.find((t) => t.key === selAttr)?.label;
+    const skillLabel = traits?.skills.find((t) => t.key === selSkill)?.label;
+    const label = attrLabel && skillLabel ? `${attrLabel} + ${skillLabel}` : "Reserva manual";
+    const extras = [surge && "Surto", discipline && "Disciplina"].filter(Boolean).join(" + ");
+    onRolled?.({
+      label: extras ? `${label} (${extras})` : label,
+      pool: total, hunger: hungerN, difficulty,
+      dice, successes,
+      outcome: win
+        ? (messy ? "CRITICO_CONFUSO" : crits >= 1 ? "CRITICO" : "SUCESSO")
+        : (bestial ? "FALHA_BESTIAL" : "FALHA"),
+    });
   }
 
   const num = (v: number, set: (n: number) => void, min: number, max: number, label: string, tid?: string) => (
