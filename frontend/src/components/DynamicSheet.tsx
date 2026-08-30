@@ -114,6 +114,9 @@ export function DynamicSheet({
   ];
   const [step, setStep] = useState(0);
   const [infoClan, setInfoClan] = useState<string | null>(null);
+  // Perícias adicionadas manualmente para especialização (mesmo sem pontos). Efêmero:
+  // ao digitar a especialização ela persiste em sheet.specialties e passa a aparecer sozinha.
+  const [addedSpecs, setAddedSpecs] = useState<string[]>([]);
   // Trava de edição: protege as bolinhas (atributos/perícias/níveis) contra clique
   // acidental. Ficha já construída abre TRAVADA; ficha nova abre destravada p/ montar.
   const built = Object.values(attrs).some((v) => Number(v) > 0);
@@ -382,23 +385,44 @@ export function DynamicSheet({
               ))}
             </div>
 
-            {/* Especializações (perícias com pontos) */}
-            <div className="sheet-section">
-              <h3 style={{ fontSize: "1rem" }}>Especializações <span className="muted" style={{ fontSize: ".8rem" }}>(foco dentro da perícia)</span></h3>
-              {skills.filter((n) => (skillVals[n] ?? 0) > 0).length === 0 && (
-                <p className="muted" style={{ fontSize: 13 }}>Suba alguma perícia para adicionar especializações.</p>
-              )}
-              {skills.filter((n) => (skillVals[n] ?? 0) > 0).map((n) => {
-                const specialties = (sheet.specialties as Record<string, string>) ?? {};
-                return (
-                  <div key={n} style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
-                    <span style={{ flex: "0 0 130px", fontSize: 14 }}>{skillMeta.get(norm(n))?.label ?? titleCase(n)}</span>
-                    <input value={specialties[n] ?? ""} placeholder="ex.: Facas, Mentir, Pistolas…"
-                      onChange={(e) => setTop("specialties", { ...specialties, [n]: e.target.value })} />
-                  </div>
-                );
-              })}
-            </div>
+            {/* Especializações — qualquer perícia pode ter, mesmo sem pontos (regra V5). */}
+            {(() => {
+              const specialties = (sheet.specialties as Record<string, string>) ?? {};
+              // Mostradas: com pontos, ou já com especialização, ou adicionadas à mão.
+              const shown = skills.filter((n) => (skillVals[n] ?? 0) > 0 || (specialties[n] ?? "").trim().length > 0 || addedSpecs.includes(n));
+              const addable = skills.filter((n) => !shown.includes(n));
+              const label = (n: string) => skillMeta.get(norm(n))?.label ?? titleCase(n);
+              function setSpec(n: string, v: string) { setTop("specialties", { ...specialties, [n]: v }); }
+              function dropSpec(n: string) {
+                const next = { ...specialties }; delete next[n];
+                setTop("specialties", next);
+                setAddedSpecs((xs) => xs.filter((x) => x !== n));
+              }
+              return (
+                <div className="sheet-section">
+                  <h3 style={{ fontSize: "1rem" }}>Especializações <span className="muted" style={{ fontSize: ".8rem" }}>(foco dentro da perícia — vale mesmo sem pontos)</span></h3>
+                  {shown.length === 0 && (
+                    <p className="muted" style={{ fontSize: 13 }}>Nenhuma ainda. Escolha uma perícia abaixo para especializar.</p>
+                  )}
+                  {shown.map((n) => (
+                    <div key={n} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+                      <span style={{ flex: "0 0 130px", fontSize: 14 }}>{label(n)}</span>
+                      <input style={{ flex: 1 }} data-testid={`spec-${n}`} value={specialties[n] ?? ""} placeholder="ex.: Facas, Mentir, Pistolas…"
+                        onChange={(e) => setSpec(n, e.target.value)} />
+                      <button type="button" className="ghost" title="Remover especialização" aria-label="Remover"
+                        onClick={() => dropSpec(n)} style={{ padding: "2px 8px", color: "var(--err)" }}>✕</button>
+                    </div>
+                  ))}
+                  {addable.length > 0 && (
+                    <select data-testid="spec-add" value="" style={{ marginTop: 8, maxWidth: 320 }}
+                      onChange={(e) => { const v = e.target.value; if (v) setAddedSpecs((xs) => (xs.includes(v) ? xs : [...xs, v])); }}>
+                      <option value="">+ especializar outra perícia…</option>
+                      {addable.map((n) => <option key={n} value={n}>{label(n)}</option>)}
+                    </select>
+                  )}
+                </div>
+              );
+            })()}
           </section>
         )}
 
