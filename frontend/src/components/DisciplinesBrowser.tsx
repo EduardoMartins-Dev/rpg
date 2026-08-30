@@ -51,7 +51,7 @@ export function DisciplinesBrowser({
   }
 
   return (
-    <div data-testid="disciplines-browser" style={{ display: "grid", gridTemplateColumns: "240px 1fr", gap: 18 }} className="disc-grid">
+    <div data-testid="disciplines-browser" className="disc-grid">
       {/* lista de disciplinas */}
       <div className="panel" style={{ margin: 0, padding: 8, alignSelf: "start" }} data-testid="disc-list">
         {disciplines.map((d, i) => (

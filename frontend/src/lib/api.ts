@@ -126,6 +126,36 @@ export async function uploadFile<T>(path: string, file: File, retry = true): Pro
   return data as T;
 }
 
+/**
+ * Baixa um binário protegido (imagem do mural) com o Bearer token e devolve uma blob
+ * URL utilizável em <img src>. Um <img> comum não manda header de autorização, daí a
+ * volta. O resultado é memoizado por caminho: a mesma imagem aparece na listagem e na
+ * edição, e o id é imutável (upload novo = id novo), então nunca serve stale.
+ */
+const blobUrlCache = new Map<string, Promise<string>>();
+
+export function fetchBlobUrl(path: string, retry = true): Promise<string> {
+  const cached = blobUrlCache.get(path);
+  if (cached) return cached;
+
+  const pending = (async () => {
+    const headers: Record<string, string> = {};
+    const token = getToken();
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+    const res = await fetch(path, { headers });
+    if (res.status === 401 && retry && await tryRefresh()) {
+      blobUrlCache.delete(path);
+      return fetchBlobUrl(path, false);
+    }
+    if (!res.ok) throw new ApiError(res.status, httpMsg(res.status));
+    return URL.createObjectURL(await res.blob());
+  })();
+
+  blobUrlCache.set(path, pending);
+  pending.catch(() => blobUrlCache.delete(path)); // falha não fica grudada no cache
+  return pending;
+}
+
 // --- response shapes (mirror backend DTOs) ----------------------------------
 
 export interface User { id: string; email: string; displayName: string; isAdmin: boolean; avatarUrl?: string | null; }

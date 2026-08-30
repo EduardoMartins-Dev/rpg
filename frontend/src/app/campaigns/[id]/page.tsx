@@ -246,7 +246,7 @@ export default function CampaignDetailPage() {
               <span className="sys">{system?.name ?? "—"} · {members.length} membros · <span className={`badge role-${campaign.role}`} data-testid="my-role">{campaign.role}</span></span>
             </div>
             {isMaster && (
-              <div style={{ alignSelf: "center", display: "flex", gap: 8 }}>
+              <div className="cam-hero-actions">
                 <button className="secondary" data-testid="campaign-customize" onClick={() => { setTab("overview"); openEdit(); }}>Personalizar</button>
                 <button data-testid="invite-regen" onClick={regenInvite}>Gerar convite</button>
               </div>

@@ -172,6 +172,37 @@ export const campaignBoardItems = pgTable(
   (t) => [index("idx_board_items_campaign").on(t.campaignId, t.sortOrder, t.createdAt)],
 );
 
+/**
+ * Imagens enviadas do dispositivo do mestre para o mural. Guardadas no próprio banco
+ * (não em object storage) de propósito: o mural é pequeno — poucas dezenas de imagens
+ * por campanha — e assim a feature funciona em qualquer ambiente sem depender de bucket
+ * configurado. As imagens são comprimidas no navegador antes do upload (ver
+ * CampaignBoard), então cada linha fica na casa das centenas de KB.
+ *
+ * O board guarda só a URL da rota que serve estes bytes, nunca o base64 inline — assim
+ * a listagem do mural continua leve e o navegador cacheia cada imagem separadamente.
+ */
+export const campaignMedia = pgTable(
+  "campaign_media",
+  {
+    id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+    campaignId: uuid("campaign_id")
+      .notNull()
+      .references(() => campaigns.id, { onDelete: "cascade" }),
+    uploadedBy: uuid("uploaded_by")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    contentType: varchar("content_type", { length: 100 }).notNull(),
+    bytes: customType<{ data: Buffer; driverData: Buffer }>({
+      dataType() {
+        return "bytea";
+      },
+    })("bytes").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().default(sql`now()`),
+  },
+  (t) => [index("idx_campaign_media_campaign").on(t.campaignId, t.createdAt)],
+);
+
 // V5
 export const campaignNotes = pgTable(
   "campaign_notes",

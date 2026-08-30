@@ -68,7 +68,7 @@ export function SessionSheet({
   return (
     <div data-testid="session-sheet" style={{ display: "flex", flexDirection: "column", gap: 18 }}>
       {/* Vitalidade + Força de Vontade — trilhas de dano grandes */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }} className="ss-tracks">
+      <div className="ss-tracks">
         <div className="panel accent-box" style={{ margin: 0 }} data-testid="ss-vitality">
           <DamageTrack label="Vitalidade" max={vitMax} sup={healthDmg.sup} agg={healthDmg.agg}
             onChange={(s, a) => patch("healthDmg", { sup: s, agg: a })} />
@@ -86,7 +86,7 @@ export function SessionSheet({
       </div>
 
       {/* Fome + Humanidade */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }} className="ss-tracks">
+      <div className="ss-tracks">
         {/* Fome (0–5) */}
         <div className="panel" style={{ margin: 0 }} data-testid="ss-hunger">
           <div className="track-head">

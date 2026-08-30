@@ -129,8 +129,10 @@ th { font-size: .72rem; text-transform: uppercase; letter-spacing: .5px; color: 
   display: flex; align-items: center; gap: 11px; padding: 10px; border-radius: 10px;
   border: 1px solid var(--border); background: var(--surface);
 }
+.side-spacer { flex: 1; }
 .app-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .page { padding: 30px 38px 90px; }
+
 .page-wide { max-width: 1100px; margin: 0 auto; width: 100%; }
 .page-narrow { max-width: 920px; margin: 0 auto; width: 100%; }
 
@@ -189,8 +191,22 @@ th { font-size: .72rem; text-transform: uppercase; letter-spacing: .5px; color: 
 .camp-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px; }
 @media (max-width: 860px) { .camp-grid { grid-template-columns: 1fr; } }
 .board-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 18px; align-items: start; }
-.board-card { transition: border-color .15s; }
+.board-card { transition: border-color .15s; margin: 0; padding: 0; overflow: hidden; display: flex; flex-direction: column; }
 .board-card:hover { border-color: var(--accent); }
+.board-card-img { width: 100%; max-height: 220px; object-fit: cover; display: block; }
+.board-card-body { padding: 16px; flex: 1; display: flex; flex-direction: column; gap: 8px; }
+.board-card-body h3 { margin: 0; font-family: var(--serif); font-size: 17px; }
+.board-card-edit { padding: 14px; display: flex; flex-direction: column; gap: 8px; }
+.board-card-actions { display: flex; gap: 6px; margin-top: auto; padding-top: 8px; border-top: 1px solid var(--border); flex-wrap: wrap; }
+.board-card-actions button { padding: 2px 8px; }
+.board-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; flex-wrap: wrap; gap: 10px; }
+.board-form { margin: 0 0 18px; display: flex; flex-direction: column; gap: 10px; }
+.board-form-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* imagem do card: enviar do dispositivo ou colar URL */
+.img-field { display: flex; flex-direction: column; gap: 8px; }
+.img-field-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.img-field-preview { max-height: 160px; width: 100%; object-fit: cover; border-radius: 8px; display: block; }
 .portrait { display: inline-flex; align-items: center; justify-content: center; width: 84px; height: 84px; border-radius: 14px; overflow: hidden; background: var(--surface); border: 1px solid var(--border); flex: 0 0 auto; }
 .portrait img { width: 100%; height: 100%; object-fit: cover; }
 .portrait.lg { width: 160px; height: 160px; box-shadow: 0 0 30px var(--accent-tint); }
@@ -217,6 +233,7 @@ th { font-size: .72rem; text-transform: uppercase; letter-spacing: .5px; color: 
 .seg { display: flex; background: var(--surface); border: 1px solid var(--border); border-radius: 9px; padding: 4px; }
 .seg button { background: none; color: var(--muted); border: none; padding: 8px 14px; border-radius: 7px; font: 600 13px var(--ui); }
 .seg button.on { background: var(--elev); color: var(--text); }
+.cam-hero-actions { align-self: center; display: flex; gap: 8px; flex-wrap: wrap; }
 .cam-tabs { padding: 0 38px; border-bottom: 1px solid var(--border); display: flex; gap: 24px; }
 .cam-tabs .tab { background: none; border: none; border-bottom: 2px solid transparent; color: var(--muted); padding: 14px 2px; font: 600 14px var(--ui); border-radius: 0; }
 .cam-tabs .tab.on { color: var(--text); border-bottom-color: var(--accent); }
@@ -437,3 +454,108 @@ th { font-size: .72rem; text-transform: uppercase; letter-spacing: .5px; color: 
 .accent-chip { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border: 1px solid var(--border); border-radius: 10px; cursor: pointer; }
 .accent-chip.on { border-color: var(--accent); background: var(--accent-tint); }
 .accent-chip .sw { width: 22px; height: 22px; border-radius: 50%; }
+
+/* navegador de disciplinas: lista fixa + painel do poder */
+.disc-grid { display: grid; grid-template-columns: 240px 1fr; gap: 18px; }
+
+/* trilhas da ficha em sessão (vitalidade/força de vontade, fome/humanidade).
+   min-width:0 nos filhos: item de grid tem min-width auto e não encolhe abaixo do
+   conteúdo, o que fazia a grade transbordar em telas estreitas. */
+.ss-tracks { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.ss-tracks > * { min-width: 0; }
+
+/* cabeçalho da ficha: retrato + nome + seletor de modo + salvar */
+.sheet-head { display: flex; align-items: center; gap: 18px; margin-bottom: 22px; flex-wrap: wrap; }
+
+/* --- mobile: a sidebar de 240px vira barra de navegação inferior ------------
+   Sem isto, num aparelho de 375px a sidebar comia 240px e sobravam 135px de
+   conteúdo. Abaixo de 760px ela passa a ser uma barra fixa embaixo (padrão de
+   app nativo), e o conteúdo ganha respiro embaixo para não ficar sob a barra. */
+@media (max-width: 760px) {
+  .app { flex-direction: column; }
+  .sidebar {
+    /* 100vw (e não 100%): a barra é fixed, e width:100% acabava resolvendo contra a
+       largura de rolagem do documento em vez da viewport — a barra ficava mais larga
+       que a tela e gerava rolagem horizontal na página inteira. */
+    position: fixed; inset: auto 0 0 0; height: auto; width: 100vw; max-width: 100vw;
+    flex: none; flex-direction: row; align-items: stretch; justify-content: space-around;
+    gap: 2px; padding: 6px 6px calc(6px + env(safe-area-inset-bottom, 0px));
+    border-right: none; border-top: 1px solid var(--border);
+    z-index: 50;
+  }
+  .sidebar .brand, .side-spacer, .side-user-text { display: none; }
+  .side-link {
+    flex: 1 1 0; min-width: 0; flex-direction: column; gap: 3px;
+    padding: 7px 4px; font-size: 11px; text-align: center; justify-content: center;
+  }
+  .side-link .ic { font-size: 18px; width: auto; }
+  .side-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
+  .side-foot {
+    flex: 0 0 auto; padding: 6px 8px; border: none; background: none;
+    align-self: center; gap: 6px;
+  }
+  .page { padding: 20px 16px calc(84px + env(safe-area-inset-bottom, 0px)); }
+  .page-head h1 { font-size: 24px; }
+
+  /* .row é flex:1 sem base mínima: em vez de quebrar linha, os filhos encolhiam e
+     ficavam ilegíveis (input de convite cortado, botão em 3 linhas). Todos os usos
+     são formulários/painéis, então empilhar é o comportamento certo aqui. */
+  .row { flex-direction: column; align-items: stretch; }
+  .row > * { flex: none; }
+
+  /* As 7 abas da campanha não cabem em 375px. Em vez de quebrar em 3 linhas (e
+     empurrar o conteúdo pra baixo), viram uma faixa deslizável — padrão de app. */
+  .cam-tabs {
+    padding: 0 16px; gap: 18px;
+    overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch;
+  }
+  .cam-tabs::-webkit-scrollbar { display: none; }
+  .cam-tabs .tab { flex: 0 0 auto; white-space: nowrap; }
+
+  /* Alvos de toque: no dedo, 26px (steppers), 15px (bolinhas de traço) e 13px
+     (checkbox) erram muito. As bolinhas não podem virar 34px — quebrariam a linha
+     do traço —, então crescem só o suficiente. */
+  .app button:not(.dot):not(.tab) { min-height: 34px; }
+  .app input[type="checkbox"], .app input[type="radio"] { width: 18px; height: 18px; }
+  .dot { width: 19px; height: 19px; }
+
+  .cam-hero { padding: 14px 16px; }
+  .cam-hero .inner { flex-wrap: wrap; gap: 10px; }
+  .cam-hero h1 { font-size: 20px; margin: 2px 0; }
+  .cam-hero-actions { align-self: stretch; width: 100%; }
+  .cam-hero-actions button { flex: 1; }
+  /* o retrato de 64px come um terço da tela junto com o título */
+  .avatar.lg { width: 44px; height: 44px; border-radius: 10px; font-size: 17px; }
+
+  /* a coluna fixa de 240px do navegador de disciplinas não cabe: vira lista em cima
+     e painel do poder embaixo */
+  .disc-grid { grid-template-columns: 1fr; }
+
+  /* trilhas lado a lado ficam apertadas demais em 375px */
+  .ss-tracks { grid-template-columns: 1fr; gap: 12px; }
+
+  /* tabelas (lista de usuários do admin) não têm como caber em 375px: em vez de
+     empurrar a página inteira, a própria tabela rola na horizontal. */
+  table { display: block; width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+}
+
+/* --- landing (pública, primeira impressão no celular) ---------------------- */
+@media (max-width: 900px) {
+  /* eram 4 colunas fixas: em telas estreitas o conteúdo dos cards transbordava */
+  .feature-grid { grid-template-columns: repeat(2, 1fr); padding: 28px 20px 60px; }
+  .hero { padding: 52px 20px 40px; }
+  .hero h1 { font-size: 42px; }
+}
+@media (max-width: 560px) {
+  .feature-grid { grid-template-columns: 1fr; padding: 24px 16px 48px; gap: 14px; }
+  .hero { padding: 36px 16px 28px; }
+  .hero h1 { font-size: 32px; letter-spacing: -.5px; }
+  .hero p { font-size: 16px; margin: 18px auto 28px; }
+  /* logo (164px) + os dois botões (179px) somavam exatamente a largura útil e
+     encostavam um no outro; o logo menor devolve o respiro */
+  .landing-head { padding: 14px 16px; gap: 12px; }
+  .landing-head .logo .word { font-size: 17px; }
+  .landing-head .logo .mark { width: 28px; height: 28px; font-size: 15px; }
+  .landing-foot .inner { padding: 22px 16px; }
+  .cta-row { flex-direction: column; align-items: stretch; }
+}

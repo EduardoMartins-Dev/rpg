@@ -8,6 +8,13 @@
       "when": 1788041044623,
       "tag": "0000_overjoyed_loners",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1788057737275,
+      "tag": "0001_abnormal_cobalt_man",
+      "breakpoints": true
     }
   ]
 }

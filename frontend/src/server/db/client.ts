@@ -83,14 +83,14 @@ export const sqlRaw = new Proxy((() => undefined) as unknown as postgres.Sql, {
     const client = getClient() as unknown as (...a: unknown[]) => unknown;
     return client(...args);
   },
-  get(_target, prop, _receiver) {
+  get(_target, prop) {
     const value = Reflect.get(getClient(), prop);
     return typeof value === "function" ? value.bind(getClient()) : value;
   },
 });
 
 export const db = new Proxy({} as Db, {
-  get(_target, prop, _receiver) {
+  get(_target, prop) {
     const value = Reflect.get(getDb(), prop);
     return typeof value === "function" ? value.bind(getDb()) : value;
   },

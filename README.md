@@ -44,7 +44,7 @@ docker exec portalrpg-db psql -U portalrpg -d portalrpg \
   -c "CREATE EXTENSION IF NOT EXISTS vector; CREATE EXTENSION IF NOT EXISTS pgcrypto;"
 cd frontend
 npm run db:migrate                     # aplica o schema (drizzle-kit)
-docker exec -i portalrpg-db psql -U portalrpg -d portalrpg < drizzle/0001_ivfflat_index.sql
+docker exec -i portalrpg-db psql -U portalrpg -d portalrpg < drizzle/manual/ivfflat_index.sql
 npm run db:seed                        # 5 contas fixas (admin@test / Sup3rSenha!, etc.)
 ```
 

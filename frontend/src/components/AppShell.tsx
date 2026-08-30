@@ -31,31 +31,31 @@ export function AppShell({ user, active, children }: {
 
         <Link href="/campaigns" data-testid="nav-campaigns"
           className={`side-link${active === "campaigns" ? " on" : ""}`}>
-          <span className="ic">📚</span>Campanhas
+          <span className="ic">📚</span><span className="side-label">Campanhas</span>
         </Link>
         <Link href="/characters" data-testid="nav-characters"
           className={`side-link${active === "characters" ? " on" : ""}`}>
-          <span className="ic">🎭</span>Personagens
+          <span className="ic">🎭</span><span className="side-label">Personagens</span>
         </Link>
         {user.isAdmin && (
           <Link href="/admin" data-testid="nav-admin"
             className={`side-link${active === "admin" ? " on" : ""}`}>
-            <span className="ic">⬡</span>Admin
+            <span className="ic">⬡</span><span className="side-label">Admin</span>
           </Link>
         )}
         <Link href="/settings" data-testid="nav-settings"
           className={`side-link${active === "settings" ? " on" : ""}`}>
-          <span className="ic">⚙</span>Configurações
+          <span className="ic">⚙</span><span className="side-label">Configurações</span>
         </Link>
 
-        <div style={{ flex: 1 }} />
+        <div className="side-spacer" />
 
         <div className="side-foot">
           <span className="avatar"
             style={user.avatarUrl ? { backgroundImage: `url(${user.avatarUrl})` } : undefined}>
             {user.avatarUrl ? "" : initials}
           </span>
-          <div style={{ minWidth: 0, flex: 1 }}>
+          <div className="side-user-text" style={{ minWidth: 0, flex: 1 }}>
             <div data-testid="nav-user" style={{ fontSize: 13, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
               {user.displayName}
             </div>

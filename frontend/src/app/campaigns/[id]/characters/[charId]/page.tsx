@@ -99,7 +99,7 @@ export default function CharacterSheetPage() {
           <Link href={`/campaigns/${id}`}>← Campanha</Link>
         </p>
 
-        <div style={{ display: "flex", alignItems: "center", gap: 18, marginBottom: 22 }}>
+        <div className="sheet-head">
           {str(sheet.avatarUrl) ? (
             <span className="portrait" data-testid="header-portrait">
               {/* eslint-disable-next-line @next/next/no-img-element */}

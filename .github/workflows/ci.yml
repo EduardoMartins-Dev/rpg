@@ -46,7 +46,7 @@ jobs:
         working-directory: frontend
         run: |
           npx drizzle-kit migrate
-          PGPASSWORD=portalrpg psql -h localhost -U portalrpg -d portalrpg -f drizzle/0001_ivfflat_index.sql
+          PGPASSWORD=portalrpg psql -h localhost -U portalrpg -d portalrpg -f drizzle/manual/ivfflat_index.sql
       - name: Lint
         working-directory: frontend
         run: npm run lint

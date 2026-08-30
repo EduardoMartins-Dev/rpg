@@ -1,14 +1,17 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { api, type BoardItem } from "@/lib/api";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { api, uploadFile, type BoardItem } from "@/lib/api";
+import { compressImage } from "@/lib/image";
+import { AuthImage } from "@/components/AuthImage";
 
 type Draft = { title: string; body: string; imageUrl: string };
 const EMPTY: Draft = { title: "", body: "", imageUrl: "" };
 
 /**
  * Mural da campanha. Qualquer membro lê; só o mestre cria/edita/exclui cards.
- * Card = título/texto/imagem opcionais (imagem por URL). Ordenável (subir/descer).
+ * Card = título/texto/imagem opcionais. A imagem pode vir do dispositivo (upload,
+ * comprimido no navegador) ou de uma URL colada. Ordenável (subir/descer).
  */
 export function CampaignBoard({ campaignId, isMaster }: { campaignId: string; isMaster: boolean }) {
   const [items, setItems] = useState<BoardItem[]>([]);
@@ -78,7 +81,7 @@ export function CampaignBoard({ campaignId, isMaster }: { campaignId: string; is
 
   return (
     <div data-testid="campaign-board">
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16, flexWrap: "wrap", gap: 10 }}>
+      <div className="board-head">
         <span className="muted" style={{ fontSize: 14 }}>
           {isMaster ? "Publique cards com lore, ganchos, mapas e imagens para a mesa." : "Mural da crônica — publicado pelo mestre."}
         </span>
@@ -88,18 +91,19 @@ export function CampaignBoard({ campaignId, isMaster }: { campaignId: string; is
       </div>
 
       {isMaster && creating && (
-        <form className="panel" onSubmit={add} data-testid="board-form" style={{ margin: "0 0 18px", display: "flex", flexDirection: "column", gap: 10 }}>
+        <form className="panel board-form" onSubmit={add} data-testid="board-form">
           <input data-testid="board-title" value={draft.title} placeholder="Título (opcional)"
             onChange={(e) => setDraft({ ...draft, title: e.target.value })} />
           <textarea data-testid="board-body" value={draft.body} placeholder="Texto / descrição (opcional)" rows={4}
             onChange={(e) => setDraft({ ...draft, body: e.target.value })} style={{ resize: "vertical" }} />
-          <input data-testid="board-image" value={draft.imageUrl} placeholder="URL de imagem (opcional)"
-            onChange={(e) => setDraft({ ...draft, imageUrl: e.target.value })} />
-          {draft.imageUrl.trim() && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={draft.imageUrl} alt="" style={{ maxHeight: 160, borderRadius: 8, objectFit: "cover" }} />
-          )}
-          <div style={{ display: "flex", gap: 8 }}>
+          <ImageField
+            campaignId={campaignId}
+            value={draft.imageUrl}
+            onChange={(url) => setDraft({ ...draft, imageUrl: url })}
+            onError={setError}
+            testid="board-image"
+          />
+          <div className="board-form-actions">
             <button type="submit" data-testid="board-publish" disabled={empty(draft)}>Publicar</button>
             <button type="button" className="secondary" onClick={() => { setCreating(false); setDraft(EMPTY); }}>Cancelar</button>
           </div>
@@ -108,16 +112,21 @@ export function CampaignBoard({ campaignId, isMaster }: { campaignId: string; is
 
       <div className="board-grid" data-testid="board-list">
         {items.map((it, idx) => (
-          <div key={it.id} className="panel board-card" data-testid="board-card" style={{ margin: 0, padding: 0, overflow: "hidden", display: "flex", flexDirection: "column" }}>
+          <div key={it.id} className="panel board-card" data-testid="board-card">
             {editing === it.id ? (
-              <div style={{ padding: 14, display: "flex", flexDirection: "column", gap: 8 }}>
+              <div className="board-card-edit">
                 <input value={editDraft.title} placeholder="Título"
                   onChange={(e) => setEditDraft({ ...editDraft, title: e.target.value })} />
                 <textarea value={editDraft.body} placeholder="Texto" rows={4} style={{ resize: "vertical" }}
                   onChange={(e) => setEditDraft({ ...editDraft, body: e.target.value })} />
-                <input value={editDraft.imageUrl} placeholder="URL de imagem"
-                  onChange={(e) => setEditDraft({ ...editDraft, imageUrl: e.target.value })} />
-                <div style={{ display: "flex", gap: 8 }}>
+                <ImageField
+                  campaignId={campaignId}
+                  value={editDraft.imageUrl}
+                  onChange={(url) => setEditDraft({ ...editDraft, imageUrl: url })}
+                  onError={setError}
+                  testid={`board-image-edit-${it.id}`}
+                />
+                <div className="board-form-actions">
                   <button onClick={() => saveEdit(it)} disabled={empty(editDraft)}>Salvar</button>
                   <button className="secondary" onClick={() => setEditing(null)}>Cancelar</button>
                 </div>
@@ -125,18 +134,17 @@ export function CampaignBoard({ campaignId, isMaster }: { campaignId: string; is
             ) : (
               <>
                 {it.imageUrl && (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={it.imageUrl} alt={it.title ?? ""} style={{ width: "100%", maxHeight: 220, objectFit: "cover" }} />
+                  <AuthImage src={it.imageUrl} alt={it.title ?? ""} className="board-card-img" />
                 )}
-                <div style={{ padding: 16, flex: 1, display: "flex", flexDirection: "column", gap: 8 }}>
-                  {it.title && <h3 style={{ margin: 0, fontFamily: "var(--serif)", fontSize: 17 }}>{it.title}</h3>}
+                <div className="board-card-body">
+                  {it.title && <h3>{it.title}</h3>}
                   {it.body && <p className="muted" style={{ margin: 0, lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{it.body}</p>}
                   {isMaster && (
-                    <div style={{ display: "flex", gap: 6, marginTop: "auto", paddingTop: 8, borderTop: "1px solid var(--border)", flexWrap: "wrap" }}>
-                      <button className="ghost" title="Subir" onClick={() => move(idx, -1)} disabled={idx === 0} style={{ padding: "2px 8px" }}>↑</button>
-                      <button className="ghost" title="Descer" onClick={() => move(idx, 1)} disabled={idx === items.length - 1} style={{ padding: "2px 8px" }}>↓</button>
-                      <button className="ghost" data-testid={`board-edit-${it.id}`} onClick={() => startEdit(it)} style={{ padding: "2px 8px" }}>Editar</button>
-                      <button className="ghost" data-testid={`board-delete-${it.id}`} onClick={() => remove(it)} style={{ padding: "2px 8px", color: "var(--err)" }}>Excluir</button>
+                    <div className="board-card-actions">
+                      <button className="ghost" title="Subir" aria-label="Subir card" onClick={() => move(idx, -1)} disabled={idx === 0}>↑</button>
+                      <button className="ghost" title="Descer" aria-label="Descer card" onClick={() => move(idx, 1)} disabled={idx === items.length - 1}>↓</button>
+                      <button className="ghost" data-testid={`board-edit-${it.id}`} onClick={() => startEdit(it)}>Editar</button>
+                      <button className="ghost" data-testid={`board-delete-${it.id}`} onClick={() => remove(it)} style={{ color: "var(--err)" }}>Excluir</button>
                     </div>
                   )}
                 </div>
@@ -152,6 +160,72 @@ export function CampaignBoard({ campaignId, isMaster }: { campaignId: string; is
         </p>
       )}
       {error && <p className="error" data-testid="board-error" style={{ marginTop: 14 }}>⚠ {error}</p>}
+    </div>
+  );
+}
+
+/**
+ * Escolha da imagem do card: envia do dispositivo (galeria/câmera no celular) ou cola
+ * uma URL. O arquivo é comprimido no navegador antes de subir — foto de celular vem
+ * com vários MB e não passaria no limite de corpo da plataforma.
+ */
+function ImageField({
+  campaignId, value, onChange, onError, testid,
+}: {
+  campaignId: string;
+  value: string;
+  onChange: (url: string) => void;
+  onError: (msg: string | null) => void;
+  testid: string;
+}) {
+  const [busy, setBusy] = useState(false);
+  const [showUrl, setShowUrl] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  async function pick(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // permite reenviar o mesmo arquivo depois
+    if (!file) return;
+    onError(null);
+    setBusy(true);
+    try {
+      const compressed = await compressImage(file);
+      const saved = await uploadFile<{ id: string; url: string }>(
+        `/campaigns/${campaignId}/media`, compressed);
+      onChange(saved.url);
+    } catch (err) {
+      onError(err instanceof Error ? err.message : "erro ao enviar a imagem");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="img-field">
+      <div className="img-field-actions">
+        <input ref={fileRef} type="file" accept="image/*" onChange={pick}
+          data-testid={`${testid}-file`} style={{ display: "none" }} />
+        <button type="button" className="secondary" disabled={busy}
+          onClick={() => fileRef.current?.click()} data-testid={`${testid}-pick`}>
+          {busy ? <><span className="spinner" /> Enviando…</> : "📷 Enviar imagem"}
+        </button>
+        {!showUrl && !value && (
+          <button type="button" className="ghost" onClick={() => setShowUrl(true)}>ou colar URL</button>
+        )}
+        {value && (
+          <button type="button" className="ghost" onClick={() => { onChange(""); setShowUrl(false); }}
+            data-testid={`${testid}-clear`} style={{ color: "var(--err)" }}>Remover</button>
+        )}
+      </div>
+
+      {(showUrl || (value && !value.startsWith("/api/"))) && (
+        <input data-testid={testid} value={value} placeholder="URL de imagem"
+          onChange={(e) => onChange(e.target.value)} />
+      )}
+
+      {value.trim() && (
+        <AuthImage src={value} alt="prévia" className="img-field-preview" />
+      )}
     </div>
   );
 }
