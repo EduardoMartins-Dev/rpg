@@ -7,7 +7,13 @@ import { AttributeRadial } from "@/components/AttributeRadial";
 import { ClanTrait } from "@/components/ClanTrait";
 
 type Dmg = { sup: number; agg: number };
-type Xp = { total: number; entries: { desc: string; cost: number }[] };
+type XpUndo =
+  | { group: "attributes" | "skills"; key: string; prev: number }
+  | { group: "bloodPotency"; prev: number }
+  | { group: "discipline"; key: string; prev: number }
+  | { group: "specialty"; key: string; prev: string };
+type XpEntry = { id?: string; desc: string; cost: number; undo?: XpUndo };
+type Xp = { total: number; entries: XpEntry[] };
 
 const XP_COSTS: [string, string][] = [
   ["Aumento de Atributo", "novo nível × 5"],
@@ -550,7 +556,13 @@ export function DynamicSheet({
               </div>
             </div>
 
-            <XpPanel xp={(sheet.xp as Xp) ?? { total: 0, entries: [] }} onChange={(v) => setTop("xp", v)} />
+            <XpPanel
+              sheet={sheet}
+              onSheet={onChange}
+              attrList={attributes.map((n) => ({ key: n, label: titleCase(n), value: attrs[n] ?? 0 }))}
+              skillList={skills.map((n) => ({ key: n, label: skillMeta.get(norm(n))?.label ?? titleCase(n), value: skillVals[n] ?? 0 }))}
+              clanDiscs={(sheet.clanDisciplines as string[]) ?? []}
+            />
           </section>
         )}
 
@@ -822,37 +834,192 @@ function CatalogSelect({ label, value, onChange, options }: {
   );
 }
 
-function XpPanel({ xp, onChange }: { xp: Xp; onChange: (v: Xp) => void }) {
+type XpAction = "attributes" | "skills" | "discipline" | "bloodPotency" | "specialty" | "free";
+type TraitOpt = { key: string; label: string; value: number };
+
+/**
+ * XP interativo: escolhe a ação (subir atributo/perícia/disciplina/potência, nova
+ * especialização, ou gasto livre), calcula o custo pelo livro, confirma, e aplica no
+ * traço + registra no histórico. Cada gasto guarda o valor anterior para DESFAZER
+ * (reverte o traço e devolve o XP). Trava se o custo passa do disponível.
+ */
+function XpPanel({ sheet, onSheet, attrList, skillList, clanDiscs }: {
+  sheet: Sheet; onSheet: (next: Sheet) => void;
+  attrList: TraitOpt[]; skillList: TraitOpt[]; clanDiscs: string[];
+}) {
+  const xp: Xp = (sheet.xp as Xp) ?? { total: 0, entries: [] };
   const entries = xp.entries ?? [];
   const spent = entries.reduce((a, e) => a + (e.cost || 0), 0);
   const available = (xp.total || 0) - spent;
+  const discList = normDisciplines(sheet.disciplines);
+  const bp = Number(sheet.bloodPotency) || 0;
+
+  const [action, setAction] = useState<XpAction>("attributes");
+  const [target, setTarget] = useState("");
+  const [specName, setSpecName] = useState("");
+  const [freeDesc, setFreeDesc] = useState("");
+  const [freeCost, setFreeCost] = useState(0);
+  const [err, setErr] = useState<string | null>(null);
+
+  type Plan = { label: string; cost: number; apply: () => { next: Sheet; undo: XpUndo } };
+  function plan(): Plan | null {
+    if (action === "attributes" || action === "skills") {
+      const list = action === "attributes" ? attrList : skillList;
+      const t = list.find((x) => x.key === target);
+      if (!t || t.value >= 5) return null;
+      const to = t.value + 1;
+      const cost = to * (action === "attributes" ? 5 : 3);
+      return { label: `${t.label} ${t.value}→${to}`, cost, apply: () => ({
+        next: { ...sheet, [action]: { ...((sheet[action] as Record<string, number>) ?? {}), [t.key]: to } },
+        undo: { group: action, key: t.key, prev: t.value },
+      }) };
+    }
+    if (action === "discipline") {
+      const d = discList.find((x) => x.name === target);
+      if (!d || d.level >= 5) return null;
+      const to = d.level + 1;
+      const isClan = clanDiscs.includes(d.name);
+      const cost = to * (isClan ? 5 : 7);
+      return { label: `${d.name} ${d.level}→${to}${isClan ? " (clã)" : ""}`, cost, apply: () => ({
+        next: { ...sheet, disciplines: discList.map((x) => (x.name === d.name ? { ...x, level: to } : x)) },
+        undo: { group: "discipline", key: d.name, prev: d.level },
+      }) };
+    }
+    if (action === "bloodPotency") {
+      if (bp >= 6) return null;
+      const to = bp + 1;
+      return { label: `Potência de Sangue ${bp}→${to}`, cost: to * 10, apply: () => ({
+        next: { ...sheet, bloodPotency: to },
+        undo: { group: "bloodPotency", prev: bp },
+      }) };
+    }
+    if (action === "specialty") {
+      const t = skillList.find((x) => x.key === target);
+      if (!t || !specName.trim()) return null;
+      const specs = (sheet.specialties as Record<string, string>) ?? {};
+      const prev = specs[t.key] ?? "";
+      const nextVal = prev ? `${prev}, ${specName.trim()}` : specName.trim();
+      return { label: `Especialização — ${t.label}: ${specName.trim()}`, cost: 3, apply: () => ({
+        next: { ...sheet, specialties: { ...specs, [t.key]: nextVal } },
+        undo: { group: "specialty", key: t.key, prev },
+      }) };
+    }
+    return null;
+  }
+
+  const p = action === "free" ? null : plan();
+
+  function spend() {
+    setErr(null);
+    if (action === "free") {
+      if (!freeDesc.trim() || freeCost <= 0) { setErr("Preencha descrição e custo."); return; }
+      if (freeCost > available) { setErr(`XP insuficiente: custa ${freeCost}, você tem ${available}.`); return; }
+      onSheet({ ...sheet, xp: { ...xp, entries: [...entries, { id: crypto.randomUUID(), desc: freeDesc.trim(), cost: freeCost }] } });
+      setFreeDesc(""); setFreeCost(0);
+      return;
+    }
+    if (!p) { setErr("Escolha um alvo válido (ou já está no máximo)."); return; }
+    if (p.cost > available) { setErr(`XP insuficiente: custa ${p.cost}, você tem ${available}.`); return; }
+    const msg = action === "specialty"
+      ? `Esta ação vai custar ${p.cost} de XP e adicionar "${specName.trim()}". Tem certeza?`
+      : `Esta ação vai custar ${p.cost} de XP e realizar "${p.label}". Tem certeza?`;
+    if (!confirm(msg)) return;
+    const { next, undo } = p.apply();
+    onSheet({ ...next, xp: { ...xp, entries: [...entries, { id: crypto.randomUUID(), desc: p.label, cost: p.cost, undo }] } });
+    setTarget(""); setSpecName("");
+  }
+
+  function undoEntry(e: XpEntry) {
+    let next: Sheet = sheet;
+    const u = e.undo;
+    if (u) {
+      if (u.group === "attributes" || u.group === "skills") {
+        next = { ...next, [u.group]: { ...((next[u.group] as Record<string, number>) ?? {}), [u.key]: u.prev } };
+      } else if (u.group === "bloodPotency") {
+        next = { ...next, bloodPotency: u.prev };
+      } else if (u.group === "discipline") {
+        next = { ...next, disciplines: normDisciplines(next.disciplines).map((x) => (x.name === u.key ? { ...x, level: u.prev } : x)) };
+      } else if (u.group === "specialty") {
+        const specs = { ...((next.specialties as Record<string, string>) ?? {}) };
+        if (u.prev) specs[u.key] = u.prev; else delete specs[u.key];
+        next = { ...next, specialties: specs };
+      }
+    }
+    onSheet({ ...next, xp: { ...xp, entries: entries.filter((x) => x !== e) } });
+  }
+
+  const needsTarget = action === "attributes" || action === "skills" || action === "discipline" || action === "specialty";
+  const targetOpts = action === "discipline"
+    ? discList.map((d) => ({ key: d.name, label: `${d.name} (${d.level})` }))
+    : (action === "attributes" ? attrList : skillList).map((t) => ({ key: t.key, label: `${t.label} (${t.value})` }));
+
   return (
     <div className="sheet-section" data-testid="xp-panel">
       <h3 style={{ fontSize: "1rem" }}>Experiência (XP)</h3>
       <div className="row" style={{ alignItems: "center", maxWidth: 520 }}>
         <div style={{ maxWidth: 140 }}>
           <label>Total ganho</label>
-          <input type="number" min={0} value={xp.total || 0}
-            onChange={(e) => onChange({ ...xp, total: Number(e.target.value) })} />
+          <input type="number" min={0} data-testid="xp-total" value={xp.total || 0}
+            onChange={(e) => onSheet({ ...sheet, xp: { ...xp, total: Number(e.target.value) } })} />
         </div>
         <span className="badge" style={{ alignSelf: "center" }}>Gasto: {spent}</span>
-        <span className={`budget ${available < 0 ? "warn" : "ok"}`} style={{ alignSelf: "center", padding: "5px 10px", border: "1px solid var(--border)", borderRadius: 999 }}>
+        <span data-testid="xp-available" className={`budget ${available < 0 ? "warn" : "ok"}`}
+          style={{ alignSelf: "center", padding: "5px 10px", border: "1px solid var(--border)", borderRadius: 999, color: available < 0 ? "var(--err)" : "var(--ok)" }}>
           Disponível: {available}
         </span>
       </div>
 
-      <div style={{ marginTop: 10 }}>
-        {entries.map((e, i) => (
-          <div key={i} style={{ display: "grid", gridTemplateColumns: "1fr 80px auto", gap: 8, marginBottom: 6 }}>
-            <input value={e.desc} placeholder="ex.: Potência 2" onChange={(ev) => onChange({ ...xp, entries: entries.map((x, j) => j === i ? { ...x, desc: ev.target.value } : x) })} />
-            <input type="number" value={e.cost} placeholder="custo" onChange={(ev) => onChange({ ...xp, entries: entries.map((x, j) => j === i ? { ...x, cost: Number(ev.target.value) } : x) })} />
-            <button type="button" className="secondary" onClick={() => onChange({ ...xp, entries: entries.filter((_, j) => j !== i) })}>✕</button>
-          </div>
-        ))}
-        <button type="button" className="secondary" onClick={() => onChange({ ...xp, entries: [...entries, { desc: "", cost: 0 }] })}>+ Gasto de XP</button>
+      {/* Gastar XP (interativo) */}
+      <div className="panel" style={{ margin: "12px 0 0", padding: 14 }}>
+        <div className="kv-label" style={{ marginBottom: 8 }}>Gastar XP</div>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+          <select data-testid="xp-action" value={action} onChange={(e) => { setAction(e.target.value as XpAction); setTarget(""); setErr(null); }} style={{ maxWidth: 210 }}>
+            <option value="attributes">Aumentar atributo (×5)</option>
+            <option value="skills">Aumentar perícia (×3)</option>
+            <option value="discipline">Aumentar disciplina (clã ×5 / outra ×7)</option>
+            <option value="bloodPotency">Potência de Sangue (×10)</option>
+            <option value="specialty">Nova especialização (3)</option>
+            <option value="free">Gasto livre</option>
+          </select>
+          {needsTarget && (
+            <select data-testid="xp-target" value={target} onChange={(e) => setTarget(e.target.value)} style={{ maxWidth: 210 }}>
+              <option value="">escolher…</option>
+              {targetOpts.map((o) => <option key={o.key} value={o.key}>{o.label}</option>)}
+            </select>
+          )}
+          {action === "specialty" && (
+            <input data-testid="xp-spec-name" value={specName} placeholder="nome da especialização"
+              onChange={(e) => setSpecName(e.target.value)} style={{ maxWidth: 200 }} />
+          )}
+          {action === "free" && (
+            <>
+              <input data-testid="xp-free-desc" value={freeDesc} placeholder="descrição" onChange={(e) => setFreeDesc(e.target.value)} style={{ maxWidth: 200 }} />
+              <input data-testid="xp-free-cost" type="number" min={0} value={freeCost} placeholder="custo" onChange={(e) => setFreeCost(Number(e.target.value))} style={{ maxWidth: 90 }} />
+            </>
+          )}
+          <button type="button" data-testid="xp-spend" onClick={spend}>
+            Gastar{p ? ` ${p.cost} XP` : action === "free" && freeCost > 0 ? ` ${freeCost} XP` : ""}
+          </button>
+        </div>
+        {p && p.cost > available && <p className="muted" style={{ color: "var(--err)", fontSize: 12, margin: "8px 0 0" }}>Custa {p.cost}, você tem {available}.</p>}
+        {err && <p className="error" data-testid="xp-error" style={{ margin: "8px 0 0" }}>⚠ {err}</p>}
       </div>
 
-      <details style={{ marginTop: 10 }}>
+      {/* Histórico com desfazer */}
+      {entries.length > 0 && (
+        <div style={{ marginTop: 12 }} data-testid="xp-log">
+          <div className="kv-label" style={{ marginBottom: 6 }}>Histórico de gastos</div>
+          {entries.map((e) => (
+            <div key={e.id ?? e.desc} style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 0", borderBottom: "1px solid var(--border)" }}>
+              <span style={{ flex: 1, fontSize: 14 }}>{e.desc}</span>
+              <span className="mono" style={{ color: "var(--err)" }}>−{e.cost}</span>
+              <button type="button" className="ghost" data-testid={`xp-undo-${e.id ?? ""}`} onClick={() => undoEntry(e)} style={{ padding: "2px 8px" }}>desfazer</button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <details style={{ marginTop: 12 }}>
         <summary className="muted" style={{ fontSize: 13, cursor: "pointer" }}>Tabela de custos (livro)</summary>
         <div style={{ marginTop: 8 }}>
           {XP_COSTS.map(([k, v]) => (
