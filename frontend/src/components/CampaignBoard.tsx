@@ -42,6 +42,8 @@ export function CampaignBoard({ campaignId, isMaster }: { campaignId: string; is
   const [zoom, setZoom] = useState<{ src: string; alt: string } | null>(null);
   const [menuFor, setMenuFor] = useState<string | null>(null);   // menu ⋯ de um card
   const [fMenuFor, setFMenuFor] = useState<string | null>(null); // menu ⋯ de uma pasta
+  const [dragId, setDragId] = useState<string | null>(null);     // card sendo arrastado (mouse)
+  const [dropOn, setDropOn] = useState<string | null>(null);     // alvo sob o cursor: id da pasta ou "root"
 
   const load = useCallback(async () => {
     setError(null);
@@ -105,6 +107,13 @@ export function CampaignBoard({ campaignId, isMaster }: { campaignId: string; is
     } catch (err) { setError(err instanceof Error ? err.message : "erro ao mover card"); }
   }
 
+  // Arrastar-e-soltar (mouse): o card sob `dragId` cai na pasta `folderId` (null = raiz).
+  function dropCard(folderId: string | null) {
+    const it = items.find((x) => x.id === dragId);
+    setDragId(null); setDropOn(null);
+    if (it && (it.folderId ?? null) !== folderId) void moveItem(it, folderId);
+  }
+
   // Troca a ordem com o vizinho DENTRO da pasta atual (sem tocar na pasta).
   async function reorder(idx: number, dir: -1 | 1) {
     const j = idx + dir;
@@ -151,7 +160,7 @@ export function CampaignBoard({ campaignId, isMaster }: { campaignId: string; is
     <div data-testid="campaign-board">
       <div className="board-head">
         <span className="muted" style={{ fontSize: 14 }}>
-          {isMaster ? "Organize em pastas: lore, mapas, locais, documentos da sessão…" : "Mural da crônica — organizado pelo mestre."}
+          {isMaster ? "Organize em pastas — arraste um card para dentro de uma pasta, ou use o menu ⋯." : "Mural da crônica — organizado pelo mestre."}
         </span>
         {isMaster && (
           <div style={{ display: "flex", gap: 8 }}>
@@ -161,13 +170,22 @@ export function CampaignBoard({ campaignId, isMaster }: { campaignId: string; is
         )}
       </div>
 
-      {/* Trilha de navegação (raiz → … → pasta atual) + subir um nível */}
+      {/* Trilha de navegação (raiz → … → pasta atual) + subir um nível.
+          Também aceita SOLTAR um card arrastado para mover para a raiz / pasta-mãe. */}
       <div className="folder-crumbs" data-testid="folder-crumbs">
-        <button className={`crumb${current === null ? " on" : ""}`} onClick={() => setCurrent(null)}>📋 Mural</button>
+        <button className={`crumb${current === null ? " on" : ""}${dropOn === "root" ? " drop-target" : ""}`}
+          onClick={() => setCurrent(null)}
+          onDragOver={(e) => { if (dragId) { e.preventDefault(); e.dataTransfer.dropEffect = "move"; setDropOn("root"); } }}
+          onDragLeave={() => setDropOn((d) => (d === "root" ? null : d))}
+          onDrop={(e) => { e.preventDefault(); dropCard(null); }}>📋 Mural</button>
         {crumbs.map((f) => (
           <span key={f.id} className="crumb-group">
             <span className="crumb-sep">›</span>
-            <button className={`crumb${current === f.id ? " on" : ""}`} onClick={() => setCurrent(f.id)}>{f.name}</button>
+            <button className={`crumb${current === f.id ? " on" : ""}${dropOn === f.id ? " drop-target" : ""}`}
+              onClick={() => setCurrent(f.id)}
+              onDragOver={(e) => { if (dragId) { e.preventDefault(); e.dataTransfer.dropEffect = "move"; setDropOn(f.id); } }}
+              onDragLeave={() => setDropOn((d) => (d === f.id ? null : d))}
+              onDrop={(e) => { e.preventDefault(); dropCard(f.id); }}>{f.name}</button>
           </span>
         ))}
         {current !== null && (
@@ -214,9 +232,12 @@ export function CampaignBoard({ campaignId, isMaster }: { campaignId: string; is
           const meta = cards === 0 && subs === 0 ? "vazia"
             : [cards > 0 ? `${cards} card${cards > 1 ? "s" : ""}` : "", subs > 0 ? `${subs} pasta${subs > 1 ? "s" : ""}` : ""].filter(Boolean).join(" · ");
           return (
-            <div key={f.id} className="board-folder" data-testid={`folder-open-${f.id}`} role="button" tabIndex={0}
+            <div key={f.id} className={`board-folder${dropOn === f.id ? " drop-target" : ""}`} data-testid={`folder-open-${f.id}`} role="button" tabIndex={0}
               onClick={() => setCurrent(f.id)}
-              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setCurrent(f.id); } }}>
+              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setCurrent(f.id); } }}
+              onDragOver={(e) => { if (dragId) { e.preventDefault(); e.dataTransfer.dropEffect = "move"; setDropOn(f.id); } }}
+              onDragLeave={() => setDropOn((d) => (d === f.id ? null : d))}
+              onDrop={(e) => { e.preventDefault(); dropCard(f.id); }}>
               <span className="board-folder-ico">📁</span>
               <div className="board-folder-info">
                 <h3 className="board-folder-name">{f.name}</h3>
@@ -243,7 +264,10 @@ export function CampaignBoard({ campaignId, isMaster }: { campaignId: string; is
 
         {/* Cards da pasta atual */}
         {folderItems.map((it, idx) => (
-          <div key={it.id} className="panel board-card" data-testid="board-card">
+          <div key={it.id} className={`panel board-card${dragId === it.id ? " dragging" : ""}`} data-testid="board-card"
+            draggable={isMaster && editing !== it.id}
+            onDragStart={(e) => { setDragId(it.id); setMenuFor(null); e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setData("text/plain", it.id); }}
+            onDragEnd={() => { setDragId(null); setDropOn(null); }}>
             {editing === it.id ? (
               <div className="board-card-edit">
                 <input value={editDraft.title} placeholder="Título"

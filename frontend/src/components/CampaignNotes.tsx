@@ -33,6 +33,10 @@ export function CampaignNotes({ campaignId, isMaster }: { campaignId: string; is
   const [authorFilter, setAuthorFilter] = useState("");
   const [addingFolder, setAddingFolder] = useState(false);
   const [folderName, setFolderName] = useState("");
+  const [menuFor, setMenuFor] = useState<string | null>(null);   // menu ⋯ de uma nota
+  const [fMenuFor, setFMenuFor] = useState<string | null>(null); // menu ⋯ de uma pasta
+  const [dragId, setDragId] = useState<string | null>(null);     // nota sendo arrastada
+  const [dropOn, setDropOn] = useState<string | null>(null);     // alvo sob o cursor
 
   const load = useCallback(async () => {
     setError(null);
@@ -59,9 +63,6 @@ export function CampaignNotes({ campaignId, isMaster }: { campaignId: string; is
   const subfolders = folders.filter((f) => (f.parentId ?? null) === current);
   const crumbs = pathTo(folders, current);
   const folderLabel = (f: Folder) => pathTo(folders, f.id).map((x) => x.name).join(" / ");
-  const countIn = (fid: string) =>
-    notes.filter((n) => n.folderId === fid && (!authorFilter || n.authorId === authorFilter)).length
-    + folders.filter((f) => f.parentId === fid).length;
 
   const shown = useMemo(
     () => notes.filter((n) => (n.folderId ?? null) === current && (!authorFilter || n.authorId === authorFilter)),
@@ -105,6 +106,13 @@ export function CampaignNotes({ campaignId, isMaster }: { campaignId: string; is
       await api.put(`/campaigns/${campaignId}/notes/${n.id}`, { title: n.title, body: n.body, folderId });
       await load();
     } catch (err) { setError(err instanceof Error ? err.message : "erro ao mover anotação"); }
+  }
+
+  // Arrastar-e-soltar (mouse): a nota sob `dragId` cai na pasta `folderId` (null = raiz).
+  function dropNote(folderId: string | null) {
+    const n = notes.find((x) => x.id === dragId);
+    setDragId(null); setDropOn(null);
+    if (n && n.canEdit && (n.folderId ?? null) !== folderId) void moveNote(n, folderId);
   }
 
   async function createFolder(e: React.FormEvent) {
@@ -155,13 +163,25 @@ export function CampaignNotes({ campaignId, isMaster }: { campaignId: string; is
       </div>
 
       <div className="folder-crumbs" data-testid="folder-crumbs">
-        <button className={`crumb${current === null ? " on" : ""}`} onClick={() => setCurrent(null)}>Anotações</button>
+        <button className={`crumb${current === null ? " on" : ""}${dropOn === "root" ? " drop-target" : ""}`}
+          onClick={() => setCurrent(null)}
+          onDragOver={(e) => { if (dragId) { e.preventDefault(); e.dataTransfer.dropEffect = "move"; setDropOn("root"); } }}
+          onDragLeave={() => setDropOn((d) => (d === "root" ? null : d))}
+          onDrop={(e) => { e.preventDefault(); dropNote(null); }}>📓 Anotações</button>
         {crumbs.map((f) => (
           <span key={f.id} className="crumb-group">
             <span className="crumb-sep">›</span>
-            <button className={`crumb${current === f.id ? " on" : ""}`} onClick={() => setCurrent(f.id)}>{f.name}</button>
+            <button className={`crumb${current === f.id ? " on" : ""}${dropOn === f.id ? " drop-target" : ""}`}
+              onClick={() => setCurrent(f.id)}
+              onDragOver={(e) => { if (dragId) { e.preventDefault(); e.dataTransfer.dropEffect = "move"; setDropOn(f.id); } }}
+              onDragLeave={() => setDropOn((d) => (d === f.id ? null : d))}
+              onDrop={(e) => { e.preventDefault(); dropNote(f.id); }}>{f.name}</button>
           </span>
         ))}
+        {current !== null && (
+          <button className="crumb crumb-up" title="Subir um nível" data-testid="folder-up"
+            onClick={() => setCurrent(crumbs.length >= 2 ? crumbs[crumbs.length - 2].id : null)}>↑ Subir</button>
+        )}
       </div>
 
       {isMaster && addingFolder && (
@@ -186,29 +206,50 @@ export function CampaignNotes({ campaignId, isMaster }: { campaignId: string; is
         </form>
       )}
 
-      {subfolders.length > 0 && (
-        <div className="folder-tiles" data-testid="folder-tiles">
-          {subfolders.map((f) => (
-            <div key={f.id} className="folder-tile" data-testid="folder-tile">
-              <button className="folder-tile-open" onClick={() => setCurrent(f.id)} data-testid={`folder-open-${f.id}`}>
-                <span className="folder-ico">📁</span>
-                <span className="folder-tile-name">{f.name}</span>
-                <span className="folder-tile-count">{countIn(f.id)} item(s)</span>
-              </button>
+      <div className="board-grid" data-testid="notes-list">
+        {/* Pastas primeiro, como tiles do mesmo tamanho dos cards */}
+        {subfolders.map((f) => {
+          const inNotes = notes.filter((n) => n.folderId === f.id && (!authorFilter || n.authorId === authorFilter)).length;
+          const subs = folders.filter((x) => x.parentId === f.id).length;
+          const meta = inNotes === 0 && subs === 0 ? "vazia"
+            : [inNotes > 0 ? `${inNotes} anotaç${inNotes > 1 ? "ões" : "ão"}` : "", subs > 0 ? `${subs} pasta${subs > 1 ? "s" : ""}` : ""].filter(Boolean).join(" · ");
+          return (
+            <div key={f.id} className={`board-folder${dropOn === f.id ? " drop-target" : ""}`} data-testid={`folder-open-${f.id}`} role="button" tabIndex={0}
+              onClick={() => setCurrent(f.id)}
+              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setCurrent(f.id); } }}
+              onDragOver={(e) => { if (dragId) { e.preventDefault(); e.dataTransfer.dropEffect = "move"; setDropOn(f.id); } }}
+              onDragLeave={() => setDropOn((d) => (d === f.id ? null : d))}
+              onDrop={(e) => { e.preventDefault(); dropNote(f.id); }}>
+              <span className="board-folder-ico">📁</span>
+              <div className="board-folder-info">
+                <h3 className="board-folder-name">{f.name}</h3>
+                <span className="board-folder-meta">{meta}</span>
+              </div>
+              <span className="board-folder-go">›</span>
               {isMaster && (
-                <div className="folder-tile-actions">
-                  <button className="ghost" title="Renomear" data-testid={`folder-rename-${f.id}`} onClick={() => renameFolder(f)}>✎</button>
-                  <button className="ghost" title="Excluir pasta" data-testid={`folder-delete-${f.id}`} onClick={() => removeFolder(f)} style={{ color: "var(--err)" }}>✕</button>
+                <div className="board-menu-wrap" onClick={(e) => e.stopPropagation()}>
+                  <button className="board-menu-btn" aria-label="Opções da pasta" data-testid={`folder-menu-${f.id}`}
+                    onClick={(e) => { e.stopPropagation(); setFMenuFor(fMenuFor === f.id ? null : f.id); setMenuFor(null); }}>⋯</button>
+                  {fMenuFor === f.id && (
+                    <div className="card-menu">
+                      <button className="ghost" data-testid={`folder-rename-${f.id}`} style={{ width: "100%", justifyContent: "flex-start" }}
+                        onClick={() => { setFMenuFor(null); renameFolder(f); }}>✎ Renomear</button>
+                      <button className="ghost" data-testid={`folder-delete-${f.id}`} style={{ width: "100%", justifyContent: "flex-start", color: "var(--err)" }}
+                        onClick={() => { setFMenuFor(null); removeFolder(f); }}>✕ Excluir pasta</button>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
-          ))}
-        </div>
-      )}
+          );
+        })}
 
-      <div className="notes-grid" data-testid="notes-list">
+        {/* Anotações da pasta atual */}
         {shown.map((n) => (
-          <div key={n.id} className="note-card" data-testid="note-card">
+          <div key={n.id} className={`note-card${dragId === n.id ? " dragging" : ""}`} data-testid="note-card"
+            draggable={n.canEdit && editing !== n.id}
+            onDragStart={(e) => { setDragId(n.id); setMenuFor(null); e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setData("text/plain", n.id); }}
+            onDragEnd={() => { setDragId(null); setDropOn(null); }}>
             {editing === n.id ? (
               <>
                 <input value={editDraft.title} placeholder="Título"
@@ -228,14 +269,26 @@ export function CampaignNotes({ campaignId, isMaster }: { campaignId: string; is
                 </div>
                 <p className="note-card__body">{n.body || <span className="muted">—</span>}</p>
                 {n.canEdit && (
-                  <div className="note-card__foot">
-                    <button className="ghost" data-testid={`note-edit-${n.id}`} onClick={() => startEdit(n)}>Editar</button>
-                    <button className="ghost" data-testid={`note-delete-${n.id}`} onClick={() => remove(n)} style={{ color: "var(--err)" }}>Excluir</button>
-                    <select className="board-move" data-testid={`note-move-${n.id}`} title="Mover para pasta"
-                      value={n.folderId ?? ""} onChange={(e) => moveNote(n, e.target.value || null)}>
-                      <option value="">📂 Anotações (raiz)</option>
-                      {folders.map((f) => <option key={f.id} value={f.id}>📁 {folderLabel(f)}</option>)}
-                    </select>
+                  <div className="board-menu-wrap" onClick={(e) => e.stopPropagation()}>
+                    <button className="board-menu-btn" aria-label="Opções da anotação" data-testid={`note-menu-${n.id}`}
+                      onClick={() => { setMenuFor(menuFor === n.id ? null : n.id); setFMenuFor(null); }}>⋯</button>
+                    {menuFor === n.id && (
+                      <div className="card-menu">
+                        <button className="ghost" data-testid={`note-edit-${n.id}`} style={{ width: "100%", justifyContent: "flex-start" }}
+                          onClick={() => { setMenuFor(null); startEdit(n); }}>✎ Editar</button>
+                        <div className="card-menu-sep" />
+                        <div className="card-menu-label">Mover para</div>
+                        <button className="ghost" style={{ width: "100%", justifyContent: "flex-start" }} disabled={!n.folderId}
+                          onClick={() => { setMenuFor(null); moveNote(n, null); }}>📂 Anotações (raiz)</button>
+                        {folders.filter((f) => f.id !== n.folderId).map((f) => (
+                          <button key={f.id} className="ghost" data-testid={`note-move-${n.id}-${f.id}`} style={{ width: "100%", justifyContent: "flex-start" }}
+                            onClick={() => { setMenuFor(null); moveNote(n, f.id); }}>📁 {folderLabel(f)}</button>
+                        ))}
+                        <div className="card-menu-sep" />
+                        <button className="ghost" data-testid={`note-delete-${n.id}`} style={{ width: "100%", justifyContent: "flex-start", color: "var(--err)" }}
+                          onClick={() => { setMenuFor(null); remove(n); }}>✕ Excluir</button>
+                      </div>
+                    )}
                   </div>
                 )}
               </>
@@ -243,6 +296,8 @@ export function CampaignNotes({ campaignId, isMaster }: { campaignId: string; is
           </div>
         ))}
       </div>
+
+      {(menuFor || fMenuFor) && <div className="menu-backdrop" onClick={() => { setMenuFor(null); setFMenuFor(null); }} />}
 
       {subfolders.length === 0 && shown.length === 0 && (
         <p className="empty" style={{ marginTop: 12 }} data-testid="notes-empty">

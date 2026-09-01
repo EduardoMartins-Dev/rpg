@@ -238,22 +238,33 @@ th { font-size: .72rem; text-transform: uppercase; letter-spacing: .5px; color: 
 /* Anotações: cartão estilo diário/pergaminho, distinto dos cards do mural. */
 .notes-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; align-items: start; }
 .note-card {
+  position: relative;
   background: linear-gradient(180deg, var(--elev), var(--surface));
   border: 1px solid var(--border);
   border-left: 3px solid var(--accent);
   border-radius: 12px;
   padding: 15px 17px;
   display: flex; flex-direction: column; gap: 9px;
+  overflow: visible;
   transition: border-color .15s, box-shadow .15s, transform .1s;
 }
 .note-card:hover { border-color: var(--accent); box-shadow: 0 6px 22px rgba(0, 0, 0, .28); }
+/* arrastar-e-soltar da anotação para dentro de uma pasta */
+.note-card[draggable="true"] { cursor: grab; }
+.note-card[draggable="true"]:active { cursor: grabbing; }
+.note-card.dragging { opacity: .45; }
 .note-card__head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .note-card__title { margin: 0; font-family: var(--serif); font-size: 17px; letter-spacing: .2px; }
 .note-card__body { margin: 0; line-height: 1.72; white-space: pre-wrap; color: var(--text); font-size: 14.5px; }
 .note-card__foot { display: flex; gap: 6px; margin-top: 2px; padding-top: 10px; border-top: 1px dashed var(--border); }
 .note-card__foot .ghost { padding: 2px 10px; }
-.board-card { position: relative; transition: border-color .15s, box-shadow .15s; margin: 0; padding: 0; overflow: visible; display: flex; flex-direction: column; }
+.board-card { position: relative; transition: border-color .15s, box-shadow .15s, opacity .1s; margin: 0; padding: 0; overflow: visible; display: flex; flex-direction: column; }
 .board-card:hover { box-shadow: 0 6px 22px rgba(0, 0, 0, .28); }
+/* Arrastar-e-soltar (mouse): pega o card pelo corpo e solta numa pasta. */
+.board-card[draggable="true"] .board-card-body { cursor: grab; }
+.board-card.dragging { opacity: .45; }
+.board-folder.drop-target, .board-folder.drop-target:hover { border-color: var(--accent); border-style: dashed; background: var(--accent-tint); transform: none; box-shadow: 0 0 0 2px var(--accent) inset; }
+.folder-crumbs .crumb.drop-target { background: var(--accent-tint); color: var(--text); box-shadow: 0 0 0 1px var(--accent) inset; }
 .board-card:hover { border-color: var(--accent); }
 .board-card-img { width: 100%; max-height: 200px; object-fit: cover; display: block; }
 /* A imagem do card é um botão: qualquer membro clica para ampliar em tela cheia. */
