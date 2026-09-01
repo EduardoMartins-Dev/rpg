@@ -3,6 +3,7 @@ import { jinaEmbeddingModel } from "./embeddings/jina";
 import { echoChatModel } from "./chat/echo";
 import { groqChatModel } from "./chat/groq";
 import { geminiChatModel } from "./chat/gemini";
+import { ollamaChatModel } from "./chat/ollama";
 import type { ChatModel, EmbeddingModel } from "./types";
 
 const hashingEmbeddingModel: EmbeddingModel = {
@@ -23,5 +24,6 @@ export function chatModel(): ChatModel {
   const provider = (process.env.AI_PROVIDER ?? "echo").toLowerCase();
   if (provider === "groq") return groqChatModel;
   if (provider === "gemini") return geminiChatModel;
+  if (provider === "ollama") return ollamaChatModel;
   return echoChatModel;
 }
