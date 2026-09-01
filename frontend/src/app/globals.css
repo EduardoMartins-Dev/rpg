@@ -201,23 +201,39 @@ th { font-size: .72rem; text-transform: uppercase; letter-spacing: .5px; color: 
 .folder-crumbs .crumb-group { display: inline-flex; align-items: center; }
 .folder-crumbs .crumb-up { margin-left: auto; border: 1px solid var(--border); font-size: 13px; }
 .folder-crumbs .crumb-up:hover { border-color: var(--accent); }
-.folder-section-label { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); font-weight: 700; margin: 4px 2px 8px; }
-.folder-section-label .muted { font-weight: 400; }
-.folder-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 12px; margin: 0 0 18px; }
-.folder-tile { display: flex; align-items: stretch; gap: 6px; }
-.folder-tile-open { flex: 1; display: flex; align-items: center; gap: 11px; text-align: left; padding: 13px 14px; border: 1px solid var(--border); border-radius: 11px; background: var(--surface); cursor: pointer; transition: border-color .15s, background .15s, transform .1s; min-width: 0; }
-.folder-tile-open:hover { border-color: var(--accent); background: var(--elev); transform: translateY(-1px); }
-.folder-ico { font-size: 22px; line-height: 1; }
-.folder-tile-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
-.folder-tile-name { font-family: var(--serif); font-weight: 600; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.folder-tile-count { font-size: 11.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.folder-tile-go { color: var(--muted); font-size: 20px; line-height: 1; }
-.folder-tile-open:hover .folder-tile-go { color: var(--accent); }
-/* Em fluxo, ao lado do bloco — sempre visíveis (em toque/celular não há hover). */
-.folder-tile-actions { display: flex; flex-direction: column; justify-content: center; gap: 4px; }
-.folder-tile-actions .ghost { padding: 4px 8px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; font-size: 13px; line-height: 1; }
-.folder-tile-actions .ghost:hover { border-color: var(--accent); }
-.board-move { max-width: 150px; padding: 2px 6px; font-size: 12px; }
+/* Pasta como TILE na mesma grade dos cards (mesma linguagem visual). */
+.board-folder {
+  position: relative; display: flex; align-items: center; gap: 12px;
+  padding: 15px 16px; border: 1px solid var(--border); border-radius: 14px;
+  background: linear-gradient(180deg, var(--elev), var(--surface));
+  cursor: pointer; transition: border-color .15s, transform .1s, box-shadow .15s; min-width: 0;
+}
+.board-folder:hover { border-color: var(--accent); transform: translateY(-2px); box-shadow: 0 6px 22px rgba(0, 0, 0, .28); }
+.board-folder:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.board-folder-ico { font-size: 30px; line-height: 1; }
+.board-folder-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.board-folder-name { margin: 0; font-family: var(--serif); font-weight: 600; font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.board-folder-meta { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.board-folder-go { color: var(--muted); font-size: 22px; line-height: 1; padding-right: 22px; }
+.board-folder:hover .board-folder-go { color: var(--accent); }
+
+/* Botão ⋯ + menu, no canto do card/pasta. */
+.board-menu-wrap { position: absolute; top: 8px; right: 8px; z-index: 25; }
+.board-menu-btn {
+  width: 30px; height: 30px; padding: 0; border-radius: 8px; font-size: 18px; line-height: 1;
+  background: rgba(13, 14, 18, .72); border: 1px solid var(--border); color: var(--text); cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center; backdrop-filter: blur(2px);
+}
+.board-menu-btn:hover { border-color: var(--accent); background: rgba(13, 14, 18, .9); }
+
+/* Selo 🔍 no hover da imagem, avisando que dá pra ampliar. */
+.board-card-zoomhint {
+  position: absolute; bottom: 8px; right: 8px; width: 30px; height: 30px; border-radius: 8px;
+  background: rgba(13, 14, 18, .7); display: flex; align-items: center; justify-content: center;
+  font-size: 15px; opacity: 0; transition: opacity .15s; pointer-events: none;
+}
+.board-card-imgbtn { position: relative; }
+.board-card-imgbtn:hover .board-card-zoomhint { opacity: 1; }
 
 /* Anotações: cartão estilo diário/pergaminho, distinto dos cards do mural. */
 .notes-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; align-items: start; }
@@ -236,11 +252,14 @@ th { font-size: .72rem; text-transform: uppercase; letter-spacing: .5px; color: 
 .note-card__body { margin: 0; line-height: 1.72; white-space: pre-wrap; color: var(--text); font-size: 14.5px; }
 .note-card__foot { display: flex; gap: 6px; margin-top: 2px; padding-top: 10px; border-top: 1px dashed var(--border); }
 .note-card__foot .ghost { padding: 2px 10px; }
-.board-card { transition: border-color .15s; margin: 0; padding: 0; overflow: hidden; display: flex; flex-direction: column; }
+.board-card { position: relative; transition: border-color .15s, box-shadow .15s; margin: 0; padding: 0; overflow: visible; display: flex; flex-direction: column; }
+.board-card:hover { box-shadow: 0 6px 22px rgba(0, 0, 0, .28); }
 .board-card:hover { border-color: var(--accent); }
-.board-card-img { width: 100%; max-height: 220px; object-fit: cover; display: block; }
+.board-card-img { width: 100%; max-height: 200px; object-fit: cover; display: block; }
 /* A imagem do card é um botão: qualquer membro clica para ampliar em tela cheia. */
-.board-card-imgbtn { display: block; width: 100%; padding: 0; margin: 0; border: 0; background: none; cursor: zoom-in; }
+.board-card-imgbtn { display: block; width: 100%; padding: 0; margin: 0; border: 0; background: none; cursor: zoom-in; border-radius: 13px 13px 0 0; overflow: hidden; }
+/* Card sem imagem: o corpo é o topo, arredonda também em cima. */
+.board-card > .board-card-body:first-child { border-radius: 13px 13px 0 0; }
 .board-card-imgbtn:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
 
 /* Lightbox: imagem do mural em tela cheia sobre um fundo escuro. */

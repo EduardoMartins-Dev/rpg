@@ -40,6 +40,8 @@ export function CampaignBoard({ campaignId, isMaster }: { campaignId: string; is
   const [folderName, setFolderName] = useState("");
   // Imagem aberta em tela cheia (lightbox). Qualquer membro pode ampliar para usar na mesa.
   const [zoom, setZoom] = useState<{ src: string; alt: string } | null>(null);
+  const [menuFor, setMenuFor] = useState<string | null>(null);   // menu ⋯ de um card
+  const [fMenuFor, setFMenuFor] = useState<string | null>(null); // menu ⋯ de uma pasta
 
   const load = useCallback(async () => {
     setError(null);
@@ -203,46 +205,43 @@ export function CampaignBoard({ campaignId, isMaster }: { campaignId: string; is
         </form>
       )}
 
-      {/* Subpastas da pasta atual */}
-      {subfolders.length > 0 && (
-        <>
-          <div className="folder-section-label">Pastas <span className="muted">· {subfolders.length}</span></div>
-          <div className="folder-tiles" data-testid="folder-tiles">
-            {subfolders.map((f) => {
-              const cards = items.filter((i) => i.folderId === f.id).length;
-              const subs = folders.filter((x) => x.parentId === f.id).length;
-              return (
-                <div key={f.id} className="folder-tile" data-testid="folder-tile">
-                  <button className="folder-tile-open" onClick={() => setCurrent(f.id)} data-testid={`folder-open-${f.id}`}>
-                    <span className="folder-ico">📁</span>
-                    <span className="folder-tile-body">
-                      <span className="folder-tile-name">{f.name}</span>
-                      <span className="folder-tile-count">
-                        {cards > 0 && `${cards} card${cards > 1 ? "s" : ""}`}
-                        {cards > 0 && subs > 0 && " · "}
-                        {subs > 0 && `${subs} pasta${subs > 1 ? "s" : ""}`}
-                        {cards === 0 && subs === 0 && "vazia"}
-                      </span>
-                    </span>
-                    <span className="folder-tile-go">›</span>
-                  </button>
-                  {isMaster && (
-                    <div className="folder-tile-actions">
-                      <button className="ghost" title="Renomear" data-testid={`folder-rename-${f.id}`} onClick={() => renameFolder(f)}>✎</button>
-                      <button className="ghost" title="Excluir pasta" data-testid={`folder-delete-${f.id}`} onClick={() => removeFolder(f)} style={{ color: "var(--err)" }}>✕</button>
+      {/* Grade única: pastas (como blocos) e cards juntos — mesma linguagem visual. */}
+      <div className="board-grid" data-testid="board-list">
+        {/* Pastas primeiro, como tiles do mesmo tamanho dos cards */}
+        {subfolders.map((f) => {
+          const cards = items.filter((i) => i.folderId === f.id).length;
+          const subs = folders.filter((x) => x.parentId === f.id).length;
+          const meta = cards === 0 && subs === 0 ? "vazia"
+            : [cards > 0 ? `${cards} card${cards > 1 ? "s" : ""}` : "", subs > 0 ? `${subs} pasta${subs > 1 ? "s" : ""}` : ""].filter(Boolean).join(" · ");
+          return (
+            <div key={f.id} className="board-folder" data-testid={`folder-open-${f.id}`} role="button" tabIndex={0}
+              onClick={() => setCurrent(f.id)}
+              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setCurrent(f.id); } }}>
+              <span className="board-folder-ico">📁</span>
+              <div className="board-folder-info">
+                <h3 className="board-folder-name">{f.name}</h3>
+                <span className="board-folder-meta">{meta}</span>
+              </div>
+              <span className="board-folder-go">›</span>
+              {isMaster && (
+                <div className="board-menu-wrap" onClick={(e) => e.stopPropagation()}>
+                  <button className="board-menu-btn" aria-label="Opções da pasta" data-testid={`folder-menu-${f.id}`}
+                    onClick={(e) => { e.stopPropagation(); setFMenuFor(fMenuFor === f.id ? null : f.id); setMenuFor(null); }}>⋯</button>
+                  {fMenuFor === f.id && (
+                    <div className="card-menu">
+                      <button className="ghost" data-testid={`folder-rename-${f.id}`} style={{ width: "100%", justifyContent: "flex-start" }}
+                        onClick={() => { setFMenuFor(null); renameFolder(f); }}>✎ Renomear</button>
+                      <button className="ghost" data-testid={`folder-delete-${f.id}`} style={{ width: "100%", justifyContent: "flex-start", color: "var(--err)" }}
+                        onClick={() => { setFMenuFor(null); removeFolder(f); }}>✕ Excluir pasta</button>
                     </div>
                   )}
                 </div>
-              );
-            })}
-          </div>
-        </>
-      )}
+              )}
+            </div>
+          );
+        })}
 
-      {folderItems.length > 0 && subfolders.length > 0 && (
-        <div className="folder-section-label">Cards <span className="muted">· {folderItems.length}</span></div>
-      )}
-      <div className="board-grid" data-testid="board-list">
+        {/* Cards da pasta atual */}
         {folderItems.map((it, idx) => (
           <div key={it.id} className="panel board-card" data-testid="board-card">
             {editing === it.id ? (
@@ -271,30 +270,49 @@ export function CampaignBoard({ campaignId, isMaster }: { campaignId: string; is
                     data-testid={`board-zoom-${it.id}`}
                     onClick={() => setZoom({ src: it.imageUrl!, alt: it.title ?? "Imagem do mural" })}>
                     <AuthImage src={it.imageUrl} alt={it.title ?? ""} className="board-card-img" />
+                    <span className="board-card-zoomhint" aria-hidden>🔍</span>
                   </button>
                 )}
-                <div className="board-card-body">
-                  {it.title && <h3>{it.title}</h3>}
-                  {it.body && <p className="muted" style={{ margin: 0, lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{it.body}</p>}
-                  {isMaster && (
-                    <div className="board-card-actions">
-                      <button className="ghost" title="Subir" aria-label="Subir card" onClick={() => reorder(idx, -1)} disabled={idx === 0}>↑</button>
-                      <button className="ghost" title="Descer" aria-label="Descer card" onClick={() => reorder(idx, 1)} disabled={idx === folderItems.length - 1}>↓</button>
-                      <button className="ghost" data-testid={`board-edit-${it.id}`} onClick={() => startEdit(it)}>Editar</button>
-                      <button className="ghost" data-testid={`board-delete-${it.id}`} onClick={() => remove(it)} style={{ color: "var(--err)" }}>Excluir</button>
-                      <select className="board-move" data-testid={`board-move-${it.id}`} title="Mover para pasta"
-                        value={it.folderId ?? ""} onChange={(e) => moveItem(it, e.target.value || null)}>
-                        <option value="">📂 Mural (raiz)</option>
-                        {folders.map((f) => <option key={f.id} value={f.id}>📁 {folderLabel(f)}</option>)}
-                      </select>
-                    </div>
-                  )}
-                </div>
+                {(it.title || it.body) && (
+                  <div className="board-card-body">
+                    {it.title && <h3>{it.title}</h3>}
+                    {it.body && <p className="muted" style={{ margin: 0, lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{it.body}</p>}
+                  </div>
+                )}
+                {isMaster && (
+                  <div className="board-menu-wrap" onClick={(e) => e.stopPropagation()}>
+                    <button className="board-menu-btn" aria-label="Opções do card" data-testid={`board-menu-${it.id}`}
+                      onClick={() => { setMenuFor(menuFor === it.id ? null : it.id); setFMenuFor(null); }}>⋯</button>
+                    {menuFor === it.id && (
+                      <div className="card-menu">
+                        <button className="ghost" data-testid={`board-edit-${it.id}`} style={{ width: "100%", justifyContent: "flex-start" }}
+                          onClick={() => { setMenuFor(null); startEdit(it); }}>✎ Editar</button>
+                        <button className="ghost" style={{ width: "100%", justifyContent: "flex-start" }} disabled={idx === 0}
+                          onClick={() => { setMenuFor(null); reorder(idx, -1); }}>↑ Subir</button>
+                        <button className="ghost" style={{ width: "100%", justifyContent: "flex-start" }} disabled={idx === folderItems.length - 1}
+                          onClick={() => { setMenuFor(null); reorder(idx, 1); }}>↓ Descer</button>
+                        <div className="card-menu-sep" />
+                        <div className="card-menu-label">Mover para</div>
+                        <button className="ghost" style={{ width: "100%", justifyContent: "flex-start" }} disabled={!it.folderId}
+                          onClick={() => { setMenuFor(null); moveItem(it, null); }}>📂 Raiz</button>
+                        {folders.filter((f) => f.id !== it.folderId).map((f) => (
+                          <button key={f.id} className="ghost" data-testid={`board-move-${it.id}-${f.id}`} style={{ width: "100%", justifyContent: "flex-start" }}
+                            onClick={() => { setMenuFor(null); moveItem(it, f.id); }}>📁 {folderLabel(f)}</button>
+                        ))}
+                        <div className="card-menu-sep" />
+                        <button className="ghost" data-testid={`board-delete-${it.id}`} style={{ width: "100%", justifyContent: "flex-start", color: "var(--err)" }}
+                          onClick={() => { setMenuFor(null); remove(it); }}>✕ Excluir</button>
+                      </div>
+                    )}
+                  </div>
+                )}
               </>
             )}
           </div>
         ))}
       </div>
+
+      {(menuFor || fMenuFor) && <div className="menu-backdrop" onClick={() => { setMenuFor(null); setFMenuFor(null); }} />}
 
       {subfolders.length === 0 && folderItems.length === 0 && (
         <p className="empty" style={{ marginTop: 12 }} data-testid="board-empty">
