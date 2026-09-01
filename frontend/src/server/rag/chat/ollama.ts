@@ -36,6 +36,9 @@ export const ollamaChatModel: ChatModel = {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          // Pula a página de aviso do ngrok free (interstitial) para chamadas de servidor.
+          // Inofensivo fora do ngrok; garante que a resposta venha como JSON, não como HTML.
+          "ngrok-skip-browser-warning": "1",
           // Opcional: se o túnel exigir um header de acesso (ex.: Cloudflare Access / proxy).
           ...(apiKey ? { Authorization: `Bearer ${apiKey}` } : {}),
         },
