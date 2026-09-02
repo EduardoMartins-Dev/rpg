@@ -3,6 +3,7 @@
 import Link from "next/link";
 import type { Character, Member, V5Catalog, ClanView } from "@/lib/api";
 import { DamageTrack } from "@/components/DamageTrack";
+import { Avatar } from "@/components/Avatar";
 
 /**
  * Escudo do Mestre — painel só-leitura com os dados vitais de TODOS os personagens
@@ -12,7 +13,6 @@ import { DamageTrack } from "@/components/DamageTrack";
  */
 
 type Dmg = { sup: number; agg: number };
-const initials = (s: string) => (s || "?").slice(0, 2).toUpperCase();
 const num = (v: unknown, d = 0): number => (Number.isFinite(Number(v)) ? Number(v) : d);
 
 function pips(filled: number, max: number): string {
@@ -58,7 +58,7 @@ export function MasterScreen({
             <div key={c.id} className="panel" data-testid="ms-card" style={{ margin: 0, display: "flex", flexDirection: "column", gap: 12 }}>
               {/* cabeçalho */}
               <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                <span className="avatar" style={{ borderRadius: 10 }}>{initials(c.name)}</span>
+                <Avatar src={typeof s.avatarUrl === "string" ? s.avatarUrl : null} name={c.name} style={{ borderRadius: 10 }} />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontFamily: "var(--serif)", fontWeight: 600, fontSize: 17 }}>{c.name}</div>
                   <div className="muted" style={{ fontSize: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
