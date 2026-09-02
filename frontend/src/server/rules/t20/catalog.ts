@@ -313,3 +313,53 @@ export function race(id: string): RaceInfo | undefined {
   const q = id.trim().toLowerCase();
   return RACES.find((r) => r.id === q || r.label.toLowerCase() === q);
 }
+
+// --- Origens (35) ----------------------------------------------------------------------
+// Cada origem oferece uma lista de perícias e poderes; o jogador escolhe DOIS benefícios
+// (duas perícias, dois poderes ou um de cada). Conferido na Tabela 1-19 do livro básico.
+// (Itens iniciais e descrições dos poderes únicos entram numa passada de itens/poderes.)
+
+export type OriginInfo = { id: string; label: string; skills: string[]; powers: string[] };
+
+export const ORIGINS: OriginInfo[] = [
+  { id: "acolito", label: "Acólito", skills: ["Cura", "Religião", "Vontade"], powers: ["Medicina", "Membro da Igreja", "Vontade de Ferro"] },
+  { id: "amigo-dos-animais", label: "Amigo dos Animais", skills: ["Adestramento", "Cavalgar"], powers: ["Amigo Especial"] },
+  { id: "amnesico", label: "Amnésico", skills: [], powers: ["Lembranças Graduais", "Uma perícia e um poder à escolha do mestre"] },
+  { id: "aristocrata", label: "Aristocrata", skills: ["Diplomacia", "Enganação", "Nobreza"], powers: ["Comandar", "Sangue Azul"] },
+  { id: "artesao", label: "Artesão", skills: ["Ofício", "Vontade"], powers: ["Frutos do Trabalho", "Sortudo"] },
+  { id: "artista", label: "Artista", skills: ["Atuação", "Enganação"], powers: ["Atraente", "Dom Artístico", "Sortudo", "Torcida"] },
+  { id: "assistente-de-laboratorio", label: "Assistente de Laboratório", skills: ["Ofício (alquimista)", "Misticismo"], powers: ["Esse Cheiro...", "Venefício", "Um poder da Tormenta à escolha"] },
+  { id: "batedor", label: "Batedor", skills: ["Furtividade", "Percepção", "Sobrevivência"], powers: ["À Prova de Tudo", "Estilo de Disparo", "Sentidos Aguçados"] },
+  { id: "capanga", label: "Capanga", skills: ["Luta", "Intimidação"], powers: ["Confissão", "Um poder de combate à escolha"] },
+  { id: "charlatao", label: "Charlatão", skills: ["Enganação", "Jogatina"], powers: ["Alpinista Social", "Aparência Inofensiva", "Sortudo"] },
+  { id: "circense", label: "Circense", skills: ["Acrobacia", "Atuação", "Reflexos"], powers: ["Acrobático", "Torcida", "Truque de Mágica"] },
+  { id: "criminoso", label: "Criminoso", skills: ["Enganação", "Furtividade", "Ladinagem"], powers: ["Punguista", "Venefício"] },
+  { id: "curandeiro", label: "Curandeiro", skills: ["Cura", "Vontade"], powers: ["Medicina", "Médico de Campo", "Venefício"] },
+  { id: "eremita", label: "Eremita", skills: ["Misticismo", "Religião", "Sobrevivência"], powers: ["Busca Interior", "Lobo Solitário"] },
+  { id: "escravo", label: "Escravo", skills: ["Atletismo", "Fortitude", "Furtividade"], powers: ["Desejo de Liberdade", "Vitalidade"] },
+  { id: "estudioso", label: "Estudioso", skills: ["Conhecimento", "Guerra", "Misticismo"], powers: ["Aparência Inofensiva", "Palpite Fundamentado"] },
+  { id: "fazendeiro", label: "Fazendeiro", skills: ["Adestramento", "Cavalgar", "Ofício (fazendeiro)", "Sobrevivência"], powers: ["Água no Feijão", "Ginete"] },
+  { id: "forasteiro", label: "Forasteiro", skills: ["Cavalgar", "Pilotagem", "Sobrevivência"], powers: ["Cultura Exótica", "Lobo Solitário"] },
+  { id: "gladiador", label: "Gladiador", skills: ["Atuação", "Luta"], powers: ["Atraente", "Pão e Circo", "Torcida", "Um poder de combate à escolha"] },
+  { id: "guarda", label: "Guarda", skills: ["Investigação", "Luta", "Percepção"], powers: ["Detetive", "Investigador", "Um poder de combate à escolha"] },
+  { id: "herdeiro", label: "Herdeiro", skills: ["Misticismo", "Nobreza", "Ofício"], powers: ["Comandar", "Herança"] },
+  { id: "heroi-campones", label: "Herói Camponês", skills: ["Adestramento", "Ofício"], powers: ["Coração Heroico", "Sortudo", "Surto Heroico", "Torcida"] },
+  { id: "marujo", label: "Marujo", skills: ["Atletismo", "Jogatina", "Pilotagem"], powers: ["Acrobático", "Passagem de Navio"] },
+  { id: "mateiro", label: "Mateiro", skills: ["Atletismo", "Furtividade", "Sobrevivência"], powers: ["Lobo Solitário", "Sentidos Aguçados", "Vendedor de Carcaças"] },
+  { id: "membro-de-guilda", label: "Membro de Guilda", skills: ["Diplomacia", "Enganação", "Misticismo", "Ofício"], powers: ["Foco em Perícia", "Rede de Contatos"] },
+  { id: "mercador", label: "Mercador", skills: ["Diplomacia", "Intuição", "Ofício"], powers: ["Negociação", "Proficiência", "Sortudo"] },
+  { id: "minerador", label: "Minerador", skills: ["Atletismo", "Fortitude", "Ofício (minerador)"], powers: ["Ataque Poderoso", "Escavador", "Sentidos Aguçados"] },
+  { id: "nomade", label: "Nômade", skills: ["Cavalgar", "Pilotagem", "Sobrevivência"], powers: ["Lobo Solitário", "Mochileiro", "Sentidos Aguçados"] },
+  { id: "pivete", label: "Pivete", skills: ["Furtividade", "Iniciativa", "Ladinagem"], powers: ["Acrobático", "Aparência Inofensiva", "Quebra-Galho"] },
+  { id: "refugiado", label: "Refugiado", skills: ["Fortitude", "Reflexos", "Vontade"], powers: ["Estoico", "Vontade de Ferro"] },
+  { id: "seguidor", label: "Seguidor", skills: ["Adestramento", "Ofício"], powers: ["Antigo Mestre", "Proficiência", "Surto Heroico"] },
+  { id: "selvagem", label: "Selvagem", skills: ["Percepção", "Reflexos", "Sobrevivência"], powers: ["Lobo Solitário", "Vida Rústica", "Vitalidade"] },
+  { id: "soldado", label: "Soldado", skills: ["Fortitude", "Guerra", "Luta", "Pontaria"], powers: ["Influência Militar", "Um poder de combate à escolha"] },
+  { id: "taverneiro", label: "Taverneiro", skills: ["Diplomacia", "Jogatina", "Ofício (cozinheiro)"], powers: ["Gororoba", "Proficiência", "Vitalidade"] },
+  { id: "trabalhador", label: "Trabalhador", skills: ["Atletismo", "Fortitude"], powers: ["Atlético", "Esforçado"] },
+];
+
+export function origin(id: string): OriginInfo | undefined {
+  const q = id.trim().toLowerCase();
+  return ORIGINS.find((o) => o.id === q || o.label.toLowerCase() === q);
+}

@@ -46,6 +46,7 @@ export function T20Sheet({ sheet, catalog, onPersist }: {
   const races = catalog?.races ?? [];
 
   const selectedRace = races.find((r) => r.id === str(s.raca));
+  const selectedOrigin = (catalog?.origins ?? []).find((o) => o.id === str(s.origem));
   const cls = classes.find((c) => c.id === str(s.classe));
   const con = num(atributos.constituicao);
   const des = num(atributos.destreza);
@@ -107,9 +108,11 @@ export function T20Sheet({ sheet, catalog, onPersist }: {
             {races.map((r) => <option key={r.id} value={r.id}>{r.label}</option>)}
           </select>
         </label>
-        <label style={{ flex: 1 }}>Origem
-          <input value={str(s.origem)} data-testid="t20-origem" placeholder="ex.: Acólito, Batedor…"
-            onChange={(e) => setLocal({ ...s, origem: e.target.value })} onBlur={() => commit(s)} style={{ marginTop: 6 }} />
+        <label>Origem
+          <select value={str(s.origem)} data-testid="t20-origem" onChange={(e) => commit({ ...s, origem: e.target.value })} style={{ marginTop: 6 }}>
+            <option value="">—</option>
+            {(catalog?.origins ?? []).map((o) => <option key={o.id} value={o.id}>{o.label}</option>)}
+          </select>
         </label>
       </div>
 
@@ -132,6 +135,20 @@ export function T20Sheet({ sheet, catalog, onPersist }: {
               {cls.skillChoices > 0 && <> <span className="muted">+ {cls.skillChoices} à sua escolha</span></>}
             </div>
             <div><b>Proficiências:</b> <span className="muted">armas simples, armaduras leves{cls.proficiencies !== "Nenhuma" ? `, ${cls.proficiencies.toLowerCase()}` : ""}</span></div>
+          </div>
+        </div>
+      )}
+
+      {/* Origem: escolha 2 benefícios (perícias/poderes) */}
+      {selectedOrigin && (
+        <div className="t20-race" data-testid="t20-origin-info">
+          <div className="t20-race-head">
+            <span className="t20-race-name">{selectedOrigin.label}</span>
+            <span className="muted" style={{ fontSize: 12 }}>escolha 2 benefícios (perícias e/ou poderes)</span>
+          </div>
+          <div style={{ fontSize: 13.5, lineHeight: 1.6 }}>
+            {selectedOrigin.skills.length > 0 && <div><b>Perícias:</b> <span className="muted">{selectedOrigin.skills.join(", ")}</span></div>}
+            {selectedOrigin.powers.length > 0 && <div><b>Poderes:</b> <span className="muted">{selectedOrigin.powers.join(", ")}</span></div>}
           </div>
         </div>
       )}

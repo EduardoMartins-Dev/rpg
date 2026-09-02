@@ -13,6 +13,7 @@ export async function GET(req: NextRequest) {
       skills: T20.SKILLS,
       classes: T20.CLASSES,
       races: T20.RACES,
+      origins: T20.ORIGINS,
     });
   });
 }

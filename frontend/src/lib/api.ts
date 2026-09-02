@@ -255,8 +255,9 @@ export interface T20RaceDef {
   id: string; label: string;
   attrMods: T20AttrMod[]; freeAttr?: T20FreeAttr; abilities: T20RaceAbility[]; variants?: T20RaceVariant[];
 }
+export interface T20OriginDef { id: string; label: string; skills: string[]; powers: string[]; }
 export interface T20Catalog {
-  attributes: T20AttrDef[]; skills: T20SkillDef[]; classes: T20ClassDef[]; races: T20RaceDef[];
+  attributes: T20AttrDef[]; skills: T20SkillDef[]; classes: T20ClassDef[]; races: T20RaceDef[]; origins: T20OriginDef[];
 }
 
 // --- admin: gestão de usuários ----------------------------------------------
