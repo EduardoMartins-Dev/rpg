@@ -170,7 +170,7 @@ export interface Campaign {
   masterId: string; inviteCode: string; role: "MASTER" | "PLAYER" | null;
   bannerUrl?: string | null; theme?: string | null;
 }
-export interface Member { userId: string; email: string; displayName: string; role: string; }
+export interface Member { userId: string; email: string; displayName: string; avatarUrl?: string | null; role: string; }
 export interface MyCharacter {
   id: string; name: string; campaignId: string | null; campaignName: string | null;
   systemId: string | null; systemName: string;

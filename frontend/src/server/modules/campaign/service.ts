@@ -157,7 +157,7 @@ export async function join(inviteCode: string, userId: string): Promise<Campaign
   return toResponse(c, "PLAYER");
 }
 
-export type MemberResponse = { userId: string; email: string | null; displayName: string | null; role: string; joinedAt: string };
+export type MemberResponse = { userId: string; email: string | null; displayName: string | null; avatarUrl: string | null; role: string; joinedAt: string };
 
 export async function listMembers(campaignId: string): Promise<MemberResponse[]> {
   await require(campaignId);
@@ -175,6 +175,7 @@ export async function listMembers(campaignId: string): Promise<MemberResponse[]>
       userId: m.userId,
       email: u?.email ?? null,
       displayName: u?.displayName ?? null,
+      avatarUrl: u?.avatarUrl ?? null,
       role: m.role,
       joinedAt: m.joinedAt.toISOString(),
     };

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useRequireUser } from "@/lib/guard";
 import { AppShell } from "@/components/AppShell";
+import { Avatar } from "@/components/Avatar";
 import { CampaignBoard } from "@/components/CampaignBoard";
 import { CampaignNotes } from "@/components/CampaignNotes";
 import { SessionSheet } from "@/components/SessionSheet";
@@ -352,7 +353,7 @@ export default function CampaignDetailPage() {
               <div data-testid="member-list">
                 {members.map((m) => (
                   <div key={m.userId} className="member-row" data-testid="member-row">
-                    <span className="avatar">{initials(m.displayName)}</span>
+                    <Avatar src={m.avatarUrl} name={m.displayName} />
                     <div style={{ flex: 1 }}>
                       <div style={{ fontWeight: 600 }}>{m.displayName}</div>
                       <div className="muted" style={{ fontSize: 13 }}>
