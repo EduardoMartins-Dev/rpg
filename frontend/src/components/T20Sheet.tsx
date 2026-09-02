@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import type { T20Catalog } from "@/lib/api";
+import type { T20Catalog, T20RaceDef, T20AttrDef, T20AttrMod, T20RaceAbility } from "@/lib/api";
 
 /**
  * Ficha de sessão do Tormenta 20 (sistema d20). Núcleo jogável: nível/classe/raça,
@@ -45,6 +45,7 @@ export function T20Sheet({ sheet, catalog, onPersist }: {
   const classes = catalog?.classes ?? [];
   const races = catalog?.races ?? [];
 
+  const selectedRace = races.find((r) => r.id === str(s.raca));
   const cls = classes.find((c) => c.id === str(s.classe));
   const con = num(atributos.constituicao);
   const des = num(atributos.destreza);
@@ -104,6 +105,12 @@ export function T20Sheet({ sheet, catalog, onPersist }: {
             onChange={(e) => setLocal({ ...s, origem: e.target.value })} onBlur={() => commit(s)} style={{ marginTop: 6 }} />
         </label>
       </div>
+
+      {/* Raça: modificadores + habilidades (referência) */}
+      {selectedRace && (
+        <RaceInfo race={selectedRace} attrDefs={attrDefs}
+          variantId={str(s.racaVariante)} onVariant={(v) => commit({ ...s, racaVariante: v })} />
+      )}
 
       {/* Derivados */}
       <div className="t20-derived">
@@ -181,6 +188,40 @@ export function T20Sheet({ sheet, catalog, onPersist }: {
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+function fmtMods(mods: T20AttrMod[], attrDefs: T20AttrDef[]): string {
+  const abbr = (k: string) => attrDefs.find((a) => a.key === k)?.abbr ?? k;
+  return mods.map((m) => `${abbr(m.attr)} ${m.mod >= 0 ? "+" : ""}${m.mod}`).join(", ");
+}
+
+function RaceInfo({ race, attrDefs, variantId, onVariant }: {
+  race: T20RaceDef; attrDefs: T20AttrDef[]; variantId: string; onVariant: (v: string) => void;
+}) {
+  const variant = race.variants?.find((v) => v.id === variantId) ?? race.variants?.[0];
+  const mods = [...race.attrMods, ...(variant?.attrMods ?? [])];
+  const abilities: T20RaceAbility[] = [...race.abilities, ...(variant?.abilities ?? [])];
+  const modStr = fmtMods(mods, attrDefs)
+    + (race.freeAttr ? `${mods.length ? " · " : ""}+${race.freeAttr.each} em ${race.freeAttr.count} atributos diferentes${race.freeAttr.except?.length ? ` (exceto ${race.freeAttr.except.map((k) => attrDefs.find((a) => a.key === k)?.abbr ?? k).join(", ")})` : ""}` : "");
+  return (
+    <div className="t20-race" data-testid="t20-race-info">
+      <div className="t20-race-head">
+        <span className="t20-race-name">{race.label}</span>
+        <span className="muted" style={{ fontSize: 13 }}>{modStr}</span>
+        {race.variants && (
+          <select value={variant?.id ?? ""} data-testid="t20-raca-variante"
+            onChange={(e) => onVariant(e.target.value)} style={{ width: "auto", padding: "4px 8px", fontSize: 13, marginLeft: "auto" }}>
+            {race.variants.map((v) => <option key={v.id} value={v.id}>{v.label}</option>)}
+          </select>
+        )}
+      </div>
+      <ul className="t20-race-abils">
+        {abilities.map((a) => (
+          <li key={a.name}><b>{a.name}.</b> <span className="muted">{a.desc}</span></li>
+        ))}
+      </ul>
     </div>
   );
 }

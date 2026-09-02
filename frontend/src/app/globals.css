@@ -715,3 +715,8 @@ th { font-size: .72rem; text-transform: uppercase; letter-spacing: .5px; color: 
 .t20-roll.ok { border-left-color: var(--ok); }
 .t20-roll.fail { border-left-color: var(--err); }
 @media (max-width: 640px) { .t20-attrs { grid-template-columns: repeat(3, 1fr); } }
+.t20-race { border: 1px solid var(--border); border-left: 3px solid var(--accent); border-radius: 12px; padding: 12px 14px; background: var(--surface); }
+.t20-race-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; }
+.t20-race-name { font-family: var(--serif); font-weight: 600; font-size: 16px; }
+.t20-race-abils { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 5px; }
+.t20-race-abils li { font-size: 13.5px; line-height: 1.5; }

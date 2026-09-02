@@ -101,25 +101,195 @@ export function classInfo(id: string): ClassInfo | undefined {
 }
 
 // --- Raças (17) ------------------------------------------------------------------------
-// Nomes do livro básico. Modificadores de atributo e habilidades entram numa passada
-// dedicada (verificados um a um contra o livro), por isso aqui só o rótulo por enquanto.
+// Modificadores de atributo e habilidades conferidos no livro básico (cap. 1). freeAttr =
+// "+N em X atributos diferentes" (escolha do jogador); attrMods = modificadores fixos.
+// As descrições são o essencial mecânico de cada habilidade.
 
-export const RACES: { id: string; label: string }[] = [
-  { id: "humano", label: "Humano" },
-  { id: "anao", label: "Anão" },
-  { id: "dahllan", label: "Dahllan" },
-  { id: "elfo", label: "Elfo" },
-  { id: "goblin", label: "Goblin" },
-  { id: "lefou", label: "Lefou" },
-  { id: "minotauro", label: "Minotauro" },
-  { id: "qareen", label: "Qareen" },
-  { id: "golem", label: "Golem" },
-  { id: "hynne", label: "Hynne" },
-  { id: "kliren", label: "Kliren" },
-  { id: "medusa", label: "Medusa" },
-  { id: "osteon", label: "Osteon" },
-  { id: "sereia", label: "Sereia/Tritão" },
-  { id: "silfide", label: "Sílfide" },
-  { id: "suraggel", label: "Suraggel" },
-  { id: "trog", label: "Trog" },
+export type AttrMod = { attr: AttrKey; mod: number };
+export type FreeAttr = { count: number; each: number; except?: AttrKey[] };
+export type RaceAbility = { name: string; desc: string };
+export type RaceVariant = { id: string; label: string; attrMods: AttrMod[]; abilities: RaceAbility[] };
+export type RaceInfo = {
+  id: string; label: string;
+  attrMods: AttrMod[];
+  freeAttr?: FreeAttr;
+  abilities: RaceAbility[];
+  variants?: RaceVariant[];
+};
+
+const AM = (attr: AttrKey, mod: number): AttrMod => ({ attr, mod });
+
+export const RACES: RaceInfo[] = [
+  {
+    id: "humano", label: "Humano",
+    attrMods: [], freeAttr: { count: 3, each: 1 },
+    abilities: [
+      { name: "Versátil", desc: "Torna-se treinado em duas perícias a sua escolha (não precisam ser da classe). Pode trocar uma delas por um poder geral." },
+    ],
+  },
+  {
+    id: "anao", label: "Anão",
+    attrMods: [AM("constituicao", 2), AM("sabedoria", 1), AM("destreza", -1)],
+    abilities: [
+      { name: "Conhecimento das Rochas", desc: "Visão no escuro e +2 em Percepção e Sobrevivência no subterrâneo." },
+      { name: "Devagar e Sempre", desc: "Deslocamento 6m, mas não é reduzido por armadura ou excesso de carga." },
+      { name: "Duro como Pedra", desc: "+3 PV no 1º nível e +1 PV por nível seguinte." },
+      { name: "Tradição de Heredrimm", desc: "Machados, martelos, marretas e picaretas são armas simples para você; +2 em ataques com elas." },
+    ],
+  },
+  {
+    id: "dahllan", label: "Dahllan",
+    attrMods: [AM("sabedoria", 2), AM("destreza", 1), AM("inteligencia", -1)],
+    abilities: [
+      { name: "Amiga das Plantas", desc: "Pode lançar Controlar Plantas (atributo-chave Sabedoria); repetir a habilidade reduz o custo em –1 PM." },
+      { name: "Armadura de Allihanna", desc: "Ação de movimento + 1 PM para transformar a pele em casca: +2 na Defesa até o fim da cena." },
+      { name: "Empatia Selvagem", desc: "Comunica-se com animais; usa Adestramento para mudar atitude/persuadir animais." },
+    ],
+  },
+  {
+    id: "elfo", label: "Elfo",
+    attrMods: [AM("inteligencia", 2), AM("destreza", 1), AM("constituicao", -1)],
+    abilities: [
+      { name: "Graça de Glórienn", desc: "Deslocamento 12m." },
+      { name: "Sangue Mágico", desc: "+1 PM por nível." },
+      { name: "Sentidos Élficos", desc: "Visão na penumbra e +2 em Misticismo e Percepção." },
+    ],
+  },
+  {
+    id: "goblin", label: "Goblin",
+    attrMods: [AM("destreza", 2), AM("inteligencia", 1), AM("carisma", -1)],
+    abilities: [
+      { name: "Engenhoso", desc: "Sem penalidade por não usar ferramentas; com a ferramenta certa, +2 no teste." },
+      { name: "Espelunqueiro", desc: "Visão no escuro e deslocamento de escalada igual ao terrestre." },
+      { name: "Peste Esguia", desc: "Tamanho Pequeno, mas deslocamento 9m." },
+      { name: "Rato das Ruas", desc: "+2 em Fortitude; recuperação de PV/PM nunca inferior ao seu nível." },
+    ],
+  },
+  {
+    id: "lefou", label: "Lefou",
+    attrMods: [AM("carisma", -1)], freeAttr: { count: 3, each: 1, except: ["carisma"] },
+    abilities: [
+      { name: "Cria da Tormenta", desc: "É do tipo monstro; +5 em resistência contra efeitos de lefeu e da Tormenta." },
+      { name: "Deformidade", desc: "+2 em duas perícias (cada bônus conta como poder da Tormenta); pode trocar um por um poder da Tormenta." },
+    ],
+  },
+  {
+    id: "minotauro", label: "Minotauro",
+    attrMods: [AM("forca", 2), AM("constituicao", 1), AM("sabedoria", -1)],
+    abilities: [
+      { name: "Chifres", desc: "Arma natural (1d6, x2, perfuração); 1/rodada pode gastar 1 PM p/ ataque extra ao agredir." },
+      { name: "Couro Rígido", desc: "+1 na Defesa." },
+      { name: "Faro", desc: "Não fica desprevenido contra inimigos que não veja em alcance curto; camuflagem total dá só 20% de falha." },
+      { name: "Medo de Altura", desc: "Adjacente a queda de 3m+ você fica abalado." },
+    ],
+  },
+  {
+    id: "qareen", label: "Qareen",
+    attrMods: [AM("carisma", 2), AM("inteligencia", 1), AM("sabedoria", -1)],
+    abilities: [
+      { name: "Desejos", desc: "Lançar uma magia pedida por alguém desde seu último turno custa –1 PM." },
+      { name: "Resistência Elemental", desc: "Redução 10 a um tipo de dano à escolha (frio, eletricidade, fogo, ácido, luz ou trevas)." },
+      { name: "Tatuagem Mística", desc: "Pode lançar uma magia de 1º círculo à escolha (atributo-chave Carisma); repetir reduz –1 PM." },
+    ],
+  },
+  {
+    id: "golem", label: "Golem",
+    attrMods: [AM("forca", 2), AM("constituicao", 1), AM("carisma", -1)],
+    abilities: [
+      { name: "Chassi", desc: "Deslocamento 6m não reduzido por armadura/carga; +2 na Defesa, mas penalidade de armadura –2." },
+      { name: "Criatura Artificial", desc: "Tipo construto; visão no escuro; imune a cansaço/metabólicos/veneno; não respira/come/dorme; fica inerte 8h para recuperar." },
+      { name: "Fonte Elemental", desc: "Espírito elemental (água/ar/fogo/terra): imune a esse dano; dano mágico do tipo cura metade em PV." },
+      { name: "Propósito de Criação", desc: "Não escolhe origem, mas recebe um poder geral à escolha." },
+    ],
+  },
+  {
+    id: "hynne", label: "Hynne",
+    attrMods: [AM("destreza", 2), AM("carisma", 1), AM("forca", -1)],
+    abilities: [
+      { name: "Arremessador", desc: "Ataque à distância com funda/arremesso aumenta o dano em um passo." },
+      { name: "Pequeno e Rechonchudo", desc: "Tamanho Pequeno, deslocamento 6m; +2 em Enganação; pode usar Destreza em Atletismo." },
+      { name: "Sorte Salvadora", desc: "Em um teste de resistência, gaste 1 PM para rolar de novo." },
+    ],
+  },
+  {
+    id: "kliren", label: "Kliren",
+    attrMods: [AM("inteligencia", 2), AM("carisma", 1), AM("forca", -1)],
+    abilities: [
+      { name: "Híbrido", desc: "Torna-se treinado em uma perícia à escolha (não precisa ser da classe)." },
+      { name: "Engenhosidade", desc: "Em um teste de perícia (não ataque), gaste 2 PM para somar Inteligência; repetir reduz –1 PM." },
+      { name: "Ossos Frágeis", desc: "Sofre +1 de dano por dado de dano de impacto." },
+      { name: "Vanguardista", desc: "Proficiência em armas de fogo e +2 em um Ofício à escolha." },
+    ],
+  },
+  {
+    id: "medusa", label: "Medusa",
+    attrMods: [AM("destreza", 2), AM("carisma", 1)],
+    abilities: [
+      { name: "Cria de Megalokk", desc: "É do tipo monstro e recebe visão no escuro." },
+      { name: "Natureza Venenosa", desc: "Resistência a veneno +5; ação de movimento + 1 PM para envenenar uma arma (perda de 1d12 PV)." },
+      { name: "Olhar Atordoante", desc: "Ação de movimento + 1 PM: alvo em alcance curto faz Fortitude (CD Car) ou fica atordoado 1 rodada (1/cena)." },
+    ],
+  },
+  {
+    id: "osteon", label: "Osteon",
+    attrMods: [AM("constituicao", -1)], freeAttr: { count: 3, each: 1, except: ["constituicao"] },
+    abilities: [
+      { name: "Armadura Óssea", desc: "Redução de corte, frio e perfuração 5." },
+      { name: "Memória Póstuma", desc: "Treinado em uma perícia ou um poder geral; ou seja um osteon de outra raça e ganhe uma habilidade dela." },
+      { name: "Natureza Esquelética", desc: "Tipo morto-vivo; imune a cansaço/metabólicos/trevas/veneno; cura de luz causa dano, dano de trevas cura." },
+      { name: "Preço da Não Vida", desc: "Precisa passar 8h sob estrelas ou no subterrâneo para recuperar por descanso; senão sofre efeitos de fome." },
+    ],
+  },
+  {
+    id: "sereia", label: "Sereia/Tritão",
+    attrMods: [], freeAttr: { count: 3, each: 1 },
+    abilities: [
+      { name: "Canção dos Mares", desc: "Lança duas entre Amedrontar, Comando, Despedaçar, Enfeitiçar, Hipnotismo ou Sono (chave Carisma); repetir reduz –1 PM." },
+      { name: "Mestre do Tridente", desc: "Tridente é arma simples; +2 no dano com azagaias, lanças e tridentes." },
+      { name: "Transformação Anfíbia", desc: "Respira debaixo d'água; cauda dá natação 12m (em terra, pernas com 9m)." },
+    ],
+  },
+  {
+    id: "silfide", label: "Sílfide",
+    attrMods: [AM("carisma", 2), AM("destreza", 1), AM("forca", -2)],
+    abilities: [
+      { name: "Asas de Borboleta", desc: "Tamanho Minúsculo; paira a 1,5m com deslocamento 9m (ignora terreno difícil, imune a dano de queda); 1 PM/rodada para voar 12m." },
+      { name: "Espírito da Natureza", desc: "Tipo espírito; visão na penumbra; fala com animais livremente." },
+      { name: "Magia das Fadas", desc: "Lança duas entre Criar Ilusão, Enfeitiçar, Luz (arcana) e Sono (chave Carisma); repetir reduz –1 PM." },
+    ],
+  },
+  {
+    id: "suraggel", label: "Suraggel",
+    attrMods: [],
+    abilities: [
+      { name: "Herança Divina", desc: "É do tipo espírito e recebe visão no escuro." },
+    ],
+    variants: [
+      {
+        id: "aggelus", label: "Aggelus",
+        attrMods: [AM("sabedoria", 2), AM("carisma", 1)],
+        abilities: [{ name: "Luz Sagrada", desc: "+2 em Diplomacia e Intuição; pode lançar Luz (divina, chave Carisma); repetir reduz –1 PM." }],
+      },
+      {
+        id: "sulfure", label: "Sulfure",
+        attrMods: [AM("destreza", 2), AM("inteligencia", 1)],
+        abilities: [{ name: "Sombras Profanas", desc: "+2 em Enganação e Furtividade; pode lançar Escuridão (divina, chave Inteligência); repetir reduz –1 PM." }],
+      },
+    ],
+  },
+  {
+    id: "trog", label: "Trog",
+    attrMods: [AM("constituicao", 2), AM("forca", 1), AM("inteligencia", -1)],
+    abilities: [
+      { name: "Mau Cheiro", desc: "Ação padrão + 2 PM: criaturas (exceto trogs) em alcance curto fazem Fortitude (CD Con) ou ficam enjoadas 1d6 rodadas." },
+      { name: "Mordida", desc: "Arma natural (1d6, x2, perfuração); 1/rodada pode gastar 1 PM p/ ataque extra ao agredir." },
+      { name: "Reptiliano", desc: "Tipo monstro; visão no escuro; +1 na Defesa; sem armadura pesada, +5 em Furtividade." },
+      { name: "Sangue Frio", desc: "Sofre +1 de dano por dado de dano de frio." },
+    ],
+  },
 ];
+
+export function race(id: string): RaceInfo | undefined {
+  const q = id.trim().toLowerCase();
+  return RACES.find((r) => r.id === q || r.label.toLowerCase() === q);
+}

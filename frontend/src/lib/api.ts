@@ -244,7 +244,14 @@ export interface V5Catalog {
 export interface T20AttrDef { key: string; label: string; abbr: string; }
 export interface T20SkillDef { name: string; key: string; trainedOnly?: boolean; armorPenalty?: boolean; }
 export interface T20ClassDef { id: string; label: string; pvBase: number; pvPerLevel: number; pmPerLevel: number; }
-export interface T20RaceDef { id: string; label: string; }
+export interface T20AttrMod { attr: string; mod: number; }
+export interface T20FreeAttr { count: number; each: number; except?: string[]; }
+export interface T20RaceAbility { name: string; desc: string; }
+export interface T20RaceVariant { id: string; label: string; attrMods: T20AttrMod[]; abilities: T20RaceAbility[]; }
+export interface T20RaceDef {
+  id: string; label: string;
+  attrMods: T20AttrMod[]; freeAttr?: T20FreeAttr; abilities: T20RaceAbility[]; variants?: T20RaceVariant[];
+}
 export interface T20Catalog {
   attributes: T20AttrDef[]; skills: T20SkillDef[]; classes: T20ClassDef[]; races: T20RaceDef[];
 }
