@@ -63,6 +63,13 @@ export function T20Sheet({ sheet, catalog, onPersist }: {
   function setPericia(name: string, patch: Pericia) {
     return { ...s, pericias: { ...pericias, [name]: { ...pericias[name], ...patch } } };
   }
+  // Escolher classe: já marca as perícias FIXAS como treinadas (não desmarca outras).
+  function pickClass(id: string) {
+    const c = classes.find((x) => x.id === id);
+    let per = { ...pericias };
+    if (c) for (const nm of c.skillsFixed) per = { ...per, [nm]: { ...per[nm], treinada: true } };
+    commit({ ...s, classe: id, pericias: per });
+  }
 
   function rollSkill(name: string, value: number) {
     const dtRaw = window.prompt(`Dificuldade (DT) para ${name}? Deixe vazio para rolar sem DT.`, "");
@@ -89,7 +96,7 @@ export function T20Sheet({ sheet, catalog, onPersist }: {
             onBlur={() => commit(s)} style={{ marginTop: 6 }} />
         </label>
         <label>Classe
-          <select value={str(s.classe)} data-testid="t20-classe" onChange={(e) => commit({ ...s, classe: e.target.value })} style={{ marginTop: 6 }}>
+          <select value={str(s.classe)} data-testid="t20-classe" onChange={(e) => pickClass(e.target.value)} style={{ marginTop: 6 }}>
             <option value="">—</option>
             {classes.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
           </select>
@@ -110,6 +117,23 @@ export function T20Sheet({ sheet, catalog, onPersist }: {
       {selectedRace && (
         <RaceInfo race={selectedRace} attrDefs={attrDefs}
           variantId={str(s.racaVariante)} onVariant={(v) => commit({ ...s, racaVariante: v })} />
+      )}
+
+      {/* Classe: perícias iniciais + proficiências */}
+      {cls && (
+        <div className="t20-race" data-testid="t20-class-info">
+          <div className="t20-race-head">
+            <span className="t20-race-name">{cls.label}</span>
+            <span className="muted" style={{ fontSize: 12 }}>PV {cls.pvBase}/+{cls.pvPerLevel} · PM {cls.pmPerLevel}/nível</span>
+          </div>
+          <div style={{ fontSize: 13.5, lineHeight: 1.6 }}>
+            <div><b>Perícias treinadas:</b>{" "}
+              {[...cls.skillsFixed, ...cls.skillsEither.map((g) => g.join(" ou "))].join(", ")}
+              {cls.skillChoices > 0 && <> <span className="muted">+ {cls.skillChoices} à sua escolha</span></>}
+            </div>
+            <div><b>Proficiências:</b> <span className="muted">armas simples, armaduras leves{cls.proficiencies !== "Nenhuma" ? `, ${cls.proficiencies.toLowerCase()}` : ""}</span></div>
+          </div>
+        </div>
       )}
 
       {/* Derivados */}

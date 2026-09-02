@@ -243,7 +243,10 @@ export interface V5Catalog {
 // --- Tormenta 20 -------------------------------------------------------------
 export interface T20AttrDef { key: string; label: string; abbr: string; }
 export interface T20SkillDef { name: string; key: string; trainedOnly?: boolean; armorPenalty?: boolean; }
-export interface T20ClassDef { id: string; label: string; pvBase: number; pvPerLevel: number; pmPerLevel: number; }
+export interface T20ClassDef {
+  id: string; label: string; pvBase: number; pvPerLevel: number; pmPerLevel: number;
+  skillsFixed: string[]; skillsEither: string[][]; skillChoices: number; proficiencies: string;
+}
 export interface T20AttrMod { attr: string; mod: number; }
 export interface T20FreeAttr { count: number; each: number; except?: string[]; }
 export interface T20RaceAbility { name: string; desc: string; }

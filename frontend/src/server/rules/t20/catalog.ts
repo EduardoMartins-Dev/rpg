@@ -76,23 +76,43 @@ export function skill(name: string): Skill | undefined {
 export type ClassInfo = {
   id: string; label: string;
   pvBase: number; pvPerLevel: number; pmPerLevel: number;
+  // Perícias iniciais: fixas (sempre treinadas), grupos "escolha uma" e nº de livres.
+  skillsFixed: string[];
+  skillsEither: string[][];
+  skillChoices: number;
+  proficiencies: string; // além de armas simples + armaduras leves (que todos têm)
 };
 
+// Todos os personagens já sabem usar armas simples e armaduras leves.
 export const CLASSES: ClassInfo[] = [
-  { id: "arcanista", label: "Arcanista", pvBase: 8, pvPerLevel: 2, pmPerLevel: 6 },
-  { id: "barbaro", label: "Bárbaro", pvBase: 24, pvPerLevel: 6, pmPerLevel: 3 },
-  { id: "bardo", label: "Bardo", pvBase: 12, pvPerLevel: 3, pmPerLevel: 4 },
-  { id: "bucaneiro", label: "Bucaneiro", pvBase: 16, pvPerLevel: 4, pmPerLevel: 3 },
-  { id: "cacador", label: "Caçador", pvBase: 16, pvPerLevel: 4, pmPerLevel: 4 },
-  { id: "cavaleiro", label: "Cavaleiro", pvBase: 20, pvPerLevel: 5, pmPerLevel: 3 },
-  { id: "clerigo", label: "Clérigo", pvBase: 16, pvPerLevel: 4, pmPerLevel: 5 },
-  { id: "druida", label: "Druida", pvBase: 16, pvPerLevel: 4, pmPerLevel: 4 },
-  { id: "guerreiro", label: "Guerreiro", pvBase: 20, pvPerLevel: 5, pmPerLevel: 3 },
-  { id: "inventor", label: "Inventor", pvBase: 12, pvPerLevel: 3, pmPerLevel: 4 },
-  { id: "ladino", label: "Ladino", pvBase: 12, pvPerLevel: 3, pmPerLevel: 4 },
-  { id: "lutador", label: "Lutador", pvBase: 20, pvPerLevel: 5, pmPerLevel: 3 },
-  { id: "nobre", label: "Nobre", pvBase: 16, pvPerLevel: 4, pmPerLevel: 4 },
-  { id: "paladino", label: "Paladino", pvBase: 20, pvPerLevel: 5, pmPerLevel: 3 },
+  { id: "arcanista", label: "Arcanista", pvBase: 8, pvPerLevel: 2, pmPerLevel: 6,
+    skillsFixed: ["Misticismo", "Vontade"], skillsEither: [], skillChoices: 2, proficiencies: "Nenhuma" },
+  { id: "barbaro", label: "Bárbaro", pvBase: 24, pvPerLevel: 6, pmPerLevel: 3,
+    skillsFixed: ["Fortitude", "Luta"], skillsEither: [], skillChoices: 4, proficiencies: "Armas marciais e escudos" },
+  { id: "bardo", label: "Bardo", pvBase: 12, pvPerLevel: 3, pmPerLevel: 4,
+    skillsFixed: ["Atuação", "Reflexos"], skillsEither: [], skillChoices: 6, proficiencies: "Armas marciais" },
+  { id: "bucaneiro", label: "Bucaneiro", pvBase: 16, pvPerLevel: 4, pmPerLevel: 3,
+    skillsFixed: ["Reflexos"], skillsEither: [["Luta", "Pontaria"]], skillChoices: 4, proficiencies: "Armas marciais" },
+  { id: "cacador", label: "Caçador", pvBase: 16, pvPerLevel: 4, pmPerLevel: 4,
+    skillsFixed: ["Sobrevivência"], skillsEither: [["Luta", "Pontaria"]], skillChoices: 6, proficiencies: "Armas marciais e escudos" },
+  { id: "cavaleiro", label: "Cavaleiro", pvBase: 20, pvPerLevel: 5, pmPerLevel: 3,
+    skillsFixed: ["Fortitude", "Luta"], skillsEither: [], skillChoices: 2, proficiencies: "Armas marciais, armaduras pesadas e escudos" },
+  { id: "clerigo", label: "Clérigo", pvBase: 16, pvPerLevel: 4, pmPerLevel: 5,
+    skillsFixed: ["Religião", "Vontade"], skillsEither: [], skillChoices: 2, proficiencies: "Armaduras pesadas e escudos" },
+  { id: "druida", label: "Druida", pvBase: 16, pvPerLevel: 4, pmPerLevel: 4,
+    skillsFixed: ["Sobrevivência", "Vontade"], skillsEither: [], skillChoices: 4, proficiencies: "Escudos" },
+  { id: "guerreiro", label: "Guerreiro", pvBase: 20, pvPerLevel: 5, pmPerLevel: 3,
+    skillsFixed: ["Fortitude"], skillsEither: [["Luta", "Pontaria"]], skillChoices: 2, proficiencies: "Armas marciais, armaduras pesadas e escudos" },
+  { id: "inventor", label: "Inventor", pvBase: 12, pvPerLevel: 3, pmPerLevel: 4,
+    skillsFixed: ["Ofício", "Vontade"], skillsEither: [], skillChoices: 4, proficiencies: "Nenhuma" },
+  { id: "ladino", label: "Ladino", pvBase: 12, pvPerLevel: 3, pmPerLevel: 4,
+    skillsFixed: ["Ladinagem", "Reflexos"], skillsEither: [], skillChoices: 8, proficiencies: "Nenhuma" },
+  { id: "lutador", label: "Lutador", pvBase: 20, pvPerLevel: 5, pmPerLevel: 3,
+    skillsFixed: ["Fortitude", "Luta"], skillsEither: [], skillChoices: 4, proficiencies: "Nenhuma" },
+  { id: "nobre", label: "Nobre", pvBase: 16, pvPerLevel: 4, pmPerLevel: 4,
+    skillsFixed: ["Vontade"], skillsEither: [["Diplomacia", "Intimidação"]], skillChoices: 4, proficiencies: "Armas marciais, armaduras pesadas e escudos" },
+  { id: "paladino", label: "Paladino", pvBase: 20, pvPerLevel: 5, pmPerLevel: 3,
+    skillsFixed: ["Luta", "Vontade"], skillsEither: [], skillChoices: 2, proficiencies: "Armas marciais, armaduras pesadas e escudos" },
 ];
 
 export function classInfo(id: string): ClassInfo | undefined {
