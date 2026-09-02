@@ -242,5 +242,5 @@ export interface V5Catalog {
 
 // --- admin: gestão de usuários ----------------------------------------------
 export interface AdminUser {
-  id: string; email: string; displayName: string; admin: boolean; createdAt: string | null;
+  id: string; email: string; displayName: string; avatarUrl?: string | null; admin: boolean; createdAt: string | null;
 }

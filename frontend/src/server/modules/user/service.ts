@@ -6,10 +6,10 @@ import { ApiError } from "@/server/http/errors";
 import type { z } from "zod";
 import type { createUserSchema } from "./schemas";
 
-export type AdminUserView = { id: string; email: string; displayName: string; admin: boolean; createdAt: string };
+export type AdminUserView = { id: string; email: string; displayName: string; avatarUrl: string | null; admin: boolean; createdAt: string };
 
 function toView(u: typeof users.$inferSelect): AdminUserView {
-  return { id: u.id, email: u.email, displayName: u.displayName, admin: u.isAdmin, createdAt: u.createdAt.toISOString() };
+  return { id: u.id, email: u.email, displayName: u.displayName, avatarUrl: u.avatarUrl ?? null, admin: u.isAdmin, createdAt: u.createdAt.toISOString() };
 }
 
 export async function createUser(req: z.infer<typeof createUserSchema>): Promise<AdminUserView> {

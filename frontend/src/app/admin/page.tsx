@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useRequireUser } from "@/lib/guard";
 import { AppShell } from "@/components/AppShell";
+import { Avatar } from "@/components/Avatar";
 import { api, uploadFile, type AdminUser, type RpgSystem, type SheetSchema, type SystemDocument } from "@/lib/api";
 
 type AdminTab = "systems" | "users";
@@ -321,7 +322,7 @@ export default function AdminPage() {
                 <tr key={u.id} data-testid="user-row">
                   <td style={{ paddingLeft: 20 }}>
                     <span style={{ display: "inline-flex", alignItems: "center", gap: 12 }}>
-                      <span className="avatar">{(u.displayName || u.email).slice(0, 2).toUpperCase()}</span>
+                      <Avatar src={u.avatarUrl} name={u.displayName || u.email} />
                       <strong>{u.displayName}</strong>
                     </span>
                   </td>
