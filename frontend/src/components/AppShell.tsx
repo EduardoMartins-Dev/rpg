@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Logo } from "@/components/Logo";
+import { Avatar } from "@/components/Avatar";
 import { useAuth } from "@/lib/auth";
 import type { User } from "@/lib/api";
 
@@ -21,8 +22,6 @@ export function AppShell({ user, active, children }: {
     logout();
     router.push("/");
   }
-
-  const initials = (user.displayName || user.email).slice(0, 2).toUpperCase();
 
   return (
     <div className="app">
@@ -51,10 +50,7 @@ export function AppShell({ user, active, children }: {
         <div className="side-spacer" />
 
         <div className="side-foot">
-          <span className="avatar"
-            style={user.avatarUrl ? { backgroundImage: `url(${user.avatarUrl})` } : undefined}>
-            {user.avatarUrl ? "" : initials}
-          </span>
+          <Avatar src={user.avatarUrl} name={user.displayName || user.email} />
           <div className="side-user-text" style={{ minWidth: 0, flex: 1 }}>
             <div data-testid="nav-user" style={{ fontSize: 13, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
               {user.displayName}

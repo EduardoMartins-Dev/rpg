@@ -1,8 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRequireUser } from "@/lib/guard";
+import { useAuth } from "@/lib/auth";
 import { AppShell } from "@/components/AppShell";
+import { Avatar } from "@/components/Avatar";
+import { api, uploadFile, ApiError } from "@/lib/api";
+import { compressImage } from "@/lib/image";
 
 type Section = "account" | "prefs" | "danger";
 
@@ -16,12 +20,25 @@ const ACCENTS = [
 
 export default function SettingsPage() {
   const { user } = useRequireUser();
+  const { refreshUser } = useAuth();
   const [section, setSection] = useState<Section>("account");
   const [displayName, setDisplayName] = useState("");
+  const [email, setEmail] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [accent, setAccent] = useState(ACCENTS[0].name);
   const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => { if (user) setDisplayName(user.displayName); }, [user]);
+  useEffect(() => {
+    if (user) {
+      setDisplayName(user.displayName);
+      setEmail(user.email);
+      setAvatarUrl(user.avatarUrl ?? null);
+    }
+  }, [user]);
 
   function pickAccent(a: typeof ACCENTS[number]) {
     setAccent(a.name);
@@ -29,7 +46,43 @@ export default function SettingsPage() {
     document.documentElement.style.setProperty("--accent-hover", a.hover);
   }
 
+  async function pickPhoto(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setError(null);
+    setSaved(false);
+    setUploading(true);
+    try {
+      const compressed = await compressImage(file);
+      const saved = await uploadFile<{ id: string; url: string }>("/me/media", compressed);
+      setAvatarUrl(saved.url);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "erro ao enviar a imagem");
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  async function saveProfile() {
+    setError(null);
+    setSaved(false);
+    setSaving(true);
+    try {
+      await api.patch("/me", { displayName: displayName.trim(), email: email.trim(), avatarUrl });
+      await refreshUser();
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2500);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "erro ao salvar o perfil");
+    } finally {
+      setSaving(false);
+    }
+  }
+
   if (!user) return <p className="muted" style={{ padding: 38 }}>Carregando…</p>;
+
+  const dirty = displayName.trim() !== user.displayName || email.trim() !== user.email || (avatarUrl ?? null) !== (user.avatarUrl ?? null);
 
   const nav: { k: Section; label: string }[] = [
     { k: "account", label: "Perfil" },
@@ -54,24 +107,36 @@ export default function SettingsPage() {
               <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
                 <h3 style={{ margin: 0 }}>Perfil</h3>
                 <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-                  <span className="avatar lg" style={{ borderRadius: "50%" }}>
-                    {(displayName || user.email).slice(0, 2).toUpperCase()}
-                  </span>
+                  <Avatar src={avatarUrl} name={displayName || user.email} className="lg" style={{ borderRadius: "50%" }} />
                   <div>
-                    <button className="secondary" disabled title="Em breve (Supabase Storage)">Trocar foto</button>
-                    <div className="muted" style={{ fontSize: 12, marginTop: 6 }}>Upload de avatar chega com o armazenamento de imagens.</div>
+                    <input ref={fileRef} type="file" accept="image/*" onChange={pickPhoto}
+                      data-testid="avatar-file" style={{ display: "none" }} />
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <button className="secondary" disabled={uploading} data-testid="avatar-pick"
+                        onClick={() => fileRef.current?.click()}>
+                        {uploading ? <><span className="spinner" /> Enviando…</> : "Trocar foto"}
+                      </button>
+                      {avatarUrl && (
+                        <button className="ghost" data-testid="avatar-remove" style={{ color: "var(--err)" }}
+                          onClick={() => { setAvatarUrl(null); setSaved(false); }}>Remover</button>
+                      )}
+                    </div>
+                    <div className="muted" style={{ fontSize: 12, marginTop: 6 }}>JPEG, PNG, WebP ou GIF. A imagem é comprimida no navegador.</div>
                   </div>
                 </div>
                 <label>Nome
-                  <input value={displayName} onChange={(e) => setDisplayName(e.target.value)} style={{ marginTop: 7 }} />
+                  <input value={displayName} onChange={(e) => setDisplayName(e.target.value)} data-testid="profile-name" style={{ marginTop: 7 }} />
                 </label>
                 <label>E-mail
-                  <input value={user.email} disabled style={{ marginTop: 7 }} />
+                  <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} data-testid="profile-email" style={{ marginTop: 7 }} />
                 </label>
-                <button style={{ alignSelf: "flex-start" }} onClick={() => { setSaved(true); setTimeout(() => setSaved(false), 2000); }}>
-                  Salvar alterações
+                <button style={{ alignSelf: "flex-start" }} data-testid="profile-save"
+                  disabled={saving || uploading || !dirty || !displayName.trim() || !email.trim()}
+                  onClick={saveProfile}>
+                  {saving ? <><span className="spinner" /> Salvando…</> : "Salvar alterações"}
                 </button>
-                {saved && <p className="ok-msg">✓ Preferências aplicadas localmente (persistência chega com o backend de perfil).</p>}
+                {error && <p className="error" data-testid="profile-error">⚠ {error}</p>}
+                {saved && <p className="ok-msg" data-testid="profile-saved">✓ Perfil atualizado.</p>}
               </div>
             )}
 

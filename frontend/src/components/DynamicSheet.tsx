@@ -5,6 +5,8 @@ import type { SchemaShape, V5Catalog, ClanView } from "@/lib/api";
 import { DamageTrack } from "@/components/DamageTrack";
 import { AttributeRadial } from "@/components/AttributeRadial";
 import { ClanTrait } from "@/components/ClanTrait";
+import { AuthImage } from "@/components/AuthImage";
+import { UserImageField } from "@/components/UserImageField";
 
 type Dmg = { sup: number; agg: number };
 type XpUndo =
@@ -288,14 +290,14 @@ export function DynamicSheet({
             <div style={{ display: "flex", gap: 16, alignItems: "flex-start", flexWrap: "wrap", marginBottom: ".6rem" }}>
               <span className="portrait" data-testid="sheet-portrait">
                 {str(sheet.avatarUrl)
-                  // eslint-disable-next-line @next/next/no-img-element
-                  ? <img src={str(sheet.avatarUrl)} alt="retrato" />
+                  ? <AuthImage src={str(sheet.avatarUrl)} alt="retrato" />
                   : <span className="muted" style={{ fontSize: 12, textAlign: "center", padding: 8 }}>sem foto</span>}
               </span>
               <div style={{ flex: 1, minWidth: 220 }}>
-                <Field label="Foto do personagem (URL)" v={str(sheet.avatarUrl)}
-                  on={(v) => set("avatarUrl", v || undefined)} ph="https://…" />
-                <p className="muted" style={{ fontSize: 12, margin: "6px 0 0" }}>Cole o link de uma imagem (arte, retrato).</p>
+                <label style={{ display: "block", fontSize: 13, marginBottom: 6 }}>Foto do personagem</label>
+                <UserImageField testid="sheet-avatar" value={str(sheet.avatarUrl)}
+                  onChange={(v) => set("avatarUrl", v || undefined)} />
+                <p className="muted" style={{ fontSize: 12, margin: "6px 0 0" }}>Envie uma imagem do dispositivo ou cole o link de uma arte/retrato.</p>
               </div>
             </div>
             <h3>Conceito</h3>

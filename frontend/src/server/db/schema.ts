@@ -44,6 +44,9 @@ export const users = pgTable("users", {
   displayName: varchar("display_name", { length: 255 }).notNull(),
   isAdmin: boolean("is_admin").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().default(sql`now()`),
+  // V9: foto de perfil. Aponta para /api/media/{id} (upload próprio em user_media) ou
+  // uma URL externa. Nulo = sem foto (a UI mostra as iniciais).
+  avatarUrl: text("avatar_url"),
 });
 
 export const rpgSystems = pgTable("rpg_systems", {
@@ -229,6 +232,30 @@ export const campaignMedia = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().default(sql`now()`),
   },
   (t) => [index("idx_campaign_media_campaign").on(t.campaignId, t.createdAt)],
+);
+
+/**
+ * V9: mídia por-usuário (fora de qualquer campanha). Guarda os bytes da foto de perfil
+ * e do retrato da ficha — qualquer jogador envia a sua (o mural continua sendo só do
+ * mestre, via campaign_media). Servida por /api/media/{id} a qualquer usuário logado,
+ * porque avatares e retratos são feitos para os outros jogadores verem.
+ */
+export const userMedia = pgTable(
+  "user_media",
+  {
+    id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+    ownerId: uuid("owner_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    contentType: varchar("content_type", { length: 100 }).notNull(),
+    bytes: customType<{ data: Buffer; driverData: Buffer }>({
+      dataType() {
+        return "bytea";
+      },
+    })("bytes").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().default(sql`now()`),
+  },
+  (t) => [index("idx_user_media_owner").on(t.ownerId, t.createdAt)],
 );
 
 /**

@@ -7,11 +7,11 @@ import { ApiError } from "@/server/http/errors";
 import type { z } from "zod";
 import type { registerSchema, loginSchema } from "./schemas";
 
-export type UserResponse = { id: string; email: string; displayName: string; isAdmin: boolean };
+export type UserResponse = { id: string; email: string; displayName: string; isAdmin: boolean; avatarUrl: string | null };
 export type TokenResponse = { accessToken: string; refreshToken: string; tokenType: "Bearer"; expiresIn: number };
 
 function toUserResponse(u: typeof users.$inferSelect): UserResponse {
-  return { id: u.id, email: u.email, displayName: u.displayName, isAdmin: u.isAdmin };
+  return { id: u.id, email: u.email, displayName: u.displayName, isAdmin: u.isAdmin, avatarUrl: u.avatarUrl ?? null };
 }
 
 export function registrationEnabled(): boolean {
@@ -81,4 +81,43 @@ export async function getUserResponse(userId: string): Promise<UserResponse> {
     throw ApiError.unauthorized("user no longer exists");
   }
   return toUserResponse(user);
+}
+
+/**
+ * Atualiza o próprio perfil (nome, e-mail e foto). Campos ausentes ficam como estão;
+ * avatarUrl explicitamente null/"" remove a foto. O JWT usa o id (sub), não o e-mail,
+ * então trocar o e-mail não invalida a sessão.
+ */
+export async function updateProfile(
+  userId: string,
+  req: { displayName?: string; email?: string; avatarUrl?: string | null },
+): Promise<UserResponse> {
+  const patch: Partial<typeof users.$inferInsert> = {};
+
+  if (req.displayName !== undefined) {
+    const name = req.displayName.trim();
+    if (!name) throw ApiError.badRequest("displayName: não pode ficar vazio");
+    patch.displayName = name;
+  }
+
+  if (req.email !== undefined) {
+    const email = req.email.trim().toLowerCase();
+    if (!email) throw ApiError.badRequest("email: não pode ficar vazio");
+    const [clash] = await db.select({ id: users.id }).from(users).where(eq(users.email, email)).limit(1);
+    if (clash && clash.id !== userId) throw ApiError.conflict("e-mail já está em uso por outra conta");
+    patch.email = email;
+  }
+
+  if (req.avatarUrl !== undefined) {
+    const url = (req.avatarUrl ?? "").trim();
+    patch.avatarUrl = url === "" ? null : url;
+  }
+
+  if (Object.keys(patch).length === 0) {
+    return getUserResponse(userId);
+  }
+
+  const [updated] = await db.update(users).set(patch).where(eq(users.id, userId)).returning();
+  if (!updated) throw ApiError.unauthorized("user no longer exists");
+  return toUserResponse(updated);
 }
