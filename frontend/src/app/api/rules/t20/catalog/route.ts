@@ -14,6 +14,7 @@ export async function GET(req: NextRequest) {
       classes: T20.CLASSES,
       races: T20.RACES,
       origins: T20.ORIGINS,
+      deities: T20.DEITIES,
     });
   });
 }

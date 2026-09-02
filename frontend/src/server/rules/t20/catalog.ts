@@ -363,3 +363,42 @@ export function origin(id: string): OriginInfo | undefined {
   const q = id.trim().toLowerCase();
   return ORIGINS.find((o) => o.id === q || o.label.toLowerCase() === q);
 }
+
+// --- Divindades (20 deuses maiores) ----------------------------------------------------
+// Ser devoto é opcional (clérigo/druida/paladino são devotos automaticamente). Ao se
+// tornar devoto você escolhe UM poder concedido da lista e segue as Obrigações do deus.
+// Conferido no cap. Deuses + Tabela 1-20 do livro básico.
+
+export type DeityInfo = {
+  id: string; label: string; domain: string;
+  energy: string; weapon: string; devotees: string;
+  grantedPowers: string[];
+};
+
+export const DEITIES: DeityInfo[] = [
+  { id: "aharadak", label: "Aharadak", domain: "Deus da Tormenta", energy: "Negativa", weapon: "Corrente de espinhos", devotees: "Quaisquer", grantedPowers: ["Afinidade com a Tormenta", "Êxtase da Loucura", "Percepção Temporal", "Rejeição Divina"] },
+  { id: "allihanna", label: "Allihanna", domain: "Deusa da Natureza", energy: "Positiva", weapon: "Bordão", devotees: "Dahllan, elfos, sílfides, bárbaros, caçadores, druidas", grantedPowers: ["Compreender os Ermos", "Dedo Verde", "Descanso Natural", "Voz da Natureza"] },
+  { id: "arsenal", label: "Arsenal", domain: "Deus da Guerra", energy: "Qualquer", weapon: "Martelo de guerra", devotees: "Anões, minotauros, bárbaros, cavaleiros, guerreiros, lutadores", grantedPowers: ["Conjurar Arma", "Coragem Total", "Fé Guerreira", "Sangue de Ferro"] },
+  { id: "azgher", label: "Azgher", domain: "Deus do Sol", energy: "Positiva", weapon: "Cimitarra", devotees: "Aggelus, qareen, arcanistas, bárbaros, caçadores, cavaleiros, guerreiros, nobres, paladinos", grantedPowers: ["Espada Solar", "Fulgor Solar", "Habitante do Deserto", "Inimigo de Tenebra"] },
+  { id: "hyninn", label: "Hyninn", domain: "Deus da Trapaça", energy: "Qualquer", weapon: "Adaga", devotees: "Hynne, goblins, sílfides, bardos, bucaneiros, ladinos, inventores, nobres", grantedPowers: ["Apostar com o Trapaceiro", "Farsa do Fingidor", "Forma de Macaco", "Golpista Divino"] },
+  { id: "kallyadranoch", label: "Kallyadranoch", domain: "Deus dos Dragões", energy: "Negativa", weapon: "Lança", devotees: "Elfos, medusas, sulfure, arcanistas, cavaleiros, guerreiros, lutadores, nobres", grantedPowers: ["Aura de Medo", "Escamas Dracônicas", "Presas Primordiais", "Servos do Dragão"] },
+  { id: "khalmyr", label: "Khalmyr", domain: "Deus da Justiça", energy: "Positiva", weapon: "Espada longa", devotees: "Aggelus, anões, cavaleiros, guerreiros, nobres, paladinos", grantedPowers: ["Coragem Total", "Dom da Verdade", "Espada Justiceira", "Reparar Injustiça"] },
+  { id: "lena", label: "Lena", domain: "Deusa da Vida", energy: "Positiva", weapon: "Não há", devotees: "Dahllan, qareen, nobres, paladinos (só mulheres, salvo paladinos)", grantedPowers: ["Ataque Piedoso", "Aura Restauradora", "Cura Gentil", "Curandeira Perfeita"] },
+  { id: "lin-wu", label: "Lin-Wu", domain: "Deus Samurai", energy: "Qualquer", weapon: "Katana", devotees: "Anões, cavaleiros, guerreiros, nobres, paladinos", grantedPowers: ["Coragem Total", "Kiai Divino", "Mente Vazia", "Tradição de Lin-Wu"] },
+  { id: "marah", label: "Marah", domain: "Deusa da Paz", energy: "Positiva", weapon: "Não há", devotees: "Aggelus, elfos, hynne, qareen, bardos, nobres, paladinos", grantedPowers: ["Aura de Paz", "Dom da Esperança", "Palavras de Bondade", "Talento Artístico"] },
+  { id: "megalokk", label: "Megalokk", domain: "Deus dos Monstros", energy: "Negativa", weapon: "Maça", devotees: "Goblins, medusas, minotauros, sulfure, trogs, bárbaros, caçadores, druidas, lutadores", grantedPowers: ["Olhar Amedrontador", "Presas Primordiais", "Urro Divino", "Voz dos Monstros"] },
+  { id: "nimb", label: "Nimb", domain: "Deus do Caos", energy: "Qualquer", weapon: "Qualquer (à escolha do mestre)", devotees: "Goblins, qareen, sílfides, arcanistas, bárbaros, bardos, bucaneiros, inventores, ladinos", grantedPowers: ["Êxtase da Loucura", "Poder Oculto", "Sorte dos Loucos", "Transmissão da Loucura"] },
+  { id: "oceano", label: "Oceano", domain: "Deus dos Mares", energy: "Qualquer", weapon: "Tridente", devotees: "Dahllan, hynne, minotauros, sereias/tritões, bárbaros, bucaneiros, caçadores, druidas", grantedPowers: ["Anfíbio", "Arsenal das Profundezas", "Mestre dos Mares", "Sopro do Mar"] },
+  { id: "sszzaas", label: "Sszzaas", domain: "Deus da Traição", energy: "Negativa", weapon: "Adaga", devotees: "Medusas, arcanistas, bardos, bucaneiros, inventores, ladinos, nobres", grantedPowers: ["Astúcia da Serpente", "Familiar Ofídico", "Presas Venenosas", "Sangue Ofídico"] },
+  { id: "tanna-toh", label: "Tanna-Toh", domain: "Deusa do Conhecimento", energy: "Qualquer", weapon: "Bordão", devotees: "Golens, kliren, arcanistas, bardos, inventores, nobres, paladinos", grantedPowers: ["Conhecimento Enciclopédico", "Mente Analítica", "Pesquisa Abençoada", "Voz da Civilização"] },
+  { id: "tenebra", label: "Tenebra", domain: "Deusa das Trevas", energy: "Negativa", weapon: "Adaga", devotees: "Anões, medusas, qareen, osteon, sulfure, trogs, arcanistas, bardos, ladinos", grantedPowers: ["Carícia Sombria", "Manto da Penumbra", "Visão nas Trevas", "Zumbificar"] },
+  { id: "thwor", label: "Thwor", domain: "Deus dos Goblinoides", energy: "Qualquer", weapon: "Machado de guerra", devotees: "Qualquer duyshidakk (povo goblinoide)", grantedPowers: ["Almejar o Impossível", "Fúria Divina", "Olhar Amedrontador", "Tropas Duyshidakk"] },
+  { id: "thyatis", label: "Thyatis", domain: "Deus da Ressurreição", energy: "Positiva", weapon: "Espada longa", devotees: "Aggelus, cavaleiros, guerreiros, inventores, lutadores, paladinos", grantedPowers: ["Ataque Piedoso", "Dom da Imortalidade", "Dom da Profecia", "Dom da Ressurreição"] },
+  { id: "valkaria", label: "Valkaria", domain: "Deusa da Ambição", energy: "Positiva", weapon: "Mangual", devotees: "Qualquer classe (aventureiros)", grantedPowers: ["Almejar o Impossível", "Armas da Ambição", "Coragem Total", "Liberdade Divina"] },
+  { id: "wynna", label: "Wynna", domain: "Deusa da Magia", energy: "Qualquer", weapon: "Adaga", devotees: "Elfos, golens, qareen, sílfides, arcanistas, bardos", grantedPowers: ["Bênção do Mana", "Centelha Mágica", "Escudo Mágico", "Teurgista Místico"] },
+];
+
+export function deity(id: string): DeityInfo | undefined {
+  const q = id.trim().toLowerCase();
+  return DEITIES.find((d) => d.id === q || d.label.toLowerCase() === q);
+}

@@ -47,6 +47,7 @@ export function T20Sheet({ sheet, catalog, onPersist }: {
 
   const selectedRace = races.find((r) => r.id === str(s.raca));
   const selectedOrigin = (catalog?.origins ?? []).find((o) => o.id === str(s.origem));
+  const selectedDeity = (catalog?.deities ?? []).find((d) => d.id === str(s.divindade));
   const cls = classes.find((c) => c.id === str(s.classe));
   const con = num(atributos.constituicao);
   const des = num(atributos.destreza);
@@ -114,6 +115,12 @@ export function T20Sheet({ sheet, catalog, onPersist }: {
             {(catalog?.origins ?? []).map((o) => <option key={o.id} value={o.id}>{o.label}</option>)}
           </select>
         </label>
+        <label>Divindade
+          <select value={str(s.divindade)} data-testid="t20-divindade" onChange={(e) => commit({ ...s, divindade: e.target.value })} style={{ marginTop: 6 }}>
+            <option value="">— (sem devoção)</option>
+            {(catalog?.deities ?? []).map((d) => <option key={d.id} value={d.id}>{d.label}</option>)}
+          </select>
+        </label>
       </div>
 
       {/* Raça: modificadores + habilidades (referência) */}
@@ -149,6 +156,21 @@ export function T20Sheet({ sheet, catalog, onPersist }: {
           <div style={{ fontSize: 13.5, lineHeight: 1.6 }}>
             {selectedOrigin.skills.length > 0 && <div><b>Perícias:</b> <span className="muted">{selectedOrigin.skills.join(", ")}</span></div>}
             {selectedOrigin.powers.length > 0 && <div><b>Poderes:</b> <span className="muted">{selectedOrigin.powers.join(", ")}</span></div>}
+          </div>
+        </div>
+      )}
+
+      {/* Divindade: energia, arma, devotos e poderes concedidos (escolha 1 ao se devotar) */}
+      {selectedDeity && (
+        <div className="t20-race" data-testid="t20-deity-info">
+          <div className="t20-race-head">
+            <span className="t20-race-name">{selectedDeity.label}</span>
+            <span className="muted" style={{ fontSize: 13 }}>{selectedDeity.domain}</span>
+          </div>
+          <div style={{ fontSize: 13.5, lineHeight: 1.6 }}>
+            <div className="muted"><b style={{ color: "var(--text)" }}>Energia:</b> {selectedDeity.energy} · <b style={{ color: "var(--text)" }}>Arma:</b> {selectedDeity.weapon}</div>
+            <div><b>Devotos:</b> <span className="muted">{selectedDeity.devotees}</span></div>
+            <div><b>Poderes concedidos:</b> <span className="muted">{selectedDeity.grantedPowers.join(", ")}</span> <span className="muted" style={{ fontSize: 12 }}>(escolha 1)</span></div>
           </div>
         </div>
       )}
