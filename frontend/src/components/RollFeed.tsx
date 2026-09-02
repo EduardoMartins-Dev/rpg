@@ -1,7 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { api, type CampaignRoll } from "@/lib/api";
+
+/** De quanto em quanto tempo buscamos rolagens novas em segundo plano.
+ * 4s dá sensação de "ao vivo" sem martelar o serverless/DB. O polling só roda
+ * com a aba visível (pausa em background) e é silencioso (não pisca o spinner). */
+const POLL_MS = 4000;
 
 /**
  * Últimas rolagens da mesa. O mestre vê o de TODOS os jogadores (é o ponto: conferir
@@ -74,20 +79,38 @@ export function RollFeed({ campaignId, isMaster }: { campaignId: string; isMaste
   const [rolls, setRolls] = useState<CampaignRoll[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [carregando, setCarregando] = useState(false);
+  const [aoVivo, setAoVivo] = useState(true);
+  const inFlight = useRef(false); // evita empilhar requisições se uma demorar
 
-  const load = useCallback(async () => {
-    setCarregando(true);
+  /** silent = atualização de fundo (sem spinner). Só troca o estado se algo mudou,
+   * pra não re-renderizar a lista inteira à toa a cada 4s. */
+  const load = useCallback(async (silent = false) => {
+    if (inFlight.current) return;
+    inFlight.current = true;
+    if (!silent) setCarregando(true);
     try {
-      setRolls(await api.get<CampaignRoll[]>(`/campaigns/${campaignId}/rolls`));
+      const next = await api.get<CampaignRoll[]>(`/campaigns/${campaignId}/rolls`);
+      setRolls((prev) => (prev.length === next.length && prev[0]?.id === next[0]?.id ? prev : next));
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "erro ao carregar as rolagens");
+      if (!silent) setError(err instanceof Error ? err.message : "erro ao carregar as rolagens");
     } finally {
-      setCarregando(false);
+      inFlight.current = false;
+      if (!silent) setCarregando(false);
     }
   }, [campaignId]);
 
-  useEffect(() => { load(); }, [load]);
+  // Carga inicial + polling em segundo plano enquanto a aba está visível.
+  useEffect(() => {
+    load();
+    let timer: ReturnType<typeof setInterval> | null = null;
+    const start = () => { if (!timer) timer = setInterval(() => load(true), POLL_MS); setAoVivo(true); };
+    const stop = () => { if (timer) { clearInterval(timer); timer = null; } setAoVivo(false); };
+    const onVis = () => { if (document.visibilityState === "visible") { load(true); start(); } else { stop(); } };
+    if (document.visibilityState === "visible") start();
+    document.addEventListener("visibilitychange", onVis);
+    return () => { stop(); document.removeEventListener("visibilitychange", onVis); };
+  }, [load]);
 
   // Última de cada jogador: a lista já vem do mais recente para o mais antigo.
   const ultimaPorJogador: CampaignRoll[] = [];
@@ -99,12 +122,15 @@ export function RollFeed({ campaignId, isMaster }: { campaignId: string; isMaste
   return (
     <div data-testid="roll-feed">
       <div className="board-head">
-        <span className="muted" style={{ fontSize: 14 }}>
+        <span className="muted" style={{ fontSize: 14, display: "inline-flex", alignItems: "center", gap: 8 }}>
+          <span className={`live-dot${aoVivo ? "" : " off"}`} data-testid="rolls-live" aria-hidden />
           {isMaster
-            ? "Rolagens da mesa em tempo quase real — atualize para ver o que acabou de sair."
+            ? (aoVivo
+                ? "Rolagens da mesa ao vivo — aparecem sozinhas assim que o jogador rola."
+                : "Ao vivo pausado (aba em segundo plano) — volte para retomar.")
             : "Suas últimas rolagens nesta campanha."}
         </span>
-        <button className="secondary" onClick={load} disabled={carregando} data-testid="rolls-refresh">
+        <button className="secondary" onClick={() => load()} disabled={carregando} data-testid="rolls-refresh">
           {carregando ? <><span className="spinner" /> Atualizando…</> : "↻ Atualizar"}
         </button>
       </div>

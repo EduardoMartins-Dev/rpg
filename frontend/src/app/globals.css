@@ -50,6 +50,9 @@ code, .mono { font-family: var(--mono); }
 .skel { background: linear-gradient(90deg, #1a1d24 25%, #23262f 50%, #1a1d24 75%); background-size: 800px 100%; animation: shimmer 1.4s linear infinite; border-radius: 8px; }
 .fade-up { animation: fadeUp .35s ease both; }
 .spinner { width: 15px; height: 15px; border: 2px solid rgba(13,14,18,0.35); border-top-color: #0D0E12; border-radius: 50%; animation: spin .7s linear infinite; display: inline-block; }
+/* Ponto "ao vivo" do feed de rolagens: pulsa em verde quando o polling está ativo. */
+.live-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ok); flex: 0 0 auto; animation: pulseDot 1.6s ease-in-out infinite; box-shadow: 0 0 6px var(--ok); }
+.live-dot.off { background: var(--muted); box-shadow: none; animation: none; }
 
 /* --- form controls --------------------------------------------------------- */
 label { display: block; font-size: .82rem; color: var(--muted); font-weight: 500; margin: 0 0 .35rem; }
