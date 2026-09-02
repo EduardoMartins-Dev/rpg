@@ -684,3 +684,34 @@ th { font-size: .72rem; text-transform: uppercase; letter-spacing: .5px; color: 
   .landing-foot .inner { padding: 22px 16px; }
   .cta-row { flex-direction: column; align-items: stretch; }
 }
+
+/* ===== Tormenta 20 (ficha) ===================================================== */
+.t20-sheet { display: flex; flex-direction: column; gap: 18px; }
+.t20-h { margin: 4px 0 -4px; font-family: var(--serif); font-size: 17px; letter-spacing: .2px; }
+.t20-idrow { display: flex; gap: 12px; flex-wrap: wrap; }
+.t20-idrow label { display: flex; flex-direction: column; font-size: 13px; color: var(--muted); min-width: 110px; }
+.t20-derived { display: flex; gap: 12px; flex-wrap: wrap; }
+.t20-vitalbox, .t20-defbox { flex: 1 1 150px; background: linear-gradient(180deg, var(--elev), var(--surface)); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; text-align: center; }
+.t20-vital-head, .t20-defbox-val { font-family: var(--serif); }
+.t20-vital-val, .t20-defbox-val { font-size: 26px; font-weight: 700; color: var(--text); }
+.t20-vital-ctrls { display: flex; gap: 8px; justify-content: center; margin-top: 8px; }
+.t20-vital-ctrls .ghost { width: 34px; height: 30px; border: 1px solid var(--border); border-radius: 8px; }
+.t20-attrs { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; }
+.t20-attr { display: flex; flex-direction: column; align-items: center; gap: 4px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 10px 6px; }
+.t20-attr-abbr { font-family: var(--serif); font-size: 13px; color: var(--accent); letter-spacing: .5px; text-transform: uppercase; }
+.t20-attr input { width: 100%; text-align: center; font-size: 22px; font-weight: 700; padding: 4px; }
+.t20-attr-label { font-size: 11px; color: var(--muted); }
+.t20-armorrow { display: flex; gap: 12px; flex-wrap: wrap; }
+.t20-armorrow label { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
+.t20-armorrow input { width: 70px; text-align: center; }
+.t20-skills { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 6px 14px; }
+.t20-skill { display: flex; align-items: center; gap: 8px; padding: 5px 8px; border-radius: 8px; }
+.t20-skill:hover { background: var(--elev); }
+.t20-skill-name { flex: 1; font-size: 14px; }
+.t20-skill-val { font-family: var(--serif); font-weight: 700; min-width: 34px; text-align: right; color: var(--text); }
+.t20-skill-roll { padding: 2px 6px; }
+.t20-rolls { display: flex; flex-direction: column; gap: 5px; }
+.t20-roll { padding: 8px 12px; border: 1px solid var(--border); border-left: 3px solid var(--border); border-radius: 8px; font-size: 14px; }
+.t20-roll.ok { border-left-color: var(--ok); }
+.t20-roll.fail { border-left-color: var(--err); }
+@media (max-width: 640px) { .t20-attrs { grid-template-columns: repeat(3, 1fr); } }

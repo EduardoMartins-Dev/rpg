@@ -8,10 +8,11 @@ import { AppShell } from "@/components/AppShell";
 import { DynamicSheet } from "@/components/DynamicSheet";
 import { SheetView } from "@/components/SheetView";
 import { SessionSheet } from "@/components/SessionSheet";
+import { T20Sheet } from "@/components/T20Sheet";
 import type { RolledEvent } from "@/components/V5Roller";
 import {
   api, type Campaign, type Character, type SchemaShape, type SheetSchema,
-  type RpgSystem, type V5Catalog,
+  type RpgSystem, type V5Catalog, type T20Catalog,
 } from "@/lib/api";
 
 type Sheet = Record<string, unknown>;
@@ -24,6 +25,8 @@ export default function CharacterSheetPage() {
 
   const [schema, setSchema] = useState<SchemaShape | null>(null);
   const [catalog, setCatalog] = useState<V5Catalog | null>(null);
+  const [ruleset, setRuleset] = useState<string>("v5");
+  const [t20cat, setT20cat] = useState<T20Catalog | null>(null);
   const [name, setName] = useState("");
   const [sheet, setSheet] = useState<Sheet>({});
   const [mode, setMode] = useState<"session" | "edit" | "view">("edit");
@@ -38,12 +41,17 @@ export default function CharacterSheetPage() {
       const system = await api.get<RpgSystem>(`/systems/${campaign.systemId}`);
       const sc = await api.get<SheetSchema>(`/systems/${campaign.systemId}/sheet-schema`);
       setSchema(sc.schema);
-      // Catálogo V5 só quando o sistema usa o ruleset v5 (admin define). Senão, ficha genérica.
-      if ((system.ruleset ?? "v5") === "v5") {
-        try { setCatalog(await api.get<V5Catalog>("/rules/v5/catalog")); }
-        catch { setCatalog(null); }
-      } else {
+      const rs = system.ruleset ?? "v5";
+      setRuleset(rs);
+      // Cada ruleset carrega seu catálogo; os outros ficam nulos.
+      if (rs === "v5") {
+        try { setCatalog(await api.get<V5Catalog>("/rules/v5/catalog")); } catch { setCatalog(null); }
+        setT20cat(null);
+      } else if (rs === "t20") {
+        try { setT20cat(await api.get<T20Catalog>("/rules/t20/catalog")); } catch { setT20cat(null); }
         setCatalog(null);
+      } else {
+        setCatalog(null); setT20cat(null);
       }
       const ch = await api.get<Character>(`/campaigns/${id}/characters/${charId}`);
       setName(ch.name);
@@ -136,7 +144,9 @@ export default function CharacterSheetPage() {
         </div>
 
         <div className="panel">
-          {!schema ? (
+          {ruleset === "t20" ? (
+            <T20Sheet sheet={sheet} catalog={t20cat} onPersist={persist} />
+          ) : !schema ? (
             <p className="muted">Carregando schema…</p>
           ) : mode === "view" ? (
             <SheetView schema={schema} sheet={sheet} catalog={catalog} />

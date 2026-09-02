@@ -2,7 +2,8 @@ import { and, asc, eq, inArray } from "drizzle-orm";
 import { db } from "@/server/db/client";
 import { campaignMembers, campaigns, characters, rpgSystems, systemSheetSchema } from "@/server/db/schema";
 import { ApiError } from "@/server/http/errors";
-import { process as processSheet, type SheetSchema } from "@/server/rules/v5/sheetProcessor";
+import { processSheet } from "@/server/rules/dispatch";
+import type { SheetSchema } from "@/server/rules/v5/sheetProcessor";
 import type { z } from "zod";
 import type { characterRequestSchema } from "./schemas";
 
@@ -32,6 +33,12 @@ async function requireSystem(systemId: string): Promise<typeof rpgSystems.$infer
   const [s] = await db.select().from(rpgSystems).where(eq(rpgSystems.id, systemId)).limit(1);
   if (!s) throw ApiError.notFound("system not found");
   return s;
+}
+
+/** Ruleset do sistema (para escolher o motor de ficha). Default "v5" se não achar. */
+async function rulesetFor(systemId: string): Promise<string> {
+  const [s] = await db.select({ ruleset: rpgSystems.ruleset }).from(rpgSystems).where(eq(rpgSystems.id, systemId)).limit(1);
+  return s?.ruleset ?? "v5";
 }
 
 async function schemaForSystem(systemId: string): Promise<SheetSchema> {
@@ -82,7 +89,7 @@ async function requireAccessible(campaignId: string, charId: string, userId: str
 
 export async function create(campaignId: string, playerId: string, req: z.infer<typeof characterRequestSchema>): Promise<CharacterResponse> {
   const campaign = await requireCampaign(campaignId);
-  const enriched = processSheet(req.sheetData, await schemaFor(campaign));
+  const enriched = processSheet(await rulesetFor(campaign.systemId), req.sheetData, await schemaFor(campaign));
   const [c] = await db
     .insert(characters)
     .values({ campaignId, playerId, systemId: campaign.systemId, name: req.name, sheetData: enriched })
@@ -111,7 +118,7 @@ export async function get(campaignId: string, charId: string, userId: string): P
 export async function update(campaignId: string, charId: string, req: z.infer<typeof characterRequestSchema>, userId: string): Promise<CharacterResponse> {
   await requireAccessible(campaignId, charId, userId);
   const campaign = await requireCampaign(campaignId);
-  const enriched = processSheet(req.sheetData, await schemaFor(campaign));
+  const enriched = processSheet(await rulesetFor(campaign.systemId), req.sheetData, await schemaFor(campaign));
   const [updated] = await db
     .update(characters)
     .set({ name: req.name, sheetData: enriched })
@@ -129,7 +136,7 @@ export async function deleteCharacter(campaignId: string, charId: string, userId
 
 export async function createStandalone(playerId: string, name: string, systemId: string): Promise<CharacterResponse> {
   const system = await requireSystem(systemId);
-  const enriched = processSheet({}, await schemaForSystem(system.id));
+  const enriched = processSheet(system.ruleset, {}, await schemaForSystem(system.id));
   const [c] = await db
     .insert(characters)
     .values({ campaignId: null, playerId, systemId: system.id, name, sheetData: enriched })
@@ -148,7 +155,7 @@ export async function updateMine(
 ): Promise<CharacterResponse> {
   const existing = await requireOwnedStandalone(charId, userId);
   if (!existing.systemId) throw ApiError.badRequest("character has no system");
-  const enriched = processSheet(req.sheetData, await schemaForSystem(existing.systemId));
+  const enriched = processSheet(await rulesetFor(existing.systemId), req.sheetData, await schemaForSystem(existing.systemId));
   const [updated] = await db
     .update(characters)
     .set({ name: req.name, sheetData: enriched })
@@ -179,7 +186,7 @@ export async function copyToCampaign(charId: string, campaignId: string, userId:
   if (src.systemId && src.systemId !== campaign.systemId) {
     throw ApiError.badRequest("character system does not match campaign system");
   }
-  const enriched = processSheet(src.sheetData, await schemaFor(campaign));
+  const enriched = processSheet(await rulesetFor(campaign.systemId), src.sheetData, await schemaFor(campaign));
   const [copy] = await db
     .insert(characters)
     .values({ campaignId, playerId: userId, systemId: campaign.systemId, name: src.name, sheetData: enriched })

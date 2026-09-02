@@ -8,7 +8,7 @@ export const systemRequestSchema = z.object({
     .max(255, "size must be between 0 and 255")
     .regex(/^[a-z0-9-]+$/, "slug must be lowercase alphanumeric with hyphens"),
   description: z.string().nullish(),
-  ruleset: z.enum(["v5", "generic"]).nullish(),
+  ruleset: z.enum(["v5", "t20", "generic"]).nullish(),
 });
 
 export const sheetSchemaRequestSchema = z.object({

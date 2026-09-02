@@ -370,6 +370,7 @@ export default function AdminPage() {
             <select id="sys-ruleset" data-testid="system-ruleset" value={ruleset}
               onChange={(e) => setRuleset(e.target.value)}>
               <option value="v5">Vampiro V5</option>
+              <option value="t20">Tormenta 20</option>
               <option value="generic">Genérico</option>
             </select>
           </div>
@@ -394,6 +395,7 @@ export default function AdminPage() {
                   <select data-testid={`system-ruleset-${s.slug}`} value={s.ruleset ?? "v5"}
                     onChange={(e) => changeRuleset(s, e.target.value)} style={{ width: "auto", padding: "5px 8px", fontSize: 13 }}>
                     <option value="v5">Vampiro V5</option>
+                    <option value="t20">Tormenta 20</option>
                     <option value="generic">Genérico</option>
                   </select>
                 </td>

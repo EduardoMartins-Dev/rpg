@@ -240,6 +240,15 @@ export interface V5Catalog {
   advantages?: string[]; flaws?: string[]; resonances?: ResonanceView[]; coterieTypes?: CoterieView[];
 }
 
+// --- Tormenta 20 -------------------------------------------------------------
+export interface T20AttrDef { key: string; label: string; abbr: string; }
+export interface T20SkillDef { name: string; key: string; trainedOnly?: boolean; armorPenalty?: boolean; }
+export interface T20ClassDef { id: string; label: string; pvBase: number; pvPerLevel: number; pmPerLevel: number; }
+export interface T20RaceDef { id: string; label: string; }
+export interface T20Catalog {
+  attributes: T20AttrDef[]; skills: T20SkillDef[]; classes: T20ClassDef[]; races: T20RaceDef[];
+}
+
 // --- admin: gestão de usuários ----------------------------------------------
 export interface AdminUser {
   id: string; email: string; displayName: string; avatarUrl?: string | null; admin: boolean; createdAt: string | null;
