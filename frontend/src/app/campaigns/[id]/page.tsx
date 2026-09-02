@@ -400,7 +400,7 @@ export default function CampaignDetailPage() {
                             style={{ position: "absolute", top: 8, right: 8, padding: "2px 8px", color: "var(--err)" }}
                             onClick={(e) => { e.preventDefault(); e.stopPropagation(); deleteCharacter(c); }}>✕</button>
                           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                            <span className="avatar" style={{ borderRadius: 10 }}>{initials(c.name)}</span>
+                            <Avatar src={typeof c.sheetData?.avatarUrl === "string" ? c.sheetData.avatarUrl : null} name={c.name} style={{ borderRadius: 10 }} />
                             <div>
                               <div style={{ fontFamily: "var(--serif)", fontWeight: 600, fontSize: 16 }}>{c.name}</div>
                               <div className="muted" style={{ fontSize: 12 }}>Abrir ficha →</div>
@@ -417,7 +417,7 @@ export default function CampaignDetailPage() {
                   {characters.map((c) => (
                     <div key={c.id} className="panel" data-testid={`character-row`} style={{ margin: 0 }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14, flexWrap: "wrap" }}>
-                        <span className="avatar" style={{ borderRadius: 10 }}>{initials(c.name)}</span>
+                        <Avatar src={typeof c.sheetData?.avatarUrl === "string" ? c.sheetData.avatarUrl : null} name={c.name} style={{ borderRadius: 10 }} />
                         <div style={{ flex: 1 }}>
                           <div style={{ fontFamily: "var(--serif)", fontWeight: 600, fontSize: 18 }}>{c.name}</div>
                           <div className="muted" style={{ fontSize: 12 }}>Sua ficha</div>
