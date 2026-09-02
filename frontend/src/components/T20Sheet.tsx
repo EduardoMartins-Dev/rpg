@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { T20Catalog, T20RaceDef, T20AttrDef, T20AttrMod, T20RaceAbility } from "@/lib/api";
 
 /**
@@ -44,6 +44,18 @@ export function T20Sheet({ sheet, catalog, onPersist }: {
   const skillDefs = catalog?.skills ?? [];
   const classes = catalog?.classes ?? [];
   const races = catalog?.races ?? [];
+
+  const powerMap = useMemo(() => new Map((catalog?.powers ?? []).map((p) => [p.name.toLowerCase(), p])), [catalog]);
+  // Lista de nomes de poder; os que existem no catálogo ganham tooltip com a descrição.
+  const renderPowers = (names: string[]) => names.map((nm, i) => {
+    const p = powerMap.get(nm.toLowerCase());
+    return (
+      <span key={nm}>
+        {i > 0 && ", "}
+        {p ? <span className="t20-power" title={`${p.desc}${p.prereq ? ` (Pré: ${p.prereq})` : ""}`}>{nm}</span> : nm}
+      </span>
+    );
+  });
 
   const selectedRace = races.find((r) => r.id === str(s.raca));
   const selectedOrigin = (catalog?.origins ?? []).find((o) => o.id === str(s.origem));
@@ -155,7 +167,7 @@ export function T20Sheet({ sheet, catalog, onPersist }: {
           </div>
           <div style={{ fontSize: 13.5, lineHeight: 1.6 }}>
             {selectedOrigin.skills.length > 0 && <div><b>Perícias:</b> <span className="muted">{selectedOrigin.skills.join(", ")}</span></div>}
-            {selectedOrigin.powers.length > 0 && <div><b>Poderes:</b> <span className="muted">{selectedOrigin.powers.join(", ")}</span></div>}
+            {selectedOrigin.powers.length > 0 && <div><b>Poderes:</b> <span className="muted">{renderPowers(selectedOrigin.powers)}</span></div>}
           </div>
         </div>
       )}
@@ -170,7 +182,7 @@ export function T20Sheet({ sheet, catalog, onPersist }: {
           <div style={{ fontSize: 13.5, lineHeight: 1.6 }}>
             <div className="muted"><b style={{ color: "var(--text)" }}>Energia:</b> {selectedDeity.energy} · <b style={{ color: "var(--text)" }}>Arma:</b> {selectedDeity.weapon}</div>
             <div><b>Devotos:</b> <span className="muted">{selectedDeity.devotees}</span></div>
-            <div><b>Poderes concedidos:</b> <span className="muted">{selectedDeity.grantedPowers.join(", ")}</span> <span className="muted" style={{ fontSize: 12 }}>(escolha 1)</span></div>
+            <div><b>Poderes concedidos:</b> <span className="muted">{renderPowers(selectedDeity.grantedPowers)}</span> <span className="muted" style={{ fontSize: 12 }}>(escolha 1)</span></div>
           </div>
         </div>
       )}
@@ -250,6 +262,22 @@ export function T20Sheet({ sheet, catalog, onPersist }: {
             </div>
           ))}
         </div>
+      )}
+
+      {/* Referência de poderes (cresce por categoria) */}
+      {(catalog.powers ?? []).length > 0 && (
+        <details className="t20-powers-ref" data-testid="t20-powers-ref">
+          <summary>Poderes ({catalog.powers.length}) — referência</summary>
+          <div className="t20-powers-list">
+            {catalog.powers.map((p) => (
+              <div key={p.name} className="t20-power-row">
+                <span className="t20-power-name">{p.name}</span>
+                <span className="muted" style={{ fontSize: 11 }}> · {p.category}{p.prereq ? ` · Pré: ${p.prereq}` : ""}</span>
+                <div className="muted" style={{ fontSize: 13 }}>{p.desc}</div>
+              </div>
+            ))}
+          </div>
+        </details>
       )}
     </div>
   );

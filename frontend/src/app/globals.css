@@ -720,3 +720,9 @@ th { font-size: .72rem; text-transform: uppercase; letter-spacing: .5px; color: 
 .t20-race-name { font-family: var(--serif); font-weight: 600; font-size: 16px; }
 .t20-race-abils { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 5px; }
 .t20-race-abils li { font-size: 13.5px; line-height: 1.5; }
+.t20-power { text-decoration: underline dotted var(--muted); cursor: help; }
+.t20-powers-ref { border: 1px solid var(--border); border-radius: 12px; padding: 10px 14px; background: var(--surface); }
+.t20-powers-ref summary { cursor: pointer; font-family: var(--serif); font-weight: 600; font-size: 15px; }
+.t20-powers-list { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
+.t20-power-row { padding-bottom: 8px; border-bottom: 1px dashed var(--border); }
+.t20-power-name { font-weight: 600; font-size: 14px; }
