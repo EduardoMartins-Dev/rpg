@@ -38,6 +38,8 @@ export function T20Sheet({ sheet, catalog, onPersist }: {
   const rollId = useRef(0);
   const [spellQuery, setSpellQuery] = useState("");
   const [spellTrad, setSpellTrad] = useState("");
+  const [powerQuery, setPowerQuery] = useState("");
+  const [powerCat, setPowerCat] = useState("");
 
   const nivel = num(s.nivel, 1);
   const atributos = (s.atributos as Atributos) ?? {};
@@ -56,6 +58,14 @@ export function T20Sheet({ sheet, catalog, onPersist }: {
     );
   }, [spells, spellQuery, spellTrad]);
 
+  const powersFiltered = useMemo(() => {
+    const q = powerQuery.trim().toLowerCase();
+    return (catalog?.powers ?? []).filter((p) =>
+      (!powerCat || p.category === powerCat) &&
+      (!q || p.name.toLowerCase().includes(q) || (p.prereq ?? "").toLowerCase().includes(q)),
+    );
+  }, [catalog, powerQuery, powerCat]);
+
   const powerMap = useMemo(() => new Map((catalog?.powers ?? []).map((p) => [p.name.toLowerCase(), p])), [catalog]);
   // Lista de nomes de poder; os que existem no catálogo ganham tooltip com a descrição.
   const renderPowers = (names: string[]) => names.map((nm, i) => {
@@ -63,7 +73,7 @@ export function T20Sheet({ sheet, catalog, onPersist }: {
     return (
       <span key={nm}>
         {i > 0 && ", "}
-        {p ? <span className="t20-power" title={`${p.desc}${p.prereq ? ` (Pré: ${p.prereq})` : ""}`}>{nm}</span> : nm}
+        {p ? <span className="t20-power" title={[p.desc, p.prereq ? `Pré: ${p.prereq}` : ""].filter(Boolean).join(" · ")}>{nm}</span> : nm}
       </span>
     );
   });
@@ -275,16 +285,29 @@ export function T20Sheet({ sheet, catalog, onPersist }: {
         </div>
       )}
 
-      {/* Referência de poderes (cresce por categoria) */}
+      {/* Referência de poderes (índice completo por categoria) */}
       {(catalog.powers ?? []).length > 0 && (
         <details className="t20-powers-ref" data-testid="t20-powers-ref">
           <summary>Poderes ({catalog.powers.length}) — referência</summary>
-          <div className="t20-powers-list">
-            {catalog.powers.map((p) => (
-              <div key={p.name} className="t20-power-row">
+          <div className="t20-spell-filters">
+            <input placeholder="Buscar poder…" value={powerQuery}
+              data-testid="t20-power-search" onChange={(e) => setPowerQuery(e.target.value)} />
+            <select value={powerCat} data-testid="t20-power-cat" onChange={(e) => setPowerCat(e.target.value)} style={{ width: "auto" }}>
+              <option value="">Todas</option>
+              <option value="Combate">Combate</option>
+              <option value="Destino">Destino</option>
+              <option value="Magia">Magia</option>
+              <option value="Concedido">Concedidos</option>
+              <option value="Tormenta">Tormenta</option>
+            </select>
+            <span className="muted" style={{ fontSize: 12, alignSelf: "center" }}>{powersFiltered.length}</span>
+          </div>
+          <div className="t20-powers-list" data-testid="t20-power-list">
+            {powersFiltered.map((p) => (
+              <div key={`${p.category}-${p.name}`} className="t20-power-row">
                 <span className="t20-power-name">{p.name}</span>
                 <span className="muted" style={{ fontSize: 11 }}> · {p.category}{p.prereq ? ` · Pré: ${p.prereq}` : ""}</span>
-                <div className="muted" style={{ fontSize: 13 }}>{p.desc}</div>
+                {p.desc && <div className="muted" style={{ fontSize: 13 }}>{p.desc}</div>}
               </div>
             ))}
           </div>

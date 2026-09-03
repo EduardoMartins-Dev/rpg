@@ -259,7 +259,7 @@ export interface T20OriginDef { id: string; label: string; skills: string[]; pow
 export interface T20DeityDef {
   id: string; label: string; domain: string; energy: string; weapon: string; devotees: string; grantedPowers: string[];
 }
-export interface T20PowerDef { name: string; category: string; prereq?: string; desc: string; }
+export interface T20PowerDef { name: string; category: string; prereq?: string; desc?: string; }
 export interface T20SpellDef { name: string; tradition: string; circle: number; school: string; exec: string; summary: string; }
 export interface T20Catalog {
   attributes: T20AttrDef[]; skills: T20SkillDef[]; classes: T20ClassDef[]; races: T20RaceDef[];

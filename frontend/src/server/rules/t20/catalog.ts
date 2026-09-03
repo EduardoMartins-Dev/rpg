@@ -407,39 +407,29 @@ export function deity(id: string): DeityInfo | undefined {
 }
 
 // --- Poderes ---------------------------------------------------------------------------
-// Cresce por categoria. Cada poder: nome, categoria, pré-requisito e o essencial mecânico.
-// Categorias: Combate, Destino, Magia, Concedido, Tormenta. Conferido no cap. 2 do livro.
-// (Passada em andamento — começando pelos Poderes de Combate gerais.)
+// Índice completo (cap. 2 do livro): Combate/Destino/Magia/Tormenta vêm de ./powers.ts;
+// os Concedidos são gerados aqui a partir das divindades (poder → "Devoto de X"). Nome +
+// pré-requisito para todos; descrição preenchida para os Poderes de Combate (mais depois).
+import { POWERS_BASE, type PowerInfo, type PowerCategory } from "./powers";
+export type { PowerInfo, PowerCategory };
 
-export type PowerCategory = "Combate" | "Destino" | "Magia" | "Concedido" | "Tormenta";
-export type PowerInfo = { name: string; category: PowerCategory; prereq?: string; desc: string };
+/** Poderes Concedidos derivados das divindades: cada poder concedido lista os deuses que
+ * o concedem (une deuses que compartilham o mesmo poder). */
+function concededPowers(): PowerInfo[] {
+  const byPower = new Map<string, string[]>();
+  for (const d of DEITIES) {
+    for (const p of d.grantedPowers) {
+      const arr = byPower.get(p) ?? [];
+      arr.push(d.label);
+      byPower.set(p, arr);
+    }
+  }
+  return [...byPower.entries()]
+    .map(([name, gods]) => ({ name, category: "Concedido" as PowerCategory, prereq: `Devoto de ${gods.join(", ")}` }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+}
 
-export const POWERS: PowerInfo[] = [
-  // --- Poderes de Combate (gerais) ---
-  { name: "Acuidade com Arma", category: "Combate", prereq: "Des 1", desc: "Com arma corpo a corpo leve ou de arremesso, use Destreza no lugar de Força nos ataques e no dano." },
-  { name: "Arma Secundária Grande", category: "Combate", prereq: "Estilo de Duas Armas", desc: "Pode empunhar duas armas de uma mão com o Estilo de Duas Armas." },
-  { name: "Arremesso Potente", category: "Combate", prereq: "For 1, Estilo de Arremesso", desc: "Com arma de arremesso, use Força no lugar de Destreza nos ataques; permite Ataque Poderoso com arremesso." },
-  { name: "Arremesso Múltiplo", category: "Combate", prereq: "Des 1, Estilo de Arremesso", desc: "1/rodada, gaste 1 PM para um ataque adicional de arremesso contra o mesmo alvo." },
-  { name: "Ataque com Escudo", category: "Combate", prereq: "Estilo de Arma e Escudo", desc: "1/rodada, ao agredir com escudo, gaste 1 PM para um ataque corpo a corpo extra sem perder o bônus de Defesa do escudo." },
-  { name: "Ataque Pesado", category: "Combate", prereq: "Estilo de Duas Mãos", desc: "Com arma de duas mãos, pague 1 PM: se acertar, faz derrubar ou empurrar de graça (use o ataque como teste de manobra)." },
-  { name: "Ataque Poderoso", category: "Combate", prereq: "For 1", desc: "No ataque corpo a corpo, sofra –2 no teste para +5 no dano." },
-  { name: "Ataque Preciso", category: "Combate", prereq: "Estilo de Uma Arma", desc: "Com uma arma corpo a corpo e a outra mão livre: +2 na margem de ameaça e +1 no multiplicador de crítico." },
-  { name: "Bloqueio com Escudo", category: "Combate", prereq: "Estilo de Arma e Escudo", desc: "Ao sofrer dano, gaste 1 PM para redução igual ao bônus de Defesa do escudo contra aquele dano." },
-  { name: "Carga de Cavalaria", category: "Combate", prereq: "Ginete", desc: "Investida montada causa +2d8 de dano e permite continuar o movimento (em linha reta)." },
-  { name: "Combate Defensivo", category: "Combate", prereq: "Int 1", desc: "Ao agredir: até o próximo turno, –2 nos ataques e +5 na Defesa." },
-  { name: "Derrubar Aprimorado", category: "Combate", prereq: "Combate Defensivo", desc: "+2 para derrubar; ao derrubar, gaste 1 PM para um ataque extra contra o alvo." },
-  { name: "Desarmar Aprimorado", category: "Combate", prereq: "Combate Defensivo", desc: "+2 para desarmar; ao desarmar, gaste 1 PM para arremessar a arma do alvo para longe." },
-  { name: "Disparo Preciso", category: "Combate", prereq: "Estilo de Disparo ou Estilo de Arremesso", desc: "Ataques à distância contra alvos em corpo a corpo não sofrem a penalidade de –5." },
-  { name: "Disparo Rápido", category: "Combate", prereq: "Des 1, Estilo de Disparo", desc: "Ação completa para agredir com arma de disparo (recarga livre) dá um ataque adicional; –2 nos ataques até o próximo turno." },
-  { name: "Empunhadura Poderosa", category: "Combate", prereq: "For 3", desc: "Usar arma de uma categoria de tamanho maior impõe só –2 (em vez de –5) nos ataques." },
-  { name: "Encouraçado", category: "Combate", prereq: "proficiência com armaduras pesadas", desc: "Com armadura pesada, +2 na Defesa (+2 por outro poder que tenha Encouraçado como pré-requisito)." },
-  { name: "Esquiva", category: "Combate", prereq: "Des 1", desc: "+2 na Defesa e em Reflexos." },
-  { name: "Estilo de Arma e Escudo", category: "Combate", prereq: "treinado em Luta, proficiência com escudos", desc: "O bônus na Defesa do escudo aumenta em +2." },
-  { name: "Estilo de Arma Longa", category: "Combate", prereq: "For 1, treinado em Luta", desc: "+2 nos ataques com armas alongadas e pode atacar alvos adjacentes com elas." },
-  { name: "Estilo de Arremesso", category: "Combate", prereq: "treinado em Pontaria", desc: "Saca armas de arremesso como ação livre e +2 no dano com elas (com Saque Rápido, +2 nos ataques)." },
-  { name: "Estilo de Disparo", category: "Combate", prereq: "treinado em Pontaria", desc: "Com arma de disparo, soma a Destreza nas rolagens de dano." },
-  { name: "Estilo de Duas Armas", category: "Combate", prereq: "Des 2, treinado em Luta", desc: "Empunhando duas armas (uma leve) e agredindo, faz dois ataques (um por arma); –2 nos ataques até o próximo turno (Ambidestria remove a penalidade)." },
-];
+export const POWERS: PowerInfo[] = [...POWERS_BASE, ...concededPowers()];
 
 export function power(name: string): PowerInfo | undefined {
   const q = name.trim().toLowerCase();
