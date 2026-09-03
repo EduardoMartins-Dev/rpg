@@ -86,8 +86,9 @@ export type ClassInfo = {
   skillsEither: string[][];
   skillChoices: number;
   proficiencies: string; // além de armas simples + armaduras leves (que todos têm)
-  // Conjuração (só classes que lançam magias). circles[i] = nível mínimo para o (i+1)º círculo.
-  magic?: { tradition: "Arcana" | "Divina"; circles: number[] };
+  // Conjuração (só classes que lançam magias). circles[i] = nível mínimo para o (i+1)º círculo;
+  // keyAttr = atributo-chave da conjuração (define CD e ataque das magias).
+  magic?: { tradition: "Arcana" | "Divina"; keyAttr: AttrKey; circles: number[] };
 };
 
 /** Maior círculo de magia que a classe lança no dado nível (0 = não lança). */
@@ -96,16 +97,21 @@ export function maxSpellCircle(cls: ClassInfo | undefined, level: number): numbe
   return cls.magic.circles.filter((min) => level >= min).length;
 }
 
+/** Custo em PM para lançar uma magia do círculo dado (custo base, sem aprimoramentos). */
+export function spellPmCost(circle: number): number {
+  return [0, 1, 3, 6, 10, 15][circle] ?? 0;
+}
+
 // Todos os personagens já sabem usar armas simples e armaduras leves.
 export const CLASSES: ClassInfo[] = [
   { id: "arcanista", label: "Arcanista", pvBase: 8, pvPerLevel: 2, pmPerLevel: 6,
     skillsFixed: ["Misticismo", "Vontade"], skillsEither: [], skillChoices: 2, proficiencies: "Nenhuma",
-    magic: { tradition: "Arcana", circles: [1, 5, 9, 13, 17] } },
+    magic: { tradition: "Arcana", keyAttr: "inteligencia", circles: [1, 5, 9, 13, 17] } },
   { id: "barbaro", label: "Bárbaro", pvBase: 24, pvPerLevel: 6, pmPerLevel: 3,
     skillsFixed: ["Fortitude", "Luta"], skillsEither: [], skillChoices: 4, proficiencies: "Armas marciais e escudos" },
   { id: "bardo", label: "Bardo", pvBase: 12, pvPerLevel: 3, pmPerLevel: 4,
     skillsFixed: ["Atuação", "Reflexos"], skillsEither: [], skillChoices: 6, proficiencies: "Armas marciais",
-    magic: { tradition: "Arcana", circles: [1, 6, 10, 14] } },
+    magic: { tradition: "Arcana", keyAttr: "carisma", circles: [1, 6, 10, 14] } },
   { id: "bucaneiro", label: "Bucaneiro", pvBase: 16, pvPerLevel: 4, pmPerLevel: 3,
     skillsFixed: ["Reflexos"], skillsEither: [["Luta", "Pontaria"]], skillChoices: 4, proficiencies: "Armas marciais" },
   { id: "cacador", label: "Caçador", pvBase: 16, pvPerLevel: 4, pmPerLevel: 4,
@@ -114,10 +120,10 @@ export const CLASSES: ClassInfo[] = [
     skillsFixed: ["Fortitude", "Luta"], skillsEither: [], skillChoices: 2, proficiencies: "Armas marciais, armaduras pesadas e escudos" },
   { id: "clerigo", label: "Clérigo", pvBase: 16, pvPerLevel: 4, pmPerLevel: 5,
     skillsFixed: ["Religião", "Vontade"], skillsEither: [], skillChoices: 2, proficiencies: "Armaduras pesadas e escudos",
-    magic: { tradition: "Divina", circles: [1, 5, 9, 13, 17] } },
+    magic: { tradition: "Divina", keyAttr: "sabedoria", circles: [1, 5, 9, 13, 17] } },
   { id: "druida", label: "Druida", pvBase: 16, pvPerLevel: 4, pmPerLevel: 4,
     skillsFixed: ["Sobrevivência", "Vontade"], skillsEither: [], skillChoices: 4, proficiencies: "Escudos",
-    magic: { tradition: "Divina", circles: [1, 6, 10, 14] } },
+    magic: { tradition: "Divina", keyAttr: "sabedoria", circles: [1, 6, 10, 14] } },
   { id: "guerreiro", label: "Guerreiro", pvBase: 20, pvPerLevel: 5, pmPerLevel: 3,
     skillsFixed: ["Fortitude"], skillsEither: [["Luta", "Pontaria"]], skillChoices: 2, proficiencies: "Armas marciais, armaduras pesadas e escudos" },
   { id: "inventor", label: "Inventor", pvBase: 12, pvPerLevel: 3, pmPerLevel: 4,

@@ -20,6 +20,7 @@ type Item = { nome?: string; qtd?: number; espacos?: number; obs?: string };
 
 const num = (v: unknown, d = 0): number => (Number.isFinite(Number(v)) ? Number(v) : d);
 const str = (v: unknown): string => (typeof v === "string" ? v : "");
+const rollD20 = (): number => 1 + Math.floor(Math.random() * 20); // fora do componente (não é "render")
 
 // Espelho local das fórmulas do motor (feedback imediato; o servidor é a autoridade).
 const trainingBonus = (nivel: number) => (nivel >= 15 ? 6 : nivel >= 7 ? 4 : 2);
@@ -125,6 +126,11 @@ export function T20Sheet({ sheet, catalog, onPersist }: {
   // Conjuração da classe: tradição + maior círculo no nível atual.
   const magic = cls?.magic;
   const maxCircle = magic ? magic.circles.filter((m) => nivel >= m).length : 0;
+  // Atributo-chave da conjuração define a CD e o ataque das magias (leva nível + atributo).
+  const spellKeyAttr = magic ? num(atributos[magic.keyAttr]) : 0;
+  const spellAtk = Math.floor(nivel / 2) + spellKeyAttr;      // ataque de magia (½ nível + atributo)
+  const spellCD = 10 + Math.floor(nivel / 2) + spellKeyAttr;  // CD para resistir
+  const pmCost = (circle: number) => [0, 1, 3, 6, 10, 15][circle] ?? 0;
   const magias = Array.isArray(s.magias) ? (s.magias as string[]) : [];
   const addMagia = (nome: string) => { if (!magias.includes(nome)) commit({ ...s, magias: [...magias, nome] }); };
   const removeMagia = (nome: string) => commit({ ...s, magias: magias.filter((m) => m !== nome) });
@@ -169,7 +175,7 @@ export function T20Sheet({ sheet, catalog, onPersist }: {
     const dtRaw = window.prompt(`Dificuldade (DT) para ${name}? Deixe vazio para rolar sem DT.`, "");
     if (dtRaw === null) return; // cancelou
     const dt = dtRaw.trim() === "" ? null : Math.trunc(Number(dtRaw));
-    const natural = 1 + Math.floor(Math.random() * 20);
+    const natural = rollD20();
     const line: RollLine = {
       id: rollId.current++, label: name, natural, bonus: value, total: natural + value,
       dt: dt != null && Number.isFinite(dt) ? dt : null,
@@ -187,7 +193,7 @@ export function T20Sheet({ sheet, catalog, onPersist }: {
   function setArmas(next: Arma[]) { commit({ ...s, armas: next }); }
   function setItens(next: Item[]) { commit({ ...s, itens: next }); }
   function rollAtaque(nome: string, bonus: number) {
-    const natural = 1 + Math.floor(Math.random() * 20);
+    const natural = rollD20();
     setRolls((r) => [{ id: rollId.current++, label: `Ataque: ${nome}`, natural, bonus, total: natural + bonus, dt: null, crit: natural === 20, fumble: natural === 1 }, ...r].slice(0, 12));
   }
 
@@ -415,8 +421,10 @@ export function T20Sheet({ sheet, catalog, onPersist }: {
       <div className="t20-race" data-testid="t20-magic-banner">
         {magic ? (
           <div style={{ fontSize: 13.5 }}>
-            <b>Conjuração:</b> {cls?.label} lança magias <b>{magic.tradition === "Arcana" ? "arcanas" : "divinas"}</b>,
-            até o <b>{maxCircle}º círculo</b> no nível {nivel}. Selecione no grimório abaixo (só as permitidas aparecem com <b>+ conhecer</b>).
+            <b>Conjuração:</b> {cls?.label} lança magias <b>{magic.tradition === "Arcana" ? "arcanas" : "divinas"}</b> (atributo-chave{" "}
+            <b>{attrDefs.find((a) => a.key === magic.keyAttr)?.abbr}</b>), até o <b>{maxCircle}º círculo</b> no nível {nivel}.
+            {" "}<span className="muted">Ataque de magia <b>{spellAtk >= 0 ? "+" : ""}{spellAtk}</b> · CD <b>{spellCD}</b>.</span>
+            {" "}Escolha as magias no grimório abaixo — elas entram automaticamente em <b>Magias conhecidas</b>.
           </div>
         ) : (
           <div className="muted" style={{ fontSize: 13.5 }}>
@@ -424,20 +432,31 @@ export function T20Sheet({ sheet, catalog, onPersist }: {
           </div>
         )}
       </div>
+      {magic && (
+        <button type="button" className="secondary" data-testid="t20-open-grimoire" style={{ alignSelf: "flex-start" }}
+          onClick={() => { const d = document.querySelector('[data-testid="t20-spells-ref"]') as HTMLDetailsElement | null; if (d) { d.open = true; d.scrollIntoView({ block: "center" }); } setSpellOnlyAllowed(true); }}>
+          ✨ Selecionar magias (grimório)
+        </button>
+      )}
       {magias.length > 0 && (
         <div className="t20-invsec" data-testid="t20-known-spells">
           <h4 className="t20-h">Magias conhecidas ({magias.length})</h4>
-          {magias.map((nm) => {
-            const sp = spells.find((x) => x.name === nm);
-            return (
-              <div key={nm} className="t20-weapon">
-                <span className="t20-power-name" style={{ flex: 1 }}>{nm}
-                  {sp && <span className="muted" style={{ fontSize: 11 }}> · {sp.tradition} {sp.circle}º · {sp.school}</span>}</span>
-                {sp && <button type="button" className="ghost" title="Rolar 1d20 (conjuração)" onClick={() => rollSkill(`Conjurar ${nm}`, 0)}>🎲</button>}
-                <button type="button" className="ghost" style={{ color: "var(--err)" }} data-testid={`t20-spell-remove-${nm}`} onClick={() => removeMagia(nm)}>✕</button>
+          {[...magias].map((nm) => spells.find((x) => x.name === nm)).filter(Boolean)
+            .sort((a, b) => (a!.tradition.localeCompare(b!.tradition) || a!.circle - b!.circle || a!.name.localeCompare(b!.name)))
+            .map((sp) => (
+              <div key={sp!.name} className="t20-weapon">
+                <span className="t20-power-name" style={{ flex: 1 }}>{sp!.name}
+                  <span className="muted" style={{ fontSize: 11 }}> · {sp!.tradition} {sp!.circle}º · {sp!.school} · {pmCost(sp!.circle)} PM · CD {spellCD}</span></span>
+                <button type="button" className="ghost" title={`Rolar ataque de magia (1d20 ${spellAtk >= 0 ? "+" : ""}${spellAtk})`} onClick={() => rollSkill(`Conjurar ${sp!.name}`, spellAtk)}>🎲</button>
+                <button type="button" className="ghost" style={{ color: "var(--err)" }} data-testid={`t20-spell-remove-${sp!.name}`} onClick={() => removeMagia(sp!.name)}>✕</button>
               </div>
-            );
-          })}
+            ))}
+          {magias.filter((nm) => !spells.find((x) => x.name === nm)).map((nm) => (
+            <div key={nm} className="t20-weapon">
+              <span className="t20-power-name" style={{ flex: 1 }}>{nm}</span>
+              <button type="button" className="ghost" style={{ color: "var(--err)" }} onClick={() => removeMagia(nm)}>✕</button>
+            </div>
+          ))}
         </div>
       )}
 
@@ -504,7 +523,7 @@ export function T20Sheet({ sheet, catalog, onPersist }: {
               return (
                 <div key={`${sp.tradition}-${sp.circle}-${sp.name}`} className="t20-power-row">
                   <span className="t20-power-name">{sp.name}</span>
-                  <span className="muted" style={{ fontSize: 11 }}> · {sp.tradition} {sp.circle}º · {sp.school}</span>
+                  <span className="muted" style={{ fontSize: 11 }}> · {sp.tradition} {sp.circle}º · {sp.school} · {pmCost(sp.circle)} PM</span>
                   {conhecida
                     ? <button type="button" className="ghost" style={{ color: "var(--ok)", marginLeft: 6 }} title="Remover das conhecidas" onClick={() => removeMagia(sp.name)}>✓ conhecida</button>
                     : permitida && <button type="button" className="ghost" style={{ marginLeft: 6 }} data-testid={`t20-spell-add-${sp.name}`} onClick={() => addMagia(sp.name)}>+ conhecer</button>}
