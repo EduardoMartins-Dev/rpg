@@ -251,6 +251,7 @@ export interface T20ClassDef {
 export interface T20WeaponDef {
   nome: string; categoria: string; dano: string; critico: string; tipo: string; empunhadura: string; alcance?: string;
 }
+export interface T20WeaponUpgrade { nome: string; efeito: string; applies: "any" | "distancia" | "corpo"; }
 export interface T20AttrMod { attr: string; mod: number; }
 export interface T20FreeAttr { count: number; each: number; except?: string[]; }
 export interface T20RaceAbility { name: string; desc: string; }
@@ -268,7 +269,7 @@ export interface T20SpellDef { name: string; tradition: string; circle: number; 
 export interface T20Catalog {
   attributes: T20AttrDef[]; skills: T20SkillDef[]; classes: T20ClassDef[]; races: T20RaceDef[];
   origins: T20OriginDef[]; deities: T20DeityDef[]; powers: T20PowerDef[]; spells: T20SpellDef[];
-  weapons: T20WeaponDef[];
+  weapons: T20WeaponDef[]; weaponUpgrades: T20WeaponUpgrade[];
 }
 
 // --- admin: gestão de usuários ----------------------------------------------

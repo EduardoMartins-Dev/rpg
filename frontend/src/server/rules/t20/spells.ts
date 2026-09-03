@@ -1028,7 +1028,7 @@ export const SPELLS: Spell[] = [
     "name": "Purificação",
     "tradition": "Divina",
     "circle": 2,
-    "school": "evocação",
+    "school": "Evocação",
     "exec": "Execução: padrão; Alcance: toque; Alvo: 1 criatura; Duração: instantânea.",
     "summary": "Você purifica a criatura tocada, removendo uma condição dela entre abalado, apavorado, alquebrado, atordoado, cego, confuso, debilitado, enjoado, envenenado, esmorecido, exausto, fascinado, fatigado, "
   },
@@ -1228,7 +1228,7 @@ export const SPELLS: Spell[] = [
     "name": "cólera de azgher",
     "tradition": "Divina",
     "circle": 4,
-    "school": "evocação",
+    "school": "Evocação",
     "exec": "Execução: padrão; Alcance: médio; Área: esfera com 6m de raio; Duração: instantânea. Resistência: Reflexos parcial.",
     "summary": "Você cria um fulgor dourado e intenso."
   },
@@ -1324,7 +1324,7 @@ export const SPELLS: Spell[] = [
     "name": "Lágrimas de Wynna",
     "tradition": "Divina",
     "circle": 5,
-    "school": "abjuração",
+    "school": "Abjuração",
     "exec": "Execução: padrão; Alcance: curto; Alvo: 1 criatura; Duração: instantânea; Resistência: Vontade parcial.",
     "summary": "Se falhar no teste de resistência, o alvo perde a habilidade de lançar magias arcanas até o fim da cena."
   },

@@ -11,8 +11,8 @@
 
 // Índice de magias (167) vive em ./spells.ts (gerado do PDF) e é reexportado aqui.
 export { SPELLS, type Spell } from "./spells";
-// Catálogo de armas (Tabela 3-3) vive em ./weapons.ts.
-export { WEAPONS, weapon, type WeaponInfo, type WeaponCategory } from "./weapons";
+// Catálogo de armas (Tabela 3-3) + aprimoramentos vivem em ./weapons.ts.
+export { WEAPONS, weapon, WEAPON_UPGRADES, upgradesFor, type WeaponInfo, type WeaponCategory, type WeaponUpgrade } from "./weapons";
 
 // --- Atributos (6) ---------------------------------------------------------------------
 

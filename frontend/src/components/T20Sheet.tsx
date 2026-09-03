@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { T20Catalog, T20RaceDef, T20AttrDef, T20AttrMod, T20RaceAbility, T20WeaponDef } from "@/lib/api";
+import type { T20Catalog, T20RaceDef, T20AttrDef, T20AttrMod, T20RaceAbility, T20WeaponDef, T20WeaponUpgrade } from "@/lib/api";
 
 /**
  * Ficha de sessão do Tormenta 20 (sistema d20). Núcleo jogável: nível/classe/raça,
@@ -15,7 +15,7 @@ import type { T20Catalog, T20RaceDef, T20AttrDef, T20AttrMod, T20RaceAbility, T2
 type Sheet = Record<string, unknown>;
 type Atributos = Record<string, number>;
 type Pericia = { treinada?: boolean; outros?: number };
-type Arma = { nome?: string; ataque?: number; dano?: string; critico?: string; tipo?: string; categoria?: string; empunhadura?: string; obs?: string };
+type Arma = { nome?: string; ataque?: number; dano?: string; critico?: string; tipo?: string; categoria?: string; empunhadura?: string; alcance?: string; obs?: string; aprimoramentos?: string[] };
 type Item = { nome?: string; qtd?: number; espacos?: number; obs?: string };
 
 const num = (v: unknown, d = 0): number => (Number.isFinite(Number(v)) ? Number(v) : d);
@@ -40,6 +40,9 @@ export function T20Sheet({ sheet, catalog, onPersist }: {
   const rollId = useRef(0);
   const [spellQuery, setSpellQuery] = useState("");
   const [spellTrad, setSpellTrad] = useState("");
+  const [spellSchool, setSpellSchool] = useState("");
+  const [spellCircle, setSpellCircle] = useState("");
+  const [spellOnlyAllowed, setSpellOnlyAllowed] = useState(false);
   const [powerQuery, setPowerQuery] = useState("");
   const [powerCat, setPowerCat] = useState("");
   const [step, setStep] = useState(0);
@@ -63,13 +66,7 @@ export function T20Sheet({ sheet, catalog, onPersist }: {
   const races = catalog?.races ?? [];
 
   const spells = catalog?.spells ?? [];
-  const spellsFiltered = useMemo(() => {
-    const q = spellQuery.trim().toLowerCase();
-    return spells.filter((sp) =>
-      (!spellTrad || sp.tradition === spellTrad) &&
-      (!q || sp.name.toLowerCase().includes(q) || sp.school.toLowerCase().includes(q) || sp.summary.toLowerCase().includes(q)),
-    );
-  }, [spells, spellQuery, spellTrad]);
+  const spellSchools = useMemo(() => [...new Set(spells.map((s) => s.school))].sort(), [spells]);
 
   const powersFiltered = useMemo(() => {
     const q = powerQuery.trim().toLowerCase();
@@ -131,6 +128,16 @@ export function T20Sheet({ sheet, catalog, onPersist }: {
   const magias = Array.isArray(s.magias) ? (s.magias as string[]) : [];
   const addMagia = (nome: string) => { if (!magias.includes(nome)) commit({ ...s, magias: [...magias, nome] }); };
   const removeMagia = (nome: string) => commit({ ...s, magias: magias.filter((m) => m !== nome) });
+
+  const spellQ = spellQuery.trim().toLowerCase();
+  const spellCirc = spellCircle ? Number(spellCircle) : null;
+  const spellsFiltered = spells.filter((sp) =>
+    (!spellTrad || sp.tradition === spellTrad) &&
+    (!spellSchool || sp.school === spellSchool) &&
+    (spellCirc == null || sp.circle === spellCirc) &&
+    (!spellOnlyAllowed || (!!magic && sp.tradition === magic.tradition && sp.circle <= maxCircle)) &&
+    (!spellQ || sp.name.toLowerCase().includes(spellQ) || sp.school.toLowerCase().includes(spellQ) || sp.summary.toLowerCase().includes(spellQ)),
+  );
 
   // set + persiste (otimista). Inputs chamam no blur; toggles/botões na hora.
   function commit(next: Sheet) { setS(next); onPersist(next); }
@@ -390,7 +397,7 @@ export function T20Sheet({ sheet, catalog, onPersist }: {
 
       {cur === "combate" && (
         <WeaponEditor armas={armas} onChange={setArmas} onRoll={rollAtaque}
-          weapons={weapons} proficient={weaponProficient} />
+          weapons={weapons} proficient={weaponProficient} upgrades={catalog.weaponUpgrades ?? []} />
       )}
 
       {cur === "inventario" && (
@@ -468,13 +475,26 @@ export function T20Sheet({ sheet, catalog, onPersist }: {
         <details className="t20-powers-ref" data-testid="t20-spells-ref">
           <summary>Magias ({spells.length}) — grimório</summary>
           <div className="t20-spell-filters">
-            <input placeholder="Buscar magia, escola…" value={spellQuery}
+            <input placeholder="Buscar magia…" value={spellQuery}
               data-testid="t20-spell-search" onChange={(e) => setSpellQuery(e.target.value)} />
-            <select value={spellTrad} data-testid="t20-spell-trad" onChange={(e) => setSpellTrad(e.target.value)} style={{ width: "auto" }}>
-              <option value="">Todas</option>
+            <select value={spellTrad} data-testid="t20-spell-trad" onChange={(e) => setSpellTrad(e.target.value)} style={{ width: "auto" }} title="Tradição">
+              <option value="">Tradição: todas</option>
               <option value="Arcana">Arcanas</option>
               <option value="Divina">Divinas</option>
             </select>
+            <select value={spellSchool} data-testid="t20-spell-school" onChange={(e) => setSpellSchool(e.target.value)} style={{ width: "auto" }} title="Escola">
+              <option value="">Escola: todas</option>
+              {spellSchools.map((sc) => <option key={sc} value={sc}>{sc}</option>)}
+            </select>
+            <select value={spellCircle} data-testid="t20-spell-circle" onChange={(e) => setSpellCircle(e.target.value)} style={{ width: "auto" }} title="Círculo">
+              <option value="">Círculo: todos</option>
+              {[1, 2, 3, 4, 5].map((c) => <option key={c} value={c}>{c}º círculo</option>)}
+            </select>
+            {magic && (
+              <label style={{ display: "inline-flex", alignItems: "center", gap: 6, margin: 0, fontSize: 13 }} title="Só as que sua classe pode aprender">
+                <input type="checkbox" data-testid="t20-spell-onlyallowed" checked={spellOnlyAllowed}
+                  onChange={(e) => setSpellOnlyAllowed(e.target.checked)} style={{ width: "auto" }} /> só permitidas</label>
+            )}
             <span className="muted" style={{ fontSize: 12, alignSelf: "center" }}>{spellsFiltered.length} magia(s)</span>
           </div>
           <div className="t20-powers-list" data-testid="t20-spell-list">
@@ -579,9 +599,9 @@ function VitalBox({ label, atual, max, onDelta, testid }: {
 }
 
 // Editor de armas/ataques. Digita local; persiste no blur; adiciona/remove na hora.
-function WeaponEditor({ armas, onChange, onRoll, weapons, proficient }: {
+function WeaponEditor({ armas, onChange, onRoll, weapons, proficient, upgrades }: {
   armas: Arma[]; onChange: (a: Arma[]) => void; onRoll: (nome: string, bonus: number) => void;
-  weapons: T20WeaponDef[]; proficient: (categoria?: string) => boolean;
+  weapons: T20WeaponDef[]; proficient: (categoria?: string) => boolean; upgrades: T20WeaponUpgrade[];
 }) {
   const [rows, setRows] = useState<Arma[]>(armas);
   const ref = useRef<Arma[]>(armas);
@@ -592,8 +612,10 @@ function WeaponEditor({ armas, onChange, onRoll, weapons, proficient }: {
   const addFromBook = (nome: string) => {
     const w = weapons.find((x) => x.nome === nome);
     if (!w) return;
-    push([...ref.current, { nome: w.nome, dano: w.dano, critico: w.critico, tipo: w.tipo, categoria: w.categoria, empunhadura: w.empunhadura }]);
+    push([...ref.current, { nome: w.nome, dano: w.dano, critico: w.critico, tipo: w.tipo, categoria: w.categoria, empunhadura: w.empunhadura, alcance: w.alcance }]);
   };
+  // Aprimoramentos aplicáveis à arma (à distância: applies distancia/any; corpo a corpo: corpo/any).
+  const upgradesFor = (a: Arma) => upgrades.filter((u) => u.applies === "any" || (a.alcance ? u.applies === "distancia" : u.applies === "corpo"));
   const cats = ["Simples", "Marcial", "Exótica", "Fogo"];
   return (
     <div className="t20-invsec" data-testid="t20-weapons">
@@ -628,11 +650,29 @@ function WeaponEditor({ armas, onChange, onRoll, weapons, proficient }: {
               <button type="button" className="ghost" style={{ color: "var(--err)" }} title="Remover" onClick={() => push(ref.current.filter((_, j) => j !== i))}>✕</button>
             </div>
             <div className="t20-weapon">
-              {a.categoria && <span className="badge" style={{ fontSize: 11 }}>{a.categoria}{a.empunhadura ? ` · ${a.empunhadura}` : ""}</span>}
+              {a.categoria && <span className="badge" style={{ fontSize: 11 }}>{a.categoria}{a.empunhadura ? ` · ${a.empunhadura}` : ""}{a.alcance ? " · distância" : " · corpo a corpo"}</span>}
               {semProf && <span className="error" style={{ fontSize: 12 }}>⚠ sem proficiência ({a.categoria}) — –5 no ataque</span>}
-              <input placeholder="Modificações (material, encanto, +bônus, observações…)" value={str(a.obs)} style={{ flex: 1, minWidth: 200 }}
+              <select data-testid={`t20-weapon-upg-${i}`} defaultValue="" style={{ width: "auto" }} title="Aprimoramentos aplicáveis a esta arma"
+                onChange={(e) => { if (e.target.value) { const cur = a.aprimoramentos ?? []; if (!cur.includes(e.target.value)) edit(i, { aprimoramentos: [...cur, e.target.value] }), flush(); e.target.value = ""; } }}>
+                <option value="">+ Aprimoramento…</option>
+                {upgradesFor(a).map((u) => <option key={u.nome} value={u.nome} title={u.efeito}>{u.nome} — {u.efeito}</option>)}
+              </select>
+              <input placeholder="Modificações / observações…" value={str(a.obs)} style={{ flex: 1, minWidth: 160 }}
                 onChange={(e) => edit(i, { obs: e.target.value })} onBlur={flush} />
             </div>
+            {(a.aprimoramentos?.length ?? 0) > 0 && (
+              <div className="t20-weapon" style={{ gap: 6 }}>
+                {a.aprimoramentos!.map((up) => {
+                  const info = upgrades.find((u) => u.nome === up);
+                  return (
+                    <span key={up} className="badge buff" style={{ fontSize: 11 }} title={info?.efeito}>{up}
+                      <button type="button" className="ghost" style={{ padding: "0 4px", color: "var(--err)" }}
+                        onClick={() => { edit(i, { aprimoramentos: (a.aprimoramentos ?? []).filter((x) => x !== up) }); flush(); }}>✕</button>
+                    </span>
+                  );
+                })}
+              </div>
+            )}
           </div>
         );
       })}

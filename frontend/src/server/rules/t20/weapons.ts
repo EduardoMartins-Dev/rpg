@@ -63,3 +63,27 @@ export function weapon(nome: string): WeaponInfo | undefined {
   const q = nome.trim().toLowerCase();
   return WEAPONS.find((w) => w.nome.toLowerCase() === q);
 }
+
+// Aprimoramentos ("Melhorias para armas", Tabela 3-4). applies: "any" = qualquer arma;
+// "distancia" = só armas de ataque à distância; "corpo" = só corpo a corpo.
+export type WeaponUpgrade = { nome: string; efeito: string; applies: "any" | "distancia" | "corpo" };
+
+export const WEAPON_UPGRADES: WeaponUpgrade[] = [
+  { nome: "Certeira", efeito: "+1 nos testes de ataque", applies: "any" },
+  { nome: "Pungente", efeito: "+2 nos testes de ataque", applies: "any" },
+  { nome: "Cruel", efeito: "+1 nas rolagens de dano", applies: "any" },
+  { nome: "Atroz", efeito: "+2 nas rolagens de dano", applies: "any" },
+  { nome: "Equilibrada", efeito: "+2 em testes de manobras", applies: "corpo" },
+  { nome: "Harmonizada", efeito: "custo de habilidades de ataque diminui em –1 PM", applies: "any" },
+  { nome: "Injeção alquímica", efeito: "gera efeito de preparado (item alquímico)", applies: "any" },
+  { nome: "Maciça", efeito: "+1 no multiplicador de crítico", applies: "any" },
+  { nome: "Precisa", efeito: "+1 na margem de ameaça", applies: "any" },
+  { nome: "Mira telescópica", efeito: "aumenta o alcance da arma", applies: "distancia" },
+  { nome: "Material especial", efeito: "conforme o material escolhido", applies: "any" },
+];
+
+/** Aprimoramentos aplicáveis a uma arma segundo seu tipo (corpo a corpo vs. à distância). */
+export function upgradesFor(w: { alcance?: string } | undefined): WeaponUpgrade[] {
+  const distancia = !!w?.alcance;
+  return WEAPON_UPGRADES.filter((u) => u.applies === "any" || (distancia ? u.applies === "distancia" : u.applies === "corpo"));
+}

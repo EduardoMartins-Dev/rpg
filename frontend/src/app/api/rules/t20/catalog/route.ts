@@ -18,6 +18,7 @@ export async function GET(req: NextRequest) {
       powers: T20.POWERS,
       spells: T20.SPELLS,
       weapons: T20.WEAPONS,
+      weaponUpgrades: T20.WEAPON_UPGRADES,
     });
   });
 }
