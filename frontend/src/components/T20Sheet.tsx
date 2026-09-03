@@ -15,6 +15,8 @@ import type { T20Catalog, T20RaceDef, T20AttrDef, T20AttrMod, T20RaceAbility } f
 type Sheet = Record<string, unknown>;
 type Atributos = Record<string, number>;
 type Pericia = { treinada?: boolean; outros?: number };
+type Arma = { nome?: string; ataque?: number; dano?: string; critico?: string; tipo?: string };
+type Item = { nome?: string; qtd?: number; espacos?: number; obs?: string };
 
 const num = (v: unknown, d = 0): number => (Number.isFinite(Number(v)) ? Number(v) : d);
 const str = (v: unknown): string => (typeof v === "string" ? v : "");
@@ -40,6 +42,18 @@ export function T20Sheet({ sheet, catalog, onPersist }: {
   const [spellTrad, setSpellTrad] = useState("");
   const [powerQuery, setPowerQuery] = useState("");
   const [powerCat, setPowerCat] = useState("");
+  const [step, setStep] = useState(0);
+
+  const STEPS: { key: string; label: string }[] = [
+    { key: "identidade", label: "Identidade" },
+    { key: "atributos", label: "Atributos" },
+    { key: "pericias", label: "Perícias" },
+    { key: "combate", label: "Combate" },
+    { key: "inventario", label: "Inventário" },
+    { key: "historia", label: "História" },
+    { key: "referencias", label: "Poderes & Magias" },
+  ];
+  const cur = STEPS[step]?.key ?? "identidade";
 
   const nivel = num(s.nivel, 1);
   const pericias = (s.pericias as Record<string, Pericia>) ?? {};
@@ -144,10 +158,50 @@ export function T20Sheet({ sheet, catalog, onPersist }: {
     setRolls((r) => [line, ...r].slice(0, 12));
   }
 
+  // Armas e inventário (listas livres).
+  const armas = (Array.isArray(s.armas) ? s.armas : []) as Arma[];
+  const itens = (Array.isArray(s.itens) ? s.itens : []) as Item[];
+  const cargaUsada = itens.reduce((t, it) => t + num(it.espacos) * Math.max(1, num(it.qtd, 1)), 0);
+  const cargaLimite = num(atributos.forca) + 5; // espaços = Força + 5
+
+  function setArmas(next: Arma[]) { commit({ ...s, armas: next }); }
+  function setItens(next: Item[]) { commit({ ...s, itens: next }); }
+  function rollAtaque(nome: string, bonus: number) {
+    const natural = 1 + Math.floor(Math.random() * 20);
+    setRolls((r) => [{ id: rollId.current++, label: `Ataque: ${nome}`, natural, bonus, total: natural + bonus, dt: null, crit: natural === 20, fumble: natural === 1 }, ...r].slice(0, 12));
+  }
+
   if (!catalog) return <p className="muted">Carregando catálogo do Tormenta 20…</p>;
 
   return (
     <div data-testid="t20-sheet" className="t20-sheet">
+      {/* Vitais sempre visíveis */}
+      <div className="t20-derived">
+        <VitalBox label="PV" atual={pvMax != null ? pvMax - num(s.pvDano) : null} max={pvMax}
+          onDelta={(d) => commit({ ...s, pvDano: Math.max(0, num(s.pvDano) - d) })} testid="t20-pv" />
+        <VitalBox label="PM" atual={pmMax != null ? pmMax - num(s.pmGasto) : null} max={pmMax}
+          onDelta={(d) => commit({ ...s, pmGasto: Math.max(0, num(s.pmGasto) - d) })} testid="t20-pm" />
+        <div className="t20-defbox" data-testid="t20-defesa">
+          <div className="t20-defbox-val">{defesa}</div>
+          <div className="muted" style={{ fontSize: 12 }}>Defesa</div>
+          <div className="muted" style={{ fontSize: 11 }}>10 + Des + arm. + esc.</div>
+        </div>
+      </div>
+
+      {/* Passos (como no V5) */}
+      <ol className="stepper" data-testid="t20-steps">
+        {STEPS.map((st, i) => (
+          <li key={st.key}>
+            <button type="button" className={`step-tab${i === step ? " on" : ""}${i < step ? " done" : ""}`}
+              data-testid={`t20-step-${st.key}`} onClick={() => setStep(i)}>
+              <span className="step-no">{i + 1}</span>{st.label}
+            </button>
+          </li>
+        ))}
+      </ol>
+
+      <div className="step-body">
+      {cur === "identidade" && (<>
       {/* Identidade */}
       <div className="t20-idrow">
         <label>Nível
@@ -233,19 +287,9 @@ export function T20Sheet({ sheet, catalog, onPersist }: {
         </div>
       )}
 
-      {/* Derivados */}
-      <div className="t20-derived">
-        <VitalBox label="PV" atual={pvMax != null ? pvMax - num(s.pvDano) : null} max={pvMax}
-          onDelta={(d) => commit({ ...s, pvDano: Math.max(0, num(s.pvDano) - d) })} testid="t20-pv" />
-        <VitalBox label="PM" atual={pmMax != null ? pmMax - num(s.pmGasto) : null} max={pmMax}
-          onDelta={(d) => commit({ ...s, pmGasto: Math.max(0, num(s.pmGasto) - d) })} testid="t20-pm" />
-        <div className="t20-defbox" data-testid="t20-defesa">
-          <div className="t20-defbox-val">{defesa}</div>
-          <div className="muted" style={{ fontSize: 12 }}>Defesa</div>
-          <div className="muted" style={{ fontSize: 11 }}>10 + Des + arm. + esc.</div>
-        </div>
-      </div>
+      </>)}
 
+      {cur === "atributos" && (<>
       {/* Atributos: você edita o BASE; a raça soma o modificador; o total é o valor final */}
       <h4 className="t20-h">Atributos <span className="muted" style={{ fontSize: 12, fontWeight: 400 }}>(base + raça = total)</span></h4>
       <div className="t20-attrs">
@@ -288,7 +332,9 @@ export function T20Sheet({ sheet, catalog, onPersist }: {
         <label>Outros <input type="number" value={num(s.defesaOutros)}
           onChange={(e) => setLocal({ ...s, defesaOutros: num(e.target.value) })} onBlur={() => commit(s)} /></label>
       </div>
+      </>)}
 
+      {cur === "pericias" && (<>
       {/* Perícias */}
       <h4 className="t20-h">Perícias</h4>
       <div className="t20-skills" data-testid="t20-skills">
@@ -312,23 +358,23 @@ export function T20Sheet({ sheet, catalog, onPersist }: {
           );
         })}
       </div>
+      </>)}
 
-      {/* Resultados de rolagem */}
-      {rolls.length > 0 && (
-        <div className="t20-rolls" data-testid="t20-rolls">
-          <h4 className="t20-h">Rolagens</h4>
-          {rolls.map((r) => (
-            <div key={r.id} className={`t20-roll${r.dt != null ? (r.total >= r.dt ? " ok" : " fail") : ""}`}>
-              <b>{r.label}</b>
-              <span className="mono"> 1d20 ({r.natural}) {r.bonus >= 0 ? "+" : ""}{r.bonus} = <b>{r.total}</b></span>
-              {r.dt != null && <span className="muted"> vs DT {r.dt} → {r.total >= r.dt ? "sucesso" : "falha"}</span>}
-              {r.crit && <span style={{ color: "var(--ok)" }}> · 20 natural!</span>}
-              {r.fumble && <span style={{ color: "var(--err)" }}> · 1 natural</span>}
-            </div>
-          ))}
-        </div>
+      {cur === "combate" && (
+        <WeaponEditor armas={armas} onChange={setArmas} onRoll={rollAtaque} />
       )}
 
+      {cur === "inventario" && (
+        <InventoryEditor itens={itens} onChange={setItens}
+          dinheiro={num(s.dinheiro)} onDinheiro={(v) => commit({ ...s, dinheiro: v })}
+          cargaUsada={cargaUsada} cargaLimite={cargaLimite} />
+      )}
+
+      {cur === "historia" && (
+        <LoreEditor sheet={s} onCommit={commit} />
+      )}
+
+      {cur === "referencias" && (<>
       {/* Referência de poderes (índice completo por categoria) */}
       {(catalog.powers ?? []).length > 0 && (
         <details className="t20-powers-ref" data-testid="t20-powers-ref">
@@ -384,6 +430,32 @@ export function T20Sheet({ sheet, catalog, onPersist }: {
           </div>
         </details>
       )}
+      </>)}
+      </div>
+
+      {/* Rolagens (sempre visíveis) */}
+      {rolls.length > 0 && (
+        <div className="t20-rolls" data-testid="t20-rolls">
+          <h4 className="t20-h">Rolagens</h4>
+          {rolls.map((r) => (
+            <div key={r.id} className={`t20-roll${r.dt != null ? (r.total >= r.dt ? " ok" : " fail") : ""}`}>
+              <b>{r.label}</b>
+              <span className="mono"> 1d20 ({r.natural}) {r.bonus >= 0 ? "+" : ""}{r.bonus} = <b>{r.total}</b></span>
+              {r.dt != null && <span className="muted"> vs DT {r.dt} → {r.total >= r.dt ? "sucesso" : "falha"}</span>}
+              {r.crit && <span style={{ color: "var(--ok)" }}> · 20 natural!</span>}
+              {r.fumble && <span style={{ color: "var(--err)" }}> · 1 natural</span>}
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="step-nav">
+        <button type="button" className="secondary" data-testid="t20-step-prev" disabled={step === 0}
+          onClick={() => setStep((n) => Math.max(0, n - 1))}>← Anterior</button>
+        <span className="muted" style={{ fontSize: 13, alignSelf: "center" }}>{step + 1} / {STEPS.length}</span>
+        <button type="button" data-testid="t20-step-next" disabled={step === STEPS.length - 1}
+          onClick={() => setStep((n) => Math.min(STEPS.length - 1, n + 1))}>Próximo →</button>
+      </div>
     </div>
   );
 }
@@ -436,6 +508,124 @@ function VitalBox({ label, atual, max, onDelta, testid }: {
         <button className="ghost" onClick={() => onDelta(-1)} title={`-1 ${label}`}>−</button>
         <button className="ghost" onClick={() => onDelta(1)} title={`+1 ${label}`}>＋</button>
       </div>
+    </div>
+  );
+}
+
+// Editor de armas/ataques. Digita local; persiste no blur; adiciona/remove na hora.
+function WeaponEditor({ armas, onChange, onRoll }: {
+  armas: Arma[]; onChange: (a: Arma[]) => void; onRoll: (nome: string, bonus: number) => void;
+}) {
+  const [rows, setRows] = useState<Arma[]>(armas);
+  const ref = useRef<Arma[]>(armas);
+  useEffect(() => { ref.current = armas; setRows(armas); }, [armas]);
+  const edit = (i: number, patch: Arma) => { const next = ref.current.map((a, j) => (j === i ? { ...a, ...patch } : a)); ref.current = next; setRows(next); };
+  const flush = () => onChange(ref.current);
+  const push = (next: Arma[]) => { ref.current = next; onChange(next); };
+  return (
+    <div className="t20-invsec" data-testid="t20-weapons">
+      <div className="t20-invhead"><h4 className="t20-h">Armas & Ataques</h4>
+        <button type="button" className="secondary" data-testid="t20-weapon-add" onClick={() => push([...ref.current, {}])}>+ Arma</button></div>
+      {rows.length === 0 && <p className="muted" style={{ fontSize: 13 }}>Nenhuma arma ainda.</p>}
+      {rows.map((a, i) => (
+        <div key={i} className="t20-weapon" data-testid="t20-weapon-row">
+          <input placeholder="Nome" value={str(a.nome)} style={{ flex: 2, minWidth: 120 }}
+            onChange={(e) => edit(i, { nome: e.target.value })} onBlur={flush} />
+          <input type="number" placeholder="Atq" title="Bônus de ataque" value={num(a.ataque)} style={{ width: 64 }}
+            onChange={(e) => edit(i, { ataque: num(e.target.value) })} onBlur={flush} />
+          <input placeholder="Dano (ex.: 1d8)" value={str(a.dano)} style={{ width: 120 }}
+            onChange={(e) => edit(i, { dano: e.target.value })} onBlur={flush} />
+          <input placeholder="Crít. (x2)" value={str(a.critico)} style={{ width: 90 }}
+            onChange={(e) => edit(i, { critico: e.target.value })} onBlur={flush} />
+          <input placeholder="Tipo" value={str(a.tipo)} style={{ width: 90 }}
+            onChange={(e) => edit(i, { tipo: e.target.value })} onBlur={flush} />
+          <button type="button" className="ghost" title="Rolar 1d20 + ataque" onClick={() => onRoll(str(a.nome) || "arma", num(a.ataque))}>🎲</button>
+          <button type="button" className="ghost" style={{ color: "var(--err)" }} title="Remover" onClick={() => push(ref.current.filter((_, j) => j !== i))}>✕</button>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// Inventário: itens (nome/qtd/espaços/obs) + dinheiro (T$) + carga (espaços = Força + 5).
+function InventoryEditor({ itens, onChange, dinheiro, onDinheiro, cargaUsada, cargaLimite }: {
+  itens: Item[]; onChange: (it: Item[]) => void; dinheiro: number; onDinheiro: (v: number) => void;
+  cargaUsada: number; cargaLimite: number;
+}) {
+  const [rows, setRows] = useState<Item[]>(itens);
+  const [tibar, setTibar] = useState(dinheiro);
+  const ref = useRef<Item[]>(itens);
+  useEffect(() => { ref.current = itens; setRows(itens); }, [itens]);
+  useEffect(() => { setTibar(dinheiro); }, [dinheiro]);
+  const edit = (i: number, patch: Item) => { const next = ref.current.map((it, j) => (j === i ? { ...it, ...patch } : it)); ref.current = next; setRows(next); };
+  const flush = () => onChange(ref.current);
+  const push = (next: Item[]) => { ref.current = next; onChange(next); };
+  const sobrecarga = cargaUsada > cargaLimite;
+  return (
+    <div className="t20-invsec" data-testid="t20-inventory">
+      <div className="t20-invhead">
+        <h4 className="t20-h">Inventário</h4>
+        <label style={{ display: "inline-flex", alignItems: "center", gap: 6, margin: 0 }}>T$
+          <input type="number" data-testid="t20-money" value={tibar} style={{ width: 100 }}
+            onChange={(e) => setTibar(num(e.target.value))} onBlur={() => onDinheiro(tibar)} /></label>
+        <span className={`muted${sobrecarga ? " t20-overload" : ""}`} data-testid="t20-carga" style={{ fontSize: 13 }}>
+          Carga: {cargaUsada} / {cargaLimite} espaços{sobrecarga ? " · sobrecarregado!" : ""}</span>
+        <button type="button" className="secondary" data-testid="t20-item-add" onClick={() => push([...ref.current, { qtd: 1 }])}>+ Item</button>
+      </div>
+      {rows.length === 0 && <p className="muted" style={{ fontSize: 13 }}>Nenhum item ainda.</p>}
+      {rows.map((it, i) => (
+        <div key={i} className="t20-weapon" data-testid="t20-item-row">
+          <input placeholder="Item" value={str(it.nome)} style={{ flex: 2, minWidth: 140 }}
+            onChange={(e) => edit(i, { nome: e.target.value })} onBlur={flush} />
+          <input type="number" placeholder="Qtd" title="Quantidade" value={num(it.qtd, 1)} style={{ width: 64 }}
+            onChange={(e) => edit(i, { qtd: num(e.target.value, 1) })} onBlur={flush} />
+          <input type="number" placeholder="Esp." title="Espaços (carga)" value={num(it.espacos)} style={{ width: 64 }}
+            onChange={(e) => edit(i, { espacos: num(e.target.value) })} onBlur={flush} />
+          <input placeholder="Observações" value={str(it.obs)} style={{ flex: 1, minWidth: 120 }}
+            onChange={(e) => edit(i, { obs: e.target.value })} onBlur={flush} />
+          <button type="button" className="ghost" style={{ color: "var(--err)" }} title="Remover" onClick={() => push(ref.current.filter((_, j) => j !== i))}>✕</button>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// História & personalização: campos livres de lore. Digita local; persiste no blur.
+function LoreEditor({ sheet, onCommit }: { sheet: Sheet; onCommit: (next: Sheet) => void }) {
+  const FIELDS: { key: string; label: string; area?: boolean; ph?: string }[] = [
+    { key: "conceito", label: "Conceito", ph: "ex.: cavaleiro exilado em busca de redenção" },
+    { key: "tendencia", label: "Tendência (alinhamento)", ph: "ex.: Leal e Bom, Neutro, Caótico…" },
+    { key: "aparencia", label: "Aparência", area: true },
+    { key: "personalidade", label: "Personalidade", area: true },
+    { key: "objetivo", label: "Objetivos & Motivação", area: true },
+    { key: "historia", label: "História", area: true },
+    { key: "anotacoes", label: "Anotações", area: true },
+  ];
+  const [vals, setVals] = useState<Record<string, string>>({});
+  const ref = useRef<Record<string, string>>({});
+  const sheetRef = useRef(sheet);
+  useEffect(() => {
+    sheetRef.current = sheet;
+    const init: Record<string, string> = {};
+    for (const f of FIELDS) init[f.key] = str(sheet[f.key]);
+    ref.current = init; setVals(init);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sheet]);
+  const edit = (key: string, v: string) => { ref.current = { ...ref.current, [key]: v }; setVals(ref.current); };
+  const flush = (key: string) => onCommit({ ...sheetRef.current, [key]: ref.current[key] ?? "" });
+  return (
+    <div className="t20-lore" data-testid="t20-lore">
+      {FIELDS.map((f) => (
+        <label key={f.key} style={{ display: "block" }}>{f.label}
+          {f.area
+            ? <textarea data-testid={`t20-lore-${f.key}`} value={vals[f.key] ?? ""} placeholder={f.ph} rows={3}
+                style={{ marginTop: 6, resize: "vertical" }}
+                onChange={(e) => edit(f.key, e.target.value)} onBlur={() => flush(f.key)} />
+            : <input data-testid={`t20-lore-${f.key}`} value={vals[f.key] ?? ""} placeholder={f.ph}
+                style={{ marginTop: 6 }}
+                onChange={(e) => edit(f.key, e.target.value)} onBlur={() => flush(f.key)} />}
+        </label>
+      ))}
     </div>
   );
 }

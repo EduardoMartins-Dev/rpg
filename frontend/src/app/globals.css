@@ -732,3 +732,11 @@ th { font-size: .72rem; text-transform: uppercase; letter-spacing: .5px; color: 
 .t20-freeattr { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: -6px; }
 .t20-freeattr-chip { padding: 4px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--muted); font-size: 13px; }
 .t20-freeattr-chip.on { background: var(--accent-tint); border-color: var(--accent); color: var(--accent-hover); }
+.t20-invsec { display: flex; flex-direction: column; gap: 8px; }
+.t20-invhead { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.t20-invhead .t20-h { margin-right: auto; }
+.t20-weapon { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.t20-weapon input { padding: 8px 10px; }
+.t20-overload { color: var(--err) !important; font-weight: 600; }
+.t20-lore { display: flex; flex-direction: column; gap: 14px; }
+.t20-lore label { font-size: 13px; color: var(--muted); }
