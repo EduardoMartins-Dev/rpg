@@ -31,15 +31,36 @@ function toInt(value: unknown, dflt: number): number {
   return dflt;
 }
 
-function readAttributes(sheet: SheetData): Record<Cat.AttrKey, number> {
-  const raw = isPlainObject(sheet.atributos) ? sheet.atributos : {};
-  const out = {} as Record<Cat.AttrKey, number>;
-  for (const k of Cat.ATTRIBUTE_KEYS) {
-    const v = toInt(raw[k], 0);
-    Eng.requireAttributeRange(v);
-    out[k] = v;
-  }
+const ZERO = (): Record<Cat.AttrKey, number> =>
+  Object.fromEntries(Cat.ATTRIBUTE_KEYS.map((k) => [k, 0])) as Record<Cat.AttrKey, number>;
+
+/** Atributos-base (o que o jogador "compra", antes da raça). Migração: fichas antigas sem
+ * atributosBase caem para atributos (que ali eram o valor final digitado à mão). */
+function readBaseAttributes(sheet: SheetData): Record<Cat.AttrKey, number> {
+  const raw = isPlainObject(sheet.atributosBase) ? sheet.atributosBase
+    : isPlainObject(sheet.atributos) ? sheet.atributos : {};
+  const out = ZERO();
+  for (const k of Cat.ATTRIBUTE_KEYS) out[k] = toInt(raw[k], 0);
   return out;
+}
+
+/** Modificadores de atributo vindos da raça: fixos + variante (suraggel) + escolhas livres
+ * (atributosLivres, para raças "+N em atributos diferentes"). */
+function racialMods(sheet: SheetData): Record<Cat.AttrKey, number> {
+  const mods = ZERO();
+  const r = Cat.race(typeof sheet.raca === "string" ? sheet.raca : "");
+  if (!r) return mods;
+  for (const m of r.attrMods) mods[m.attr] += m.mod;
+  if (r.variants && r.variants.length) {
+    const v = r.variants.find((x) => x.id === sheet.racaVariante) ?? r.variants[0];
+    for (const m of v.attrMods) mods[m.attr] += m.mod;
+  }
+  if (r.freeAttr) {
+    const picks = Array.isArray(sheet.atributosLivres) ? sheet.atributosLivres : [];
+    const uniq = [...new Set(picks.filter((k): k is Cat.AttrKey => (Cat.ATTRIBUTE_KEYS as string[]).includes(k as string)))];
+    for (const k of uniq.slice(0, r.freeAttr.count)) mods[k] += r.freeAttr.each;
+  }
+  return mods;
 }
 
 /** Valida contra o catálogo e devolve a ficha enriquecida (uma cópia) com `derived`. */
@@ -54,7 +75,17 @@ export function process(sheetData: unknown): SheetData {
   Eng.requireLevelRange(nivel);
   sheet.nivel = nivel;
 
-  const attrs = readAttributes(sheet);
+  // Atributos: base (comprado) + modificadores da raça = final (usado pelo motor).
+  const base = readBaseAttributes(sheet);
+  const mods = racialMods(sheet);
+  const attrs = ZERO();
+  for (const k of Cat.ATTRIBUTE_KEYS) {
+    const v = base[k] + mods[k];
+    Eng.requireAttributeRange(v);
+    attrs[k] = v;
+  }
+  sheet.atributosBase = base;
+  sheet.racaMods = mods;
   sheet.atributos = attrs;
 
   // Perícias: só nomes conhecidos; guarda { treinada, outros }.

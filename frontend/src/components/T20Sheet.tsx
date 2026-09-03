@@ -42,7 +42,6 @@ export function T20Sheet({ sheet, catalog, onPersist }: {
   const [powerCat, setPowerCat] = useState("");
 
   const nivel = num(s.nivel, 1);
-  const atributos = (s.atributos as Atributos) ?? {};
   const pericias = (s.pericias as Record<string, Pericia>) ?? {};
   const attrDefs = catalog?.attributes ?? [];
   const skillDefs = catalog?.skills ?? [];
@@ -82,6 +81,24 @@ export function T20Sheet({ sheet, catalog, onPersist }: {
   const selectedOrigin = (catalog?.origins ?? []).find((o) => o.id === str(s.origem));
   const selectedDeity = (catalog?.deities ?? []).find((d) => d.id === str(s.divindade));
   const cls = classes.find((c) => c.id === str(s.classe));
+
+  // Atributos: base (comprado) + modificadores da raça = final (espelha o servidor).
+  const atributosBase = (s.atributosBase as Atributos) ?? (s.atributos as Atributos) ?? {};
+  const livres = Array.isArray(s.atributosLivres) ? (s.atributosLivres as string[]) : [];
+  const racaMods: Atributos = {};
+  for (const a of attrDefs) racaMods[a.key] = 0;
+  if (selectedRace) {
+    for (const m of selectedRace.attrMods) racaMods[m.attr] = (racaMods[m.attr] ?? 0) + m.mod;
+    const variant = selectedRace.variants?.find((v) => v.id === str(s.racaVariante)) ?? selectedRace.variants?.[0];
+    if (variant) for (const m of variant.attrMods) racaMods[m.attr] = (racaMods[m.attr] ?? 0) + m.mod;
+    if (selectedRace.freeAttr) {
+      const uniq = [...new Set(livres.filter((k) => attrDefs.some((a) => a.key === k)))].slice(0, selectedRace.freeAttr.count);
+      for (const k of uniq) racaMods[k] = (racaMods[k] ?? 0) + selectedRace.freeAttr.each;
+    }
+  }
+  const atributos: Atributos = {};
+  for (const a of attrDefs) atributos[a.key] = num(atributosBase[a.key]) + num(racaMods[a.key]);
+
   const con = num(atributos.constituicao);
   const des = num(atributos.destreza);
   const pvMax = cls ? cls.pvBase + (nivel - 1) * cls.pvPerLevel + nivel * con : null;
@@ -93,7 +110,15 @@ export function T20Sheet({ sheet, catalog, onPersist }: {
   function setLocal(next: Sheet) { setS(next); }
 
   function setAttr(key: string, v: number) {
-    return { ...s, atributos: { ...atributos, [key]: v } };
+    return { ...s, atributosBase: { ...atributosBase, [key]: v } };
+  }
+  // Alterna um atributo na escolha livre da raça (respeitando o limite `count`).
+  function toggleLivre(key: string) {
+    const max = selectedRace?.freeAttr?.count ?? 0;
+    const has = livres.includes(key);
+    let next = has ? livres.filter((k) => k !== key) : [...livres, key];
+    if (!has && next.length > max) next = next.slice(next.length - max); // mantém as últimas escolhas
+    return { ...s, atributosLivres: next };
   }
   function setPericia(name: string, patch: Pericia) {
     return { ...s, pericias: { ...pericias, [name]: { ...pericias[name], ...patch } } };
@@ -221,19 +246,38 @@ export function T20Sheet({ sheet, catalog, onPersist }: {
         </div>
       </div>
 
-      {/* Atributos */}
-      <h4 className="t20-h">Atributos</h4>
+      {/* Atributos: você edita o BASE; a raça soma o modificador; o total é o valor final */}
+      <h4 className="t20-h">Atributos <span className="muted" style={{ fontSize: 12, fontWeight: 400 }}>(base + raça = total)</span></h4>
       <div className="t20-attrs">
-        {attrDefs.map((a) => (
-          <label key={a.key} className="t20-attr" data-testid={`t20-attr-${a.key}`}>
-            <span className="t20-attr-abbr">{a.abbr}</span>
-            <input type="number" value={num(atributos[a.key])}
-              onChange={(e) => setLocal(setAttr(a.key, num(e.target.value)))}
-              onBlur={() => commit(s)} />
-            <span className="t20-attr-label">{a.label}</span>
-          </label>
-        ))}
+        {attrDefs.map((a) => {
+          const mod = num(racaMods[a.key]);
+          return (
+            <label key={a.key} className="t20-attr" data-testid={`t20-attr-${a.key}`}>
+              <span className="t20-attr-abbr">{a.abbr}</span>
+              <input type="number" value={num(atributosBase[a.key])} data-testid={`t20-attr-base-${a.key}`}
+                onChange={(e) => setLocal(setAttr(a.key, num(e.target.value)))}
+                onBlur={() => commit(s)} />
+              <span className="t20-attr-total" data-testid={`t20-attr-total-${a.key}`}>
+                = {num(atributos[a.key])}{mod !== 0 && <span className="muted" style={{ fontSize: 11 }}> ({mod > 0 ? "+" : ""}{mod})</span>}
+              </span>
+              <span className="t20-attr-label">{a.label}</span>
+            </label>
+          );
+        })}
       </div>
+      {selectedRace?.freeAttr && (
+        <div className="t20-freeattr" data-testid="t20-freeattr">
+          <span className="muted" style={{ fontSize: 13 }}>
+            {selectedRace.label}: escolha {selectedRace.freeAttr.count} atributo(s) para +{selectedRace.freeAttr.each}
+            {" "}({livres.length}/{selectedRace.freeAttr.count}):
+          </span>
+          {attrDefs.filter((a) => !selectedRace.freeAttr!.except?.includes(a.key)).map((a) => (
+            <button key={a.key} type="button" data-testid={`t20-freeattr-${a.key}`}
+              className={`t20-freeattr-chip${livres.includes(a.key) ? " on" : ""}`}
+              onClick={() => commit(toggleLivre(a.key))}>{a.abbr}</button>
+          ))}
+        </div>
+      )}
 
       {/* Defesa (equipamento) */}
       <div className="t20-armorrow">
