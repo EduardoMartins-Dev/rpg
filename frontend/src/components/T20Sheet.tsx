@@ -36,6 +36,8 @@ export function T20Sheet({ sheet, catalog, onPersist }: {
 
   const [rolls, setRolls] = useState<RollLine[]>([]);
   const rollId = useRef(0);
+  const [spellQuery, setSpellQuery] = useState("");
+  const [spellTrad, setSpellTrad] = useState("");
 
   const nivel = num(s.nivel, 1);
   const atributos = (s.atributos as Atributos) ?? {};
@@ -44,6 +46,15 @@ export function T20Sheet({ sheet, catalog, onPersist }: {
   const skillDefs = catalog?.skills ?? [];
   const classes = catalog?.classes ?? [];
   const races = catalog?.races ?? [];
+
+  const spells = catalog?.spells ?? [];
+  const spellsFiltered = useMemo(() => {
+    const q = spellQuery.trim().toLowerCase();
+    return spells.filter((sp) =>
+      (!spellTrad || sp.tradition === spellTrad) &&
+      (!q || sp.name.toLowerCase().includes(q) || sp.school.toLowerCase().includes(q) || sp.summary.toLowerCase().includes(q)),
+    );
+  }, [spells, spellQuery, spellTrad]);
 
   const powerMap = useMemo(() => new Map((catalog?.powers ?? []).map((p) => [p.name.toLowerCase(), p])), [catalog]);
   // Lista de nomes de poder; os que existem no catálogo ganham tooltip com a descrição.
@@ -274,6 +285,33 @@ export function T20Sheet({ sheet, catalog, onPersist }: {
                 <span className="t20-power-name">{p.name}</span>
                 <span className="muted" style={{ fontSize: 11 }}> · {p.category}{p.prereq ? ` · Pré: ${p.prereq}` : ""}</span>
                 <div className="muted" style={{ fontSize: 13 }}>{p.desc}</div>
+              </div>
+            ))}
+          </div>
+        </details>
+      )}
+
+      {/* Grimório: índice de magias (busca + filtro por tradição) */}
+      {spells.length > 0 && (
+        <details className="t20-powers-ref" data-testid="t20-spells-ref">
+          <summary>Magias ({spells.length}) — grimório</summary>
+          <div className="t20-spell-filters">
+            <input placeholder="Buscar magia, escola…" value={spellQuery}
+              data-testid="t20-spell-search" onChange={(e) => setSpellQuery(e.target.value)} />
+            <select value={spellTrad} data-testid="t20-spell-trad" onChange={(e) => setSpellTrad(e.target.value)} style={{ width: "auto" }}>
+              <option value="">Todas</option>
+              <option value="Arcana">Arcanas</option>
+              <option value="Divina">Divinas</option>
+            </select>
+            <span className="muted" style={{ fontSize: 12, alignSelf: "center" }}>{spellsFiltered.length} magia(s)</span>
+          </div>
+          <div className="t20-powers-list" data-testid="t20-spell-list">
+            {spellsFiltered.map((sp) => (
+              <div key={`${sp.tradition}-${sp.circle}-${sp.name}`} className="t20-power-row">
+                <span className="t20-power-name">{sp.name}</span>
+                <span className="muted" style={{ fontSize: 11 }}> · {sp.tradition} {sp.circle}º · {sp.school}</span>
+                <div className="muted" style={{ fontSize: 12 }}>{sp.exec}</div>
+                <div className="muted" style={{ fontSize: 13 }}>{sp.summary}</div>
               </div>
             ))}
           </div>

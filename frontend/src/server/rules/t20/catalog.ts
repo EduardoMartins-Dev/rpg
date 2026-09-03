@@ -9,6 +9,9 @@
  * os rótulos são exibidos ao jogador.
  */
 
+// Índice de magias (167) vive em ./spells.ts (gerado do PDF) e é reexportado aqui.
+export { SPELLS, type Spell } from "./spells";
+
 // --- Atributos (6) ---------------------------------------------------------------------
 
 export type AttrKey = "forca" | "destreza" | "constituicao" | "inteligencia" | "sabedoria" | "carisma";

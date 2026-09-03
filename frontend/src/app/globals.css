@@ -726,3 +726,5 @@ th { font-size: .72rem; text-transform: uppercase; letter-spacing: .5px; color: 
 .t20-powers-list { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
 .t20-power-row { padding-bottom: 8px; border-bottom: 1px dashed var(--border); }
 .t20-power-name { font-weight: 600; font-size: 14px; }
+.t20-spell-filters { display: flex; gap: 10px; margin: 12px 0; flex-wrap: wrap; }
+.t20-spell-filters input { flex: 1; min-width: 180px; }
