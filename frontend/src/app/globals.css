@@ -705,11 +705,25 @@ th { font-size: .72rem; text-transform: uppercase; letter-spacing: .5px; color: 
 .t20-armorrow label { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
 .t20-armorrow input { width: 70px; text-align: center; }
 .t20-skills { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 6px 14px; }
-.t20-skill { display: flex; align-items: center; gap: 8px; padding: 5px 8px; border-radius: 8px; }
+.t20-skill { display: grid; grid-template-columns: 20px 1fr auto 30px; align-items: center; gap: 8px; padding: 5px 9px; border-radius: 8px; min-height: 44px; border: 1px solid transparent; border-left: 3px solid transparent; }
 .t20-skill:hover { background: var(--elev); }
-.t20-skill-name { flex: 1; font-size: 14px; }
-.t20-skill-val { font-family: var(--serif); font-weight: 700; min-width: 34px; text-align: right; color: var(--text); }
-.t20-skill-roll { padding: 2px 6px; }
+.t20-skill.trained { background: var(--accent-tint); border-left-color: var(--accent); }
+.t20-skill.trained .t20-skill-name { font-weight: 600; }
+.t20-skill.trained .t20-skill-val { color: var(--accent-hover); }
+.t20-skill-off { opacity: .45; }
+.t20-skill-name { display: flex; flex-direction: column; line-height: 1.15; font-size: 14px; min-width: 0; }
+.t20-skill-tags { font-size: 10.5px; color: var(--muted); }
+.t20-skill-val { font-family: var(--serif); font-weight: 700; font-size: 17px; min-width: 40px; text-align: right; color: var(--text); }
+.t20-skill-roll { padding: 2px 4px; }
+/* cor sutil da borda por atributo, ajuda a escanear */
+.t20-skill.attr-forca { border-left-color: rgba(181,68,58,.55); }
+.t20-skill.attr-destreza { border-left-color: rgba(63,168,115,.55); }
+.t20-skill.attr-constituicao { border-left-color: rgba(224,162,46,.55); }
+.t20-skill.attr-inteligencia { border-left-color: rgba(91,141,239,.55); }
+.t20-skill.attr-sabedoria { border-left-color: rgba(124,107,224,.6); }
+.t20-skill.attr-carisma { border-left-color: rgba(201,162,75,.6); }
+.t20-skill.trained.attr-forca, .t20-skill.trained.attr-destreza, .t20-skill.trained.attr-constituicao,
+.t20-skill.trained.attr-inteligencia, .t20-skill.trained.attr-sabedoria, .t20-skill.trained.attr-carisma { border-left-color: var(--accent); }
 .t20-rolls { display: flex; flex-direction: column; gap: 5px; }
 .t20-roll { padding: 8px 12px; border: 1px solid var(--border); border-left: 3px solid var(--border); border-radius: 8px; font-size: 14px; }
 .t20-roll.ok { border-left-color: var(--ok); }

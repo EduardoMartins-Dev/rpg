@@ -46,6 +46,7 @@ export function T20Sheet({ sheet, catalog, onPersist }: {
   const [spellOnlyAllowed, setSpellOnlyAllowed] = useState(false);
   const [powerQuery, setPowerQuery] = useState("");
   const [powerCat, setPowerCat] = useState("");
+  const [dtInput, setDtInput] = useState(""); // DT opcional, compartilhada pelas rolagens
   const [step, setStep] = useState(0);
 
   const STEPS: { key: string; label: string }[] = [
@@ -171,18 +172,16 @@ export function T20Sheet({ sheet, catalog, onPersist }: {
     commit({ ...s, classe: id, pericias: per });
   }
 
-  function rollSkill(name: string, value: number) {
-    const dtRaw = window.prompt(`Dificuldade (DT) para ${name}? Deixe vazio para rolar sem DT.`, "");
-    if (dtRaw === null) return; // cancelou
-    const dt = dtRaw.trim() === "" ? null : Math.trunc(Number(dtRaw));
+  // Rolagem inline: usa a DT do campo compartilhado (vazio = rola sem DT). Sem popup.
+  function doRoll(label: string, bonus: number) {
+    const dt = dtInput.trim() === "" ? null : Math.trunc(Number(dtInput));
     const natural = rollD20();
-    const line: RollLine = {
-      id: rollId.current++, label: name, natural, bonus: value, total: natural + value,
-      dt: dt != null && Number.isFinite(dt) ? dt : null,
-      crit: natural === 20, fumble: natural === 1,
-    };
-    setRolls((r) => [line, ...r].slice(0, 12));
+    setRolls((r) => [{
+      id: rollId.current++, label, natural, bonus, total: natural + bonus,
+      dt: dt != null && Number.isFinite(dt) ? dt : null, crit: natural === 20, fumble: natural === 1,
+    }, ...r].slice(0, 12));
   }
+  const rollSkill = doRoll;
 
   // Armas e inventário (listas livres).
   const armas = (Array.isArray(s.armas) ? s.armas : []) as Arma[];
@@ -192,10 +191,7 @@ export function T20Sheet({ sheet, catalog, onPersist }: {
 
   function setArmas(next: Arma[]) { commit({ ...s, armas: next }); }
   function setItens(next: Item[]) { commit({ ...s, itens: next }); }
-  function rollAtaque(nome: string, bonus: number) {
-    const natural = rollD20();
-    setRolls((r) => [{ id: rollId.current++, label: `Ataque: ${nome}`, natural, bonus, total: natural + bonus, dt: null, crit: natural === 20, fumble: natural === 1 }, ...r].slice(0, 12));
-  }
+  const rollAtaque = (nome: string, bonus: number) => doRoll(`Ataque: ${nome}`, bonus);
 
   if (!catalog) return <p className="muted">Carregando catálogo do Tormenta 20…</p>;
 
@@ -381,20 +377,22 @@ export function T20Sheet({ sheet, catalog, onPersist }: {
       <div className="t20-skills" data-testid="t20-skills">
         {skillDefs.map((sk) => {
           const p = pericias[sk.name] ?? {};
+          const treinada = p.treinada === true;
           const attr = num(atributos[sk.key]);
-          const val = skillValue(nivel, attr, p.treinada === true, num(p.outros));
+          const val = skillValue(nivel, attr, treinada, num(p.outros));
           const abbr = attrDefs.find((a) => a.key === sk.key)?.abbr ?? "";
+          const semUso = sk.trainedOnly && !treinada; // só treinada, sem treino: não pode rolar
           return (
-            <div key={sk.name} className="t20-skill" data-testid={`t20-skill-${sk.name}`}>
-              <input type="checkbox" checked={p.treinada === true} title="Treinada"
+            <div key={sk.name} className={`t20-skill attr-${sk.key}${treinada ? " trained" : ""}${semUso ? " t20-skill-off" : ""}`} data-testid={`t20-skill-${sk.name}`}>
+              <input type="checkbox" checked={treinada} title="Treinada"
                 data-testid={`t20-skill-treinada-${sk.name}`}
                 onChange={(e) => commit(setPericia(sk.name, { treinada: e.target.checked }))} />
               <span className="t20-skill-name">{sk.name}
-                <span className="muted" style={{ fontSize: 11 }}> ({abbr}){sk.trainedOnly ? " ·só treinada" : ""}</span>
+                <span className="t20-skill-tags">{abbr}{sk.trainedOnly ? " · só treinada" : ""}{sk.armorPenalty ? " · pen. arm." : ""}</span>
               </span>
               <span className="t20-skill-val" data-testid={`t20-skill-val-${sk.name}`}>{val >= 0 ? `+${val}` : val}</span>
-              <button className="ghost t20-skill-roll" title="Rolar 1d20 + valor"
-                data-testid={`t20-skill-roll-${sk.name}`} onClick={() => rollSkill(sk.name, val)}>🎲</button>
+              <button className="ghost t20-skill-roll" title={semUso ? "Só treinada — treine para usar" : "Rolar 1d20 + valor"}
+                disabled={semUso} data-testid={`t20-skill-roll-${sk.name}`} onClick={() => rollSkill(sk.name, val)}>🎲</button>
             </div>
           );
         })}
@@ -539,10 +537,17 @@ export function T20Sheet({ sheet, catalog, onPersist }: {
       </div>
 
       {/* Rolagens (sempre visíveis) */}
-      {rolls.length > 0 && (
-        <div className="t20-rolls" data-testid="t20-rolls">
-          <h4 className="t20-h">Rolagens</h4>
-          {rolls.map((r) => (
+      <div className="t20-rolls" data-testid="t20-rolls">
+        <div className="t20-invhead" style={{ marginBottom: 4 }}>
+          <h4 className="t20-h" style={{ marginRight: "auto" }}>Rolagens</h4>
+          <label style={{ display: "inline-flex", alignItems: "center", gap: 6, margin: 0, fontSize: 13 }} title="Dificuldade opcional aplicada às próximas rolagens">DT
+            <input type="number" data-testid="t20-dt" value={dtInput} placeholder="—" style={{ width: 70 }}
+              onChange={(e) => setDtInput(e.target.value)} /></label>
+          {rolls.length > 0 && <button type="button" className="ghost" data-testid="t20-rolls-clear" onClick={() => setRolls([])}>limpar</button>}
+        </div>
+        {rolls.length === 0
+          ? <p className="muted" style={{ fontSize: 13, margin: 0 }}>Clique no 🎲 de uma perícia, arma ou magia. Defina uma DT acima para ver sucesso/falha.</p>
+          : rolls.map((r) => (
             <div key={r.id} className={`t20-roll${r.dt != null ? (r.total >= r.dt ? " ok" : " fail") : ""}`}>
               <b>{r.label}</b>
               <span className="mono"> 1d20 ({r.natural}) {r.bonus >= 0 ? "+" : ""}{r.bonus} = <b>{r.total}</b></span>
@@ -551,8 +556,7 @@ export function T20Sheet({ sheet, catalog, onPersist }: {
               {r.fumble && <span style={{ color: "var(--err)" }}> · 1 natural</span>}
             </div>
           ))}
-        </div>
-      )}
+      </div>
 
       <div className="step-nav">
         <button type="button" className="secondary" data-testid="t20-step-prev" disabled={step === 0}
