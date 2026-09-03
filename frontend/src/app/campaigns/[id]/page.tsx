@@ -155,7 +155,7 @@ export default function CampaignDetailPage() {
     try {
       await api.post<Character>(`/campaigns/${id}/characters`, {
         name: charName,
-        sheetData: { type: "VAMPIRO", attributes: {}, skills: {} },
+        sheetData: {}, // o motor do sistema (V5/T20) inicializa a ficha
       });
       setCharName("");
       await load();

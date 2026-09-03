@@ -39,10 +39,11 @@ export default function CharacterSheetPage() {
     try {
       const campaign = await api.get<Campaign>(`/campaigns/${id}`);
       const system = await api.get<RpgSystem>(`/systems/${campaign.systemId}`);
-      const sc = await api.get<SheetSchema>(`/systems/${campaign.systemId}/sheet-schema`);
-      setSchema(sc.schema);
       const rs = system.ruleset ?? "v5";
       setRuleset(rs);
+      // O T20 não usa sheet-schema (valida pelo catálogo); os demais precisam dele.
+      if (rs === "t20") setSchema({});
+      else setSchema((await api.get<SheetSchema>(`/systems/${campaign.systemId}/sheet-schema`)).schema);
       // Cada ruleset carrega seu catálogo; os outros ficam nulos.
       if (rs === "v5") {
         try { setCatalog(await api.get<V5Catalog>("/rules/v5/catalog")); } catch { setCatalog(null); }

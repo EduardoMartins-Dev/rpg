@@ -41,9 +41,13 @@ async function rulesetFor(systemId: string): Promise<string> {
   return s?.ruleset ?? "v5";
 }
 
-async function schemaForSystem(systemId: string): Promise<SheetSchema> {
+async function schemaForSystem(systemId: string, ruleset?: string): Promise<SheetSchema> {
   const [sc] = await db.select().from(systemSheetSchema).where(eq(systemSheetSchema.systemId, systemId)).limit(1);
-  if (!sc) throw ApiError.badRequest("system has no sheet-schema defined");
+  // O motor do T20 valida pelo catálogo, não pelo sheet-schema — então dispensa o schema.
+  if (!sc) {
+    if (ruleset === "t20") return null;
+    throw ApiError.badRequest("system has no sheet-schema defined");
+  }
   return sc.schema as SheetSchema;
 }
 
@@ -61,9 +65,12 @@ async function requireCampaign(campaignId: string): Promise<typeof campaigns.$in
   return c;
 }
 
-async function schemaFor(campaign: typeof campaigns.$inferSelect): Promise<SheetSchema> {
+async function schemaFor(campaign: typeof campaigns.$inferSelect, ruleset?: string): Promise<SheetSchema> {
   const [sc] = await db.select().from(systemSheetSchema).where(eq(systemSheetSchema.systemId, campaign.systemId)).limit(1);
-  if (!sc) throw ApiError.badRequest("system has no sheet-schema defined");
+  if (!sc) {
+    if (ruleset === "t20") return null;
+    throw ApiError.badRequest("system has no sheet-schema defined");
+  }
   return sc.schema as SheetSchema;
 }
 
@@ -89,7 +96,8 @@ async function requireAccessible(campaignId: string, charId: string, userId: str
 
 export async function create(campaignId: string, playerId: string, req: z.infer<typeof characterRequestSchema>): Promise<CharacterResponse> {
   const campaign = await requireCampaign(campaignId);
-  const enriched = processSheet(await rulesetFor(campaign.systemId), req.sheetData, await schemaFor(campaign));
+  const rs = await rulesetFor(campaign.systemId);
+  const enriched = processSheet(rs, req.sheetData, await schemaFor(campaign, rs));
   const [c] = await db
     .insert(characters)
     .values({ campaignId, playerId, systemId: campaign.systemId, name: req.name, sheetData: enriched })
@@ -118,7 +126,8 @@ export async function get(campaignId: string, charId: string, userId: string): P
 export async function update(campaignId: string, charId: string, req: z.infer<typeof characterRequestSchema>, userId: string): Promise<CharacterResponse> {
   await requireAccessible(campaignId, charId, userId);
   const campaign = await requireCampaign(campaignId);
-  const enriched = processSheet(await rulesetFor(campaign.systemId), req.sheetData, await schemaFor(campaign));
+  const rs = await rulesetFor(campaign.systemId);
+  const enriched = processSheet(rs, req.sheetData, await schemaFor(campaign, rs));
   const [updated] = await db
     .update(characters)
     .set({ name: req.name, sheetData: enriched })
@@ -136,7 +145,7 @@ export async function deleteCharacter(campaignId: string, charId: string, userId
 
 export async function createStandalone(playerId: string, name: string, systemId: string): Promise<CharacterResponse> {
   const system = await requireSystem(systemId);
-  const enriched = processSheet(system.ruleset, {}, await schemaForSystem(system.id));
+  const enriched = processSheet(system.ruleset, {}, await schemaForSystem(system.id, system.ruleset));
   const [c] = await db
     .insert(characters)
     .values({ campaignId: null, playerId, systemId: system.id, name, sheetData: enriched })
@@ -155,7 +164,8 @@ export async function updateMine(
 ): Promise<CharacterResponse> {
   const existing = await requireOwnedStandalone(charId, userId);
   if (!existing.systemId) throw ApiError.badRequest("character has no system");
-  const enriched = processSheet(await rulesetFor(existing.systemId), req.sheetData, await schemaForSystem(existing.systemId));
+  const rs = await rulesetFor(existing.systemId);
+  const enriched = processSheet(rs, req.sheetData, await schemaForSystem(existing.systemId, rs));
   const [updated] = await db
     .update(characters)
     .set({ name: req.name, sheetData: enriched })
@@ -186,7 +196,8 @@ export async function copyToCampaign(charId: string, campaignId: string, userId:
   if (src.systemId && src.systemId !== campaign.systemId) {
     throw ApiError.badRequest("character system does not match campaign system");
   }
-  const enriched = processSheet(await rulesetFor(campaign.systemId), src.sheetData, await schemaFor(campaign));
+  const rs = await rulesetFor(campaign.systemId);
+  const enriched = processSheet(rs, src.sheetData, await schemaFor(campaign, rs));
   const [copy] = await db
     .insert(characters)
     .values({ campaignId, playerId: userId, systemId: campaign.systemId, name: src.name, sheetData: enriched })
