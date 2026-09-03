@@ -78,8 +78,14 @@ export const WEAPON_UPGRADES: WeaponUpgrade[] = [
   { nome: "Injeção alquímica", efeito: "gera efeito de preparado (item alquímico)", applies: "any" },
   { nome: "Maciça", efeito: "+1 no multiplicador de crítico", applies: "any" },
   { nome: "Precisa", efeito: "+1 na margem de ameaça", applies: "any" },
-  { nome: "Mira telescópica", efeito: "aumenta o alcance da arma", applies: "distancia" },
+  { nome: "Mira telescópica", efeito: "aumenta o alcance da arma (só armas de disparo, exceto fundas)", applies: "distancia" },
   { nome: "Material especial", efeito: "conforme o material escolhido", applies: "any" },
+  // "Melhorias para qualquer das categorias" (também aplicáveis a armas).
+  { nome: "Banhado a ouro", efeito: "+2 em Diplomacia", applies: "any" },
+  { nome: "Cravejado de gemas", efeito: "+2 em Enganação", applies: "any" },
+  { nome: "Discreto", efeito: "–1 espaço, +5 para ocultar", applies: "any" },
+  { nome: "Macabro", efeito: "+2 em Intimidação, –2 em Diplomacia", applies: "any" },
+  { nome: "Poderoso", efeito: "a CD para resistir a suas magias aumenta em +1", applies: "any" },
 ];
 
 /** Aprimoramentos aplicáveis a uma arma segundo seu tipo (corpo a corpo vs. à distância). */
