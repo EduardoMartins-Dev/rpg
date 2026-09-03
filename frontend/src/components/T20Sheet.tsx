@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { T20Catalog, T20RaceDef, T20AttrDef, T20AttrMod, T20RaceAbility } from "@/lib/api";
+import type { T20Catalog, T20RaceDef, T20AttrDef, T20AttrMod, T20RaceAbility, T20WeaponDef } from "@/lib/api";
 
 /**
  * Ficha de sessão do Tormenta 20 (sistema d20). Núcleo jogável: nível/classe/raça,
@@ -15,7 +15,7 @@ import type { T20Catalog, T20RaceDef, T20AttrDef, T20AttrMod, T20RaceAbility } f
 type Sheet = Record<string, unknown>;
 type Atributos = Record<string, number>;
 type Pericia = { treinada?: boolean; outros?: number };
-type Arma = { nome?: string; ataque?: number; dano?: string; critico?: string; tipo?: string };
+type Arma = { nome?: string; ataque?: number; dano?: string; critico?: string; tipo?: string; categoria?: string; empunhadura?: string; obs?: string };
 type Item = { nome?: string; qtd?: number; espacos?: number; obs?: string };
 
 const num = (v: unknown, d = 0): number => (Number.isFinite(Number(v)) ? Number(v) : d);
@@ -118,6 +118,19 @@ export function T20Sheet({ sheet, catalog, onPersist }: {
   const pvMax = cls ? cls.pvBase + (nivel - 1) * cls.pvPerLevel + nivel * con : null;
   const pmMax = cls ? cls.pmPerLevel * nivel : null;
   const defesa = 10 + des + num(s.armadura) + num(s.escudo) + num(s.defesaOutros);
+
+  // Proficiência de arma pela classe (Simples: todos; Marcial: se a classe tiver; Exótica/Fogo: treino específico).
+  const weapons = catalog?.weapons ?? [];
+  const profMarcial = cls ? cls.proficiencies.toLowerCase().includes("marci") : false;
+  const weaponProficient = (categoria?: string) =>
+    !categoria || categoria === "Simples" ? true : categoria === "Marcial" ? profMarcial : false;
+
+  // Conjuração da classe: tradição + maior círculo no nível atual.
+  const magic = cls?.magic;
+  const maxCircle = magic ? magic.circles.filter((m) => nivel >= m).length : 0;
+  const magias = Array.isArray(s.magias) ? (s.magias as string[]) : [];
+  const addMagia = (nome: string) => { if (!magias.includes(nome)) commit({ ...s, magias: [...magias, nome] }); };
+  const removeMagia = (nome: string) => commit({ ...s, magias: magias.filter((m) => m !== nome) });
 
   // set + persiste (otimista). Inputs chamam no blur; toggles/botões na hora.
   function commit(next: Sheet) { setS(next); onPersist(next); }
@@ -337,6 +350,21 @@ export function T20Sheet({ sheet, catalog, onPersist }: {
       {cur === "pericias" && (<>
       {/* Perícias */}
       <h4 className="t20-h">Perícias</h4>
+      {(() => {
+        const treinadas = skillDefs.filter((sk) => (pericias[sk.name]?.treinada) === true).length;
+        const permitidas = cls ? cls.skillsFixed.length + cls.skillsEither.length + cls.skillChoices + Math.max(0, num(atributos.inteligencia)) : null;
+        const excedeu = permitidas != null && treinadas > permitidas;
+        return (
+          <div className={`t20-race${excedeu ? " t20-warn" : ""}`} data-testid="t20-skill-count" style={{ padding: "8px 12px" }}>
+            <span style={{ fontSize: 13 }}><b>Treinadas: {treinadas}</b>
+              {permitidas != null
+                ? <span className="muted"> · {cls!.label} permite ~{permitidas} (fixas {cls!.skillsFixed.length} + escolha {cls!.skillsEither.length + cls!.skillChoices} + Inteligência {Math.max(0, num(atributos.inteligencia))})</span>
+                : <span className="muted"> · selecione uma classe para ver o limite</span>}
+              {excedeu && <span className="error" style={{ fontSize: 12, marginLeft: 8 }}>⚠ acima do permitido</span>}
+            </span>
+          </div>
+        );
+      })()}
       <div className="t20-skills" data-testid="t20-skills">
         {skillDefs.map((sk) => {
           const p = pericias[sk.name] ?? {};
@@ -361,7 +389,8 @@ export function T20Sheet({ sheet, catalog, onPersist }: {
       </>)}
 
       {cur === "combate" && (
-        <WeaponEditor armas={armas} onChange={setArmas} onRoll={rollAtaque} />
+        <WeaponEditor armas={armas} onChange={setArmas} onRoll={rollAtaque}
+          weapons={weapons} proficient={weaponProficient} />
       )}
 
       {cur === "inventario" && (
@@ -375,6 +404,36 @@ export function T20Sheet({ sheet, catalog, onPersist }: {
       )}
 
       {cur === "referencias" && (<>
+      {/* Magias: conjuração da classe + magias conhecidas */}
+      <div className="t20-race" data-testid="t20-magic-banner">
+        {magic ? (
+          <div style={{ fontSize: 13.5 }}>
+            <b>Conjuração:</b> {cls?.label} lança magias <b>{magic.tradition === "Arcana" ? "arcanas" : "divinas"}</b>,
+            até o <b>{maxCircle}º círculo</b> no nível {nivel}. Selecione no grimório abaixo (só as permitidas aparecem com <b>+ conhecer</b>).
+          </div>
+        ) : (
+          <div className="muted" style={{ fontSize: 13.5 }}>
+            {cls ? `${cls.label} não lança magias.` : "Selecione uma classe na Identidade."} O grimório abaixo é referência.
+          </div>
+        )}
+      </div>
+      {magias.length > 0 && (
+        <div className="t20-invsec" data-testid="t20-known-spells">
+          <h4 className="t20-h">Magias conhecidas ({magias.length})</h4>
+          {magias.map((nm) => {
+            const sp = spells.find((x) => x.name === nm);
+            return (
+              <div key={nm} className="t20-weapon">
+                <span className="t20-power-name" style={{ flex: 1 }}>{nm}
+                  {sp && <span className="muted" style={{ fontSize: 11 }}> · {sp.tradition} {sp.circle}º · {sp.school}</span>}</span>
+                {sp && <button type="button" className="ghost" title="Rolar 1d20 (conjuração)" onClick={() => rollSkill(`Conjurar ${nm}`, 0)}>🎲</button>}
+                <button type="button" className="ghost" style={{ color: "var(--err)" }} data-testid={`t20-spell-remove-${nm}`} onClick={() => removeMagia(nm)}>✕</button>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
       {/* Referência de poderes (índice completo por categoria) */}
       {(catalog.powers ?? []).length > 0 && (
         <details className="t20-powers-ref" data-testid="t20-powers-ref">
@@ -419,14 +478,21 @@ export function T20Sheet({ sheet, catalog, onPersist }: {
             <span className="muted" style={{ fontSize: 12, alignSelf: "center" }}>{spellsFiltered.length} magia(s)</span>
           </div>
           <div className="t20-powers-list" data-testid="t20-spell-list">
-            {spellsFiltered.map((sp) => (
-              <div key={`${sp.tradition}-${sp.circle}-${sp.name}`} className="t20-power-row">
-                <span className="t20-power-name">{sp.name}</span>
-                <span className="muted" style={{ fontSize: 11 }}> · {sp.tradition} {sp.circle}º · {sp.school}</span>
-                <div className="muted" style={{ fontSize: 12 }}>{sp.exec}</div>
-                <div className="muted" style={{ fontSize: 13 }}>{sp.summary}</div>
-              </div>
-            ))}
+            {spellsFiltered.map((sp) => {
+              const permitida = !!magic && sp.tradition === magic.tradition && sp.circle <= maxCircle;
+              const conhecida = magias.includes(sp.name);
+              return (
+                <div key={`${sp.tradition}-${sp.circle}-${sp.name}`} className="t20-power-row">
+                  <span className="t20-power-name">{sp.name}</span>
+                  <span className="muted" style={{ fontSize: 11 }}> · {sp.tradition} {sp.circle}º · {sp.school}</span>
+                  {conhecida
+                    ? <button type="button" className="ghost" style={{ color: "var(--ok)", marginLeft: 6 }} title="Remover das conhecidas" onClick={() => removeMagia(sp.name)}>✓ conhecida</button>
+                    : permitida && <button type="button" className="ghost" style={{ marginLeft: 6 }} data-testid={`t20-spell-add-${sp.name}`} onClick={() => addMagia(sp.name)}>+ conhecer</button>}
+                  <div className="muted" style={{ fontSize: 12 }}>{sp.exec}</div>
+                  <div className="muted" style={{ fontSize: 13 }}>{sp.summary}</div>
+                </div>
+              );
+            })}
           </div>
         </details>
       )}
@@ -513,8 +579,9 @@ function VitalBox({ label, atual, max, onDelta, testid }: {
 }
 
 // Editor de armas/ataques. Digita local; persiste no blur; adiciona/remove na hora.
-function WeaponEditor({ armas, onChange, onRoll }: {
+function WeaponEditor({ armas, onChange, onRoll, weapons, proficient }: {
   armas: Arma[]; onChange: (a: Arma[]) => void; onRoll: (nome: string, bonus: number) => void;
+  weapons: T20WeaponDef[]; proficient: (categoria?: string) => boolean;
 }) {
   const [rows, setRows] = useState<Arma[]>(armas);
   const ref = useRef<Arma[]>(armas);
@@ -522,27 +589,53 @@ function WeaponEditor({ armas, onChange, onRoll }: {
   const edit = (i: number, patch: Arma) => { const next = ref.current.map((a, j) => (j === i ? { ...a, ...patch } : a)); ref.current = next; setRows(next); };
   const flush = () => onChange(ref.current);
   const push = (next: Arma[]) => { ref.current = next; onChange(next); };
+  const addFromBook = (nome: string) => {
+    const w = weapons.find((x) => x.nome === nome);
+    if (!w) return;
+    push([...ref.current, { nome: w.nome, dano: w.dano, critico: w.critico, tipo: w.tipo, categoria: w.categoria, empunhadura: w.empunhadura }]);
+  };
+  const cats = ["Simples", "Marcial", "Exótica", "Fogo"];
   return (
     <div className="t20-invsec" data-testid="t20-weapons">
       <div className="t20-invhead"><h4 className="t20-h">Armas & Ataques</h4>
-        <button type="button" className="secondary" data-testid="t20-weapon-add" onClick={() => push([...ref.current, {}])}>+ Arma</button></div>
-      {rows.length === 0 && <p className="muted" style={{ fontSize: 13 }}>Nenhuma arma ainda.</p>}
-      {rows.map((a, i) => (
-        <div key={i} className="t20-weapon" data-testid="t20-weapon-row">
-          <input placeholder="Nome" value={str(a.nome)} style={{ flex: 2, minWidth: 120 }}
-            onChange={(e) => edit(i, { nome: e.target.value })} onBlur={flush} />
-          <input type="number" placeholder="Atq" title="Bônus de ataque" value={num(a.ataque)} style={{ width: 64 }}
-            onChange={(e) => edit(i, { ataque: num(e.target.value) })} onBlur={flush} />
-          <input placeholder="Dano (ex.: 1d8)" value={str(a.dano)} style={{ width: 120 }}
-            onChange={(e) => edit(i, { dano: e.target.value })} onBlur={flush} />
-          <input placeholder="Crít. (x2)" value={str(a.critico)} style={{ width: 90 }}
-            onChange={(e) => edit(i, { critico: e.target.value })} onBlur={flush} />
-          <input placeholder="Tipo" value={str(a.tipo)} style={{ width: 90 }}
-            onChange={(e) => edit(i, { tipo: e.target.value })} onBlur={flush} />
-          <button type="button" className="ghost" title="Rolar 1d20 + ataque" onClick={() => onRoll(str(a.nome) || "arma", num(a.ataque))}>🎲</button>
-          <button type="button" className="ghost" style={{ color: "var(--err)" }} title="Remover" onClick={() => push(ref.current.filter((_, j) => j !== i))}>✕</button>
-        </div>
-      ))}
+        <select data-testid="t20-weapon-book" defaultValue="" style={{ width: "auto" }}
+          onChange={(e) => { if (e.target.value) { addFromBook(e.target.value); e.target.value = ""; } }}>
+          <option value="">+ Arma do livro…</option>
+          {cats.map((c) => (
+            <optgroup key={c} label={c}>
+              {weapons.filter((w) => w.categoria === c).map((w) => <option key={w.nome} value={w.nome}>{w.nome} ({w.dano} {w.critico})</option>)}
+            </optgroup>
+          ))}
+        </select>
+        <button type="button" className="secondary" data-testid="t20-weapon-add" onClick={() => push([...ref.current, {}])}>+ Vazia</button></div>
+      {rows.length === 0 && <p className="muted" style={{ fontSize: 13 }}>Nenhuma arma. Escolha uma do livro acima e ajuste modificações.</p>}
+      {rows.map((a, i) => {
+        const semProf = a.categoria && !proficient(a.categoria);
+        return (
+          <div key={i} className="t20-weaponblock" data-testid="t20-weapon-row">
+            <div className="t20-weapon">
+              <input placeholder="Nome" value={str(a.nome)} style={{ flex: 2, minWidth: 120 }}
+                onChange={(e) => edit(i, { nome: e.target.value })} onBlur={flush} />
+              <input type="number" placeholder="Atq" title="Bônus de ataque (some For/Des + treino + modificações)" value={num(a.ataque)} style={{ width: 64 }}
+                onChange={(e) => edit(i, { ataque: num(e.target.value) })} onBlur={flush} />
+              <input placeholder="Dano" title="Ex.: 1d8+3" value={str(a.dano)} style={{ width: 110 }}
+                onChange={(e) => edit(i, { dano: e.target.value })} onBlur={flush} />
+              <input placeholder="Crít." value={str(a.critico)} style={{ width: 70 }}
+                onChange={(e) => edit(i, { critico: e.target.value })} onBlur={flush} />
+              <input placeholder="Tipo" value={str(a.tipo)} style={{ width: 100 }}
+                onChange={(e) => edit(i, { tipo: e.target.value })} onBlur={flush} />
+              <button type="button" className="ghost" title="Rolar 1d20 + ataque" onClick={() => onRoll(str(a.nome) || "arma", num(a.ataque))}>🎲</button>
+              <button type="button" className="ghost" style={{ color: "var(--err)" }} title="Remover" onClick={() => push(ref.current.filter((_, j) => j !== i))}>✕</button>
+            </div>
+            <div className="t20-weapon">
+              {a.categoria && <span className="badge" style={{ fontSize: 11 }}>{a.categoria}{a.empunhadura ? ` · ${a.empunhadura}` : ""}</span>}
+              {semProf && <span className="error" style={{ fontSize: 12 }}>⚠ sem proficiência ({a.categoria}) — –5 no ataque</span>}
+              <input placeholder="Modificações (material, encanto, +bônus, observações…)" value={str(a.obs)} style={{ flex: 1, minWidth: 200 }}
+                onChange={(e) => edit(i, { obs: e.target.value })} onBlur={flush} />
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }

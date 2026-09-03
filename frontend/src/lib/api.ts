@@ -246,6 +246,10 @@ export interface T20SkillDef { name: string; key: string; trainedOnly?: boolean;
 export interface T20ClassDef {
   id: string; label: string; pvBase: number; pvPerLevel: number; pmPerLevel: number;
   skillsFixed: string[]; skillsEither: string[][]; skillChoices: number; proficiencies: string;
+  magic?: { tradition: "Arcana" | "Divina"; circles: number[] };
+}
+export interface T20WeaponDef {
+  nome: string; categoria: string; dano: string; critico: string; tipo: string; empunhadura: string; alcance?: string;
 }
 export interface T20AttrMod { attr: string; mod: number; }
 export interface T20FreeAttr { count: number; each: number; except?: string[]; }
@@ -264,6 +268,7 @@ export interface T20SpellDef { name: string; tradition: string; circle: number; 
 export interface T20Catalog {
   attributes: T20AttrDef[]; skills: T20SkillDef[]; classes: T20ClassDef[]; races: T20RaceDef[];
   origins: T20OriginDef[]; deities: T20DeityDef[]; powers: T20PowerDef[]; spells: T20SpellDef[];
+  weapons: T20WeaponDef[];
 }
 
 // --- admin: gestão de usuários ----------------------------------------------

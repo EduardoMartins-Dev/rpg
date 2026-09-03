@@ -740,3 +740,5 @@ th { font-size: .72rem; text-transform: uppercase; letter-spacing: .5px; color: 
 .t20-overload { color: var(--err) !important; font-weight: 600; }
 .t20-lore { display: flex; flex-direction: column; gap: 14px; }
 .t20-lore label { font-size: 13px; color: var(--muted); }
+.t20-weaponblock { border: 1px solid var(--border); border-radius: 10px; padding: 8px 10px; display: flex; flex-direction: column; gap: 6px; }
+.t20-warn { border-color: var(--err); }

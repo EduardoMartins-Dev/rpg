@@ -17,6 +17,7 @@ export async function GET(req: NextRequest) {
       deities: T20.DEITIES,
       powers: T20.POWERS,
       spells: T20.SPELLS,
+      weapons: T20.WEAPONS,
     });
   });
 }
