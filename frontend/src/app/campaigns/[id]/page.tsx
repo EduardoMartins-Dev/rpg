@@ -198,7 +198,13 @@ export default function CampaignDetailPage() {
   // (o backend re-deriva vitality/willpower; só healthDmg/wpDmg muda) e reconcilia com a
   // resposta. Em erro, recarrega para voltar ao estado do servidor.
   async function patchDamage(c: Character, field: "healthDmg" | "wpDmg", sup: number, agg: number) {
-    const newSheet = { ...(c.sheetData ?? {}), [field]: { sup, agg } };
+    await patchSheet(c, { [field]: { sup, agg } });
+  }
+
+  /** Mescla um patch no sheetData e persiste (otimista, reconcilia). Usado pelo Escudo
+   * do Mestre para dano V5 e para PV/PM do T20. */
+  async function patchSheet(c: Character, patch: Record<string, unknown>) {
+    const newSheet = { ...(c.sheetData ?? {}), ...patch };
     setCharacters((list) => list.map((x) => (x.id === c.id ? { ...c, sheetData: newSheet } : x)));
     try {
       const saved = await api.put<Character>(`/campaigns/${id}/characters/${c.id}`, {
@@ -206,7 +212,7 @@ export default function CampaignDetailPage() {
       });
       setCharacters((list) => list.map((x) => (x.id === c.id ? saved : x)));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "erro ao salvar dano");
+      setError(err instanceof Error ? err.message : "erro ao salvar");
       await load();
     }
   }
@@ -452,7 +458,7 @@ export default function CampaignDetailPage() {
           {/* ESCUDO DO MESTRE (só mestre) */}
           {tab === "screen" && isMaster && (
             <>
-              <MasterScreen campaignId={id} characters={characters} members={members} catalog={catalog} onDamage={patchDamage} />
+              <MasterScreen campaignId={id} characters={characters} members={members} catalog={catalog} onDamage={patchDamage} onPatch={patchSheet} />
               <div style={{ marginTop: 28 }}>
                 <h3 style={{ fontFamily: "var(--serif)", fontSize: 18, margin: "0 0 4px" }}>Dados da mesa</h3>
                 <RollFeed campaignId={id} isMaster />

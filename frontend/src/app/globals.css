@@ -756,3 +756,9 @@ th { font-size: .72rem; text-transform: uppercase; letter-spacing: .5px; color: 
 .t20-lore label { font-size: 13px; color: var(--muted); }
 .t20-weaponblock { border: 1px solid var(--border); border-radius: 10px; padding: 8px 10px; display: flex; flex-direction: column; gap: 6px; }
 .t20-warn { border-color: var(--err); }
+/* Escudo do Mestre — reservas T20 (PV/PM/Defesa) */
+.ms-pool, .ms-defbox { flex: 1; text-align: center; border: 1px solid var(--border); border-radius: 10px; padding: 8px 6px; background: linear-gradient(180deg, var(--elev), var(--surface)); }
+.ms-pool-head, .ms-defbox-val { font-family: var(--serif); }
+.ms-defbox-val { font-size: 22px; font-weight: 700; color: var(--text); }
+.ms-pool-ctrls { display: flex; gap: 6px; justify-content: center; margin-top: 6px; }
+.ms-pool-ctrls .ghost { width: 30px; height: 26px; border: 1px solid var(--border); border-radius: 7px; }
