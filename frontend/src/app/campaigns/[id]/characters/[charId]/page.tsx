@@ -130,17 +130,28 @@ export default function CharacterSheetPage() {
           <div style={{ flex: 1 }}>
             <input data-testid="sheet-name" value={name} onChange={(e) => setName(e.target.value)}
               placeholder="Nome do personagem"
+              onBlur={() => { if (ruleset === "t20") persist(sheet); }}
               style={{ background: "none", border: "none", padding: 0, fontFamily: "var(--serif)", fontSize: 26, fontWeight: 600, boxShadow: "none" }} />
             <div className="mono" style={{ fontSize: 13, color: "var(--accent)" }}>Ficha dinâmica</div>
           </div>
-          <div className="seg" data-testid="sheet-mode">
-            <button className={mode === "session" ? "on" : ""} data-testid="mode-session" onClick={() => setMode("session")}>Sessão</button>
-            <button className={mode === "edit" ? "on" : ""} data-testid="mode-edit" onClick={() => setMode("edit")}>Editar</button>
-            <button className={mode === "view" ? "on" : ""} data-testid="mode-view" onClick={() => setMode("view")}>Visualizar</button>
-          </div>
-          {mode === "edit" && <button data-testid="sheet-save" onClick={save}>Salvar ficha</button>}
-          {mode === "session" && savedAt && (
-            <span className="mono muted" data-testid="session-saved" style={{ fontSize: 12 }}>✓ salvo</span>
+          {/* O T20 salva sozinho e é sempre editável, então não tem Sessão/Editar/Visualizar:
+              mostra só o status de auto-save. Os demais rulesets mantêm o alternador. */}
+          {ruleset === "t20" ? (
+            <span className="mono muted" data-testid="sheet-autosave" style={{ fontSize: 12, alignSelf: "center" }}>
+              {savedAt ? "✓ salvo" : "salva automaticamente"}
+            </span>
+          ) : (
+            <>
+              <div className="seg" data-testid="sheet-mode">
+                <button className={mode === "session" ? "on" : ""} data-testid="mode-session" onClick={() => setMode("session")}>Sessão</button>
+                <button className={mode === "edit" ? "on" : ""} data-testid="mode-edit" onClick={() => setMode("edit")}>Editar</button>
+                <button className={mode === "view" ? "on" : ""} data-testid="mode-view" onClick={() => setMode("view")}>Visualizar</button>
+              </div>
+              {mode === "edit" && <button data-testid="sheet-save" onClick={save}>Salvar ficha</button>}
+              {mode === "session" && savedAt && (
+                <span className="mono muted" data-testid="session-saved" style={{ fontSize: 12 }}>✓ salvo</span>
+              )}
+            </>
           )}
         </div>
 

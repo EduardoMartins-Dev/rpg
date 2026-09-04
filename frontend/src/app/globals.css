@@ -535,7 +535,9 @@ th { font-size: .72rem; text-transform: uppercase; letter-spacing: .5px; color: 
 .track .box { flex: 0 0 auto; width: 26px; height: 26px; min-width: 26px; min-height: 26px; box-sizing: border-box; padding: 0; line-height: 1; border-radius: 5px; border: 1px solid var(--border); display: inline-flex; align-items: center; justify-content: center; font-size: 14px; background: var(--surface); }
 .track .box.sup { border-color: var(--warn); color: var(--warn); }
 .track .box.agg { border-color: var(--err); color: var(--err); background: rgba(217,72,59,.12); }
-.track-ctrl { display: flex; align-items: center; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+.track-ctrl { display: flex; align-items: center; gap: 6px 14px; margin-top: 8px; flex-wrap: wrap; }
+/* Cada stepper (Superficial/Agravado) é uma unidade: quebra só ENTRE grupos, nunca no meio de um. */
+.track-ctrl-group { display: inline-flex; align-items: center; gap: 6px; flex-wrap: nowrap; }
 .budget { font: 600 12px var(--mono); }
 .budget.ok { color: var(--ok); }
 .budget.warn { color: var(--warn); }

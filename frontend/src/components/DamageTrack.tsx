@@ -64,14 +64,20 @@ export function DamageTrack({
       </div>
       {!readOnly && (
         <div className="track-ctrl">
-          <span className="muted" style={{ fontSize: 12 }}>Superficial</span>
-          <button className="secondary" title="Curar 1 superficial" onClick={healSup} style={{ padding: "2px 9px" }}>−</button>
-          <span className="mono" style={{ minWidth: 14, textAlign: "center" }}>{s}</span>
-          <button className="secondary" title="Tomar 1 de dano superficial" onClick={applySup} style={{ padding: "2px 9px" }}>+</button>
-          <span className="muted" style={{ fontSize: 12, marginLeft: 8 }}>Agravado</span>
-          <button className="secondary" title="Curar 1 agravado" onClick={healAgg} style={{ padding: "2px 9px" }}>−</button>
-          <span className="mono" style={{ minWidth: 14, textAlign: "center" }}>{a}</span>
-          <button className="secondary" title="Tomar 1 de dano agravado" onClick={applyAgg} style={{ padding: "2px 9px" }}>+</button>
+          {/* Cada stepper é um grupo que não quebra internamente; a quebra em telas
+              estreitas acontece só ENTRE Superficial e Agravado. */}
+          <span className="track-ctrl-group">
+            <span className="muted" style={{ fontSize: 12 }}>Superficial</span>
+            <button className="secondary" title="Curar 1 superficial" onClick={healSup} style={{ padding: "2px 9px" }}>−</button>
+            <span className="mono" style={{ minWidth: 14, textAlign: "center" }}>{s}</span>
+            <button className="secondary" title="Tomar 1 de dano superficial" onClick={applySup} style={{ padding: "2px 9px" }}>+</button>
+          </span>
+          <span className="track-ctrl-group">
+            <span className="muted" style={{ fontSize: 12 }}>Agravado</span>
+            <button className="secondary" title="Curar 1 agravado" onClick={healAgg} style={{ padding: "2px 9px" }}>−</button>
+            <span className="mono" style={{ minWidth: 14, textAlign: "center" }}>{a}</span>
+            <button className="secondary" title="Tomar 1 de dano agravado" onClick={applyAgg} style={{ padding: "2px 9px" }}>+</button>
+          </span>
         </div>
       )}
     </div>

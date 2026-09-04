@@ -34,6 +34,7 @@ export default function StandaloneCharacterPage() {
   const [mode, setMode] = useState<"edit" | "view">("edit");
   const [msg, setMsg] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [savedAt, setSavedAt] = useState<number | null>(null);
 
   const load = useCallback(async () => {
     setError(null);
@@ -75,6 +76,20 @@ export default function StandaloneCharacterPage() {
     }
   }
 
+  // O T20 salva a cada interação (otimista); o servidor recomputa os derivados e devolve.
+  // Enviamos o `name` junto para que o nome também persista sem exigir "Salvar ficha".
+  async function persistT20(next: Sheet) {
+    setError(null);
+    setSheet(next);
+    try {
+      const updated = await api.put<Character>(`/me/characters/${charId}`, { name, sheetData: next });
+      setSheet(updated.sheetData ?? {});
+      setSavedAt(Date.now());
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "erro ao salvar");
+    }
+  }
+
   if (!user) return <p className="muted" style={{ padding: 38 }}>Carregando…</p>;
 
   return (
@@ -98,25 +113,30 @@ export default function StandaloneCharacterPage() {
           <div style={{ flex: 1 }}>
             <input data-testid="sheet-name" value={name} onChange={(e) => setName(e.target.value)}
               placeholder="Nome do personagem"
+              onBlur={() => { if (ruleset === "t20") persistT20(sheet); }}
               style={{ background: "none", border: "none", padding: 0, fontFamily: "var(--serif)", fontSize: 26, fontWeight: 600, boxShadow: "none" }} />
             <div className="mono" style={{ fontSize: 13, color: "var(--accent)" }}>Ficha avulsa</div>
           </div>
-          <div className="seg" data-testid="sheet-mode">
-            <button className={mode === "edit" ? "on" : ""} data-testid="mode-edit" onClick={() => setMode("edit")}>Editar</button>
-            <button className={mode === "view" ? "on" : ""} data-testid="mode-view" onClick={() => setMode("view")}>Visualizar</button>
-          </div>
-          {mode === "edit" && <button data-testid="sheet-save" onClick={save}>Salvar ficha</button>}
+          {/* O T20 salva sozinho e é sempre editável, então não tem Editar/Visualizar:
+              mostra só o status de auto-save. Os demais rulesets mantêm o alternador. */}
+          {ruleset === "t20" ? (
+            <span className="mono muted" data-testid="sheet-autosave" style={{ fontSize: 12, alignSelf: "center" }}>
+              {savedAt ? "✓ salvo" : "salva automaticamente"}
+            </span>
+          ) : (
+            <>
+              <div className="seg" data-testid="sheet-mode">
+                <button className={mode === "edit" ? "on" : ""} data-testid="mode-edit" onClick={() => setMode("edit")}>Editar</button>
+                <button className={mode === "view" ? "on" : ""} data-testid="mode-view" onClick={() => setMode("view")}>Visualizar</button>
+              </div>
+              {mode === "edit" && <button data-testid="sheet-save" onClick={save}>Salvar ficha</button>}
+            </>
+          )}
         </div>
 
         <div className="panel">
           {ruleset === "t20" ? (
-            <T20Sheet sheet={sheet} catalog={t20cat} onPersist={async (next) => {
-              setSheet(next);
-              try {
-                const updated = await api.put<Character>(`/me/characters/${charId}`, { name, sheetData: next });
-                setSheet(updated.sheetData ?? {});
-              } catch (err) { setError(err instanceof Error ? err.message : "erro ao salvar"); }
-            }} />
+            <T20Sheet sheet={sheet} catalog={t20cat} onPersist={persistT20} />
           ) : !schema ? (
             <p className="muted">Carregando schema…</p>
           ) : mode === "view" ? (
