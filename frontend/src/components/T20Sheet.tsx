@@ -121,6 +121,10 @@ export function T20Sheet({ sheet, catalog, onPersist }: {
   const pointsUsed = attrDefs.reduce((t, a) => t + (pointCost(num(atributosBase[a.key])) ?? 0), 0);
   const pointsRestantes = POINT_BUDGET - pointsUsed;
   const foraDaFaixa = attrDefs.some((a) => pointCost(num(atributosBase[a.key])) === null);
+  // O point-buy só vale na criação (1º nível). Acima disso, atributos sobem pelo poder geral
+  // "Aumento de Atributo" (+1, uma vez por patamar por atributo) — então o banner vira um lembrete.
+  const isCriacao = nivel <= 1;
+  const patamar = nivel <= 4 ? "Iniciante" : nivel <= 10 ? "Veterano" : nivel <= 16 ? "Campeão" : "Lenda";
   function stepAttr(key: string, delta: number) {
     const v = Math.max(-1, Math.min(10, num(atributosBase[key]) + delta));
     return { ...s, atributosBase: { ...atributosBase, [key]: v } };
@@ -329,19 +333,45 @@ export function T20Sheet({ sheet, catalog, onPersist }: {
       {/* Atributos: você edita o BASE; a raça soma o modificador; o total é o valor final */}
       <h4 className="t20-h">Atributos <span className="muted" style={{ fontSize: 12, fontWeight: 400 }}>(base + raça = total)</span></h4>
 
-      {/* Point-buy de criação: 10 pontos (Tabela 1-1) */}
-      <div className={`t20-race${pointsUsed > POINT_BUDGET ? " t20-warn" : ""}`} data-testid="t20-pointbuy" style={{ padding: "8px 12px" }}>
-        <span style={{ fontSize: 13 }}>
-          <b>Distribuição (criação):</b>{" "}
-          <b style={{ color: pointsUsed > POINT_BUDGET ? "var(--err)" : "var(--accent-hover)" }} data-testid="t20-points-used">{pointsUsed}</b>
-          <span className="muted"> / {POINT_BUDGET} pontos</span>
-          {pointsRestantes >= 0
-            ? <span className="muted"> · restam <b style={{ color: "var(--text)" }}>{pointsRestantes}</b></span>
-            : <span className="error" style={{ fontSize: 12, marginLeft: 8 }}>⚠ {-pointsRestantes} ponto(s) além do limite</span>}
-          {foraDaFaixa && <span className="muted" style={{ fontSize: 12, marginLeft: 8 }}>(algum atributo fora da faixa de criação −1 a +4)</span>}
-        </span>
-        <div className="muted" style={{ fontSize: 11, marginTop: 2 }}>Custo por valor: −1 → −1 · 0 → 0 · +1 → 1 · +2 → 2 · +3 → 4 · +4 → 7. Reduzir a −1 devolve 1 ponto.</div>
-      </div>
+      {/* O point-buy (10 pts, Tabela 1-1) só vale na criação. Acima do 1º nível, os aumentos
+          vêm do poder geral "Aumento de Atributo", então trocamos o medidor por um lembrete. */}
+      {isCriacao ? (
+        <div className={`t20-pointbuy${pointsUsed > POINT_BUDGET || foraDaFaixa ? " over" : ""}`} data-testid="t20-pointbuy">
+          <div className="t20-pointbuy-head">
+            <span className="t20-pointbuy-title">Distribuição de criação</span>
+            <span className="t20-pointbuy-count">
+              <b style={{ color: pointsUsed > POINT_BUDGET ? "var(--err)" : "var(--accent-hover)" }} data-testid="t20-points-used">{pointsUsed}</b>
+              <span className="muted"> / {POINT_BUDGET} pts</span>
+            </span>
+            <span className={`t20-pointbuy-status${pointsRestantes < 0 ? " err" : pointsRestantes === 0 ? " ok" : ""}`}>
+              {pointsRestantes > 0 ? `restam ${pointsRestantes}` : pointsRestantes === 0 ? "✓ completo" : `${-pointsRestantes} além do limite`}
+            </span>
+          </div>
+          <div className="t20-meter" aria-hidden="true">
+            <div className="t20-meter-fill" style={{
+              width: `${Math.max(0, Math.min(100, (pointsUsed / POINT_BUDGET) * 100))}%`,
+              background: pointsUsed > POINT_BUDGET ? "var(--err)" : "var(--accent)",
+            }} />
+          </div>
+          <div className="t20-cost-legend" title="Custo em pontos por valor de atributo na criação (reduzir a −1 devolve 1 ponto)">
+            {[["−1", "−1"], ["0", "0"], ["+1", "1"], ["+2", "2"], ["+3", "4"], ["+4", "7"]].map(([v, c]) => (
+              <span key={v} className="t20-cost-chip"><b>{v}</b> {c}p</span>
+            ))}
+          </div>
+          {foraDaFaixa && <div className="error" style={{ fontSize: 12 }}>⚠ Algum atributo está fora da faixa de criação (−1 a +4).</div>}
+        </div>
+      ) : (
+        <div className="t20-pointbuy" data-testid="t20-pointbuy-info">
+          <div className="t20-pointbuy-head">
+            <span className="t20-pointbuy-title">Atributos — {patamar} (nível {nivel})</span>
+          </div>
+          <div className="muted" style={{ fontSize: 12.5, lineHeight: 1.5 }}>
+            A distribuição por pontos vale só na criação (1º nível). Depois, cada aumento vem do poder geral{" "}
+            <b style={{ color: "var(--text)" }}>Aumento de Atributo</b> (+1 num atributo, uma vez por patamar por atributo),
+            escolhido no passo <b style={{ color: "var(--text)" }}>Poderes &amp; Magias</b>. Use os botões −/+ para aplicá-lo.
+          </div>
+        </div>
+      )}
 
       <div className="t20-attrs">
         {attrDefs.map((a) => {
@@ -349,7 +379,7 @@ export function T20Sheet({ sheet, catalog, onPersist }: {
           const mod = num(racaMods[a.key]);
           const custo = pointCost(base);
           return (
-            <div key={a.key} className="t20-attr" data-testid={`t20-attr-${a.key}`}>
+            <div key={a.key} className={`t20-attr${isCriacao && custo == null ? " t20-attr-fora" : ""}`} data-testid={`t20-attr-${a.key}`}>
               <span className="t20-attr-abbr">{a.abbr}</span>
               <div className="t20-attr-buy">
                 <button type="button" className="ghost" data-testid={`t20-attr-minus-${a.key}`} title="−1"
@@ -362,7 +392,7 @@ export function T20Sheet({ sheet, catalog, onPersist }: {
               <span className="t20-attr-total" data-testid={`t20-attr-total-${a.key}`}>
                 = {num(atributos[a.key])}{mod !== 0 && <span className="muted" style={{ fontSize: 11 }}> ({mod > 0 ? "+" : ""}{mod})</span>}
               </span>
-              <span className="t20-attr-cost muted" style={{ fontSize: 10.5 }}>{custo == null ? "fora da faixa" : `custo ${custo}`}</span>
+              {isCriacao && <span className={`t20-attr-cost${custo == null ? " err" : " muted"}`}>{custo == null ? "⚠ fora da faixa" : `custo ${custo}`}</span>}
               <span className="t20-attr-label">{a.label}</span>
             </div>
           );
