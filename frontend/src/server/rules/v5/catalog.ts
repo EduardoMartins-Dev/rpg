@@ -394,23 +394,113 @@ export function predatorTypes(): PredatorType[] {
 }
 
 // --- Antecedentes/Vantagens e Defeitos --------------------------------------------
+// Extraído do Livro Básico de V5 (capítulo Vantagens/Advantages). `group` reproduz as
+// categorias do livro para o seletor agrupar como na ficha oficial; `hint` traz a faixa
+// de pontos de cada um. Nomes em PT (edição Galápagos); ids ficam implícitos no nome.
 
-const ADVANTAGES: string[] = [
-  "Aliados", "Contatos", "Influência", "Mentor", "Recursos", "Refúgio",
-  "Rebanho", "Status", "Fama", "Lacaios", "Máscara", "Aclamação",
-  "Criado", "Herança", "Território", "Sangue Resiliente",
+export type MeritOption = { name: string; group: string; hint?: string };
+
+// Vantagens = Antecedentes + Méritos (e aprimoramentos de Refúgio/Máscara).
+const ADVANTAGES: MeritOption[] = [
+  // Antecedentes
+  { name: "Aliados", group: "Antecedentes", hint: "1–6" },
+  { name: "Contatos", group: "Antecedentes", hint: "1–3" },
+  { name: "Fama", group: "Antecedentes", hint: "1–5" },
+  { name: "Influência", group: "Antecedentes", hint: "1–5" },
+  { name: "Refúgio", group: "Antecedentes", hint: "1–3" },
+  { name: "Rebanho", group: "Antecedentes", hint: "1–5" },
+  { name: "Máscara", group: "Antecedentes", hint: "1–2" },
+  { name: "Mawla", group: "Antecedentes", hint: "1–5" },
+  { name: "Recursos", group: "Antecedentes", hint: "1–5" },
+  { name: "Lacaios", group: "Antecedentes", hint: "1–3" },
+  { name: "Status", group: "Antecedentes", hint: "1–5" },
+  // Méritos — Aparência
+  { name: "Belo", group: "Aparência", hint: "2" },
+  { name: "Deslumbrante", group: "Aparência", hint: "4" },
+  // Méritos — Linguística
+  { name: "Linguística", group: "Linguística", hint: "1 idioma por ponto" },
+  // Méritos — Uso de Substâncias
+  { name: "Viciado Funcional", group: "Uso de Substâncias", hint: "1" },
+  // Méritos — Vínculo de Sangue
+  { name: "Resistência ao Vínculo", group: "Vínculo de Sangue", hint: "1–3" },
+  { name: "Vínculo Curto", group: "Vínculo de Sangue", hint: "2" },
+  { name: "Inligável", group: "Vínculo de Sangue", hint: "5" },
+  // Méritos — Alimentação
+  { name: "Sabujo", group: "Alimentação", hint: "1" },
+  { name: "Estômago de Ferro", group: "Alimentação", hint: "3" },
+  // Méritos — Míticos
+  { name: "Comer Comida", group: "Míticos", hint: "2" },
+  // Aprimoramentos de Refúgio (somam ao valor-base do Refúgio)
+  { name: "Arsenal Oculto", group: "Refúgio · aprimoramentos", hint: "por ponto" },
+  { name: "Cela", group: "Refúgio · aprimoramentos", hint: "por ponto" },
+  { name: "Guardas", group: "Refúgio · aprimoramentos", hint: "por ponto" },
+  { name: "Laboratório", group: "Refúgio · aprimoramentos", hint: "por ponto" },
+  { name: "Biblioteca", group: "Refúgio · aprimoramentos", hint: "por ponto" },
+  { name: "Localização", group: "Refúgio · aprimoramentos", hint: "por ponto" },
+  { name: "Luxo", group: "Refúgio · aprimoramentos", hint: "por ponto" },
+  { name: "Saída Secreta", group: "Refúgio · aprimoramentos", hint: "por ponto" },
+  { name: "Sistema de Segurança", group: "Refúgio · aprimoramentos", hint: "por ponto" },
+  { name: "Sala Cirúrgica", group: "Refúgio · aprimoramentos", hint: "por ponto" },
+  { name: "Proteção Mágica", group: "Refúgio · aprimoramentos", hint: "por ponto" },
+  // Aprimoramentos de Máscara (exigem Máscara ••)
+  { name: "Zerado", group: "Máscara · aprimoramentos", hint: "1 · requer Máscara ••" },
+  { name: "Falsário", group: "Máscara · aprimoramentos", hint: "1 · requer Máscara ••" },
 ];
 
-const FLAWS: string[] = [
-  "Inimigo", "Caçado", "Adversário", "Suspeito", "Notório", "Dívida",
-  "Folclore Sombrio", "Repugnante", "Presa Restrita", "Conhecido",
+// Defeitos, agrupados pelo Antecedente/Mérito de onde derivam.
+const FLAWS: MeritOption[] = [
+  // Antecedentes
+  { name: "Inimigo", group: "Antecedentes", hint: "1+" },
+  { name: "Adversário", group: "Antecedentes", hint: "1–5" },
+  { name: "Segredo Sombrio", group: "Antecedentes", hint: "1" },
+  { name: "Infâmia", group: "Antecedentes", hint: "1–2" },
+  { name: "Malvisto", group: "Antecedentes", hint: "1" },
+  { name: "Desprezado", group: "Antecedentes", hint: "2" },
+  { name: "Predador Óbvio", group: "Antecedentes", hint: "2" },
+  { name: "Miserável", group: "Antecedentes", hint: "1" },
+  { name: "Perseguidores", group: "Antecedentes", hint: "1" },
+  { name: "Suspeito", group: "Antecedentes", hint: "1" },
+  { name: "Rejeitado", group: "Antecedentes", hint: "2" },
+  // Refúgio
+  { name: "Sem Refúgio", group: "Refúgio", hint: "1" },
+  { name: "Assombrado", group: "Refúgio", hint: "1" },
+  { name: "Sinistro", group: "Refúgio", hint: "1" },
+  { name: "Comprometido", group: "Refúgio", hint: "2" },
+  // Máscara
+  { name: "Cadáver Conhecido", group: "Máscara", hint: "1" },
+  { name: "Blankbody Conhecido", group: "Máscara", hint: "2" },
+  // Aparência
+  { name: "Feio", group: "Aparência", hint: "1" },
+  { name: "Repulsivo", group: "Aparência", hint: "2" },
+  // Uso de Substâncias
+  { name: "Vício", group: "Uso de Substâncias", hint: "1" },
+  { name: "Vício Incurável", group: "Uso de Substâncias", hint: "2" },
+  // Arcaico
+  { name: "Vivendo no Passado", group: "Arcaico", hint: "1" },
+  { name: "Arcaico", group: "Arcaico", hint: "2" },
+  // Vínculo de Sangue
+  { name: "Viciado em Vínculo", group: "Vínculo de Sangue", hint: "1" },
+  { name: "Vínculo Longo", group: "Vínculo de Sangue", hint: "1" },
+  { name: "Escravo do Vínculo", group: "Vínculo de Sangue", hint: "2" },
+  // Alimentação
+  { name: "Presa Restrita", group: "Alimentação", hint: "1" },
+  { name: "Sede de Matusalém", group: "Alimentação", hint: "1" },
+  { name: "Organívoro", group: "Alimentação", hint: "2" },
+  { name: "Vegano", group: "Alimentação", hint: "2" },
+  // Míticos
+  { name: "Perdição Folclórica", group: "Míticos", hint: "1" },
+  { name: "Bloqueio Folclórico", group: "Míticos", hint: "1" },
+  { name: "Estigma", group: "Míticos", hint: "1" },
+  { name: "Isca de Estaca", group: "Míticos", hint: "2" },
+  // Linguística
+  { name: "Analfabeto", group: "Linguística", hint: "2" },
 ];
 
-export function advantages(): string[] {
+export function advantages(): MeritOption[] {
   return ADVANTAGES;
 }
 
-export function flaws(): string[] {
+export function flaws(): MeritOption[] {
   return FLAWS;
 }
 

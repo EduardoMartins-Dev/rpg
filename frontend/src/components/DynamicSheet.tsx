@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import type { SchemaShape, V5Catalog, ClanView } from "@/lib/api";
+import type { SchemaShape, V5Catalog, ClanView, MeritView } from "@/lib/api";
 import { DamageTrack } from "@/components/DamageTrack";
 import { AttributeRadial } from "@/components/AttributeRadial";
 import { ClanTrait } from "@/components/ClanTrait";
@@ -499,10 +499,10 @@ export function DynamicSheet({
           <section>
             <h3>Vantagens & Antecedentes <Budget used={sumDots(advantages)} max={7} /></h3>
             <AdvantageEditor items={advantages} testid="advantages" onChange={(v) => set("advantages", v)}
-              ph="ex.: Refúgio, Aliados, Recursos, Mentor…" options={catalog?.advantages} />
+              ph="ex.: Refúgio, Aliados, Recursos, Mawla…" options={catalog?.advantages} />
             <h3 style={{ marginTop: "1.1rem" }}>Defeitos <Budget used={sumDots(flaws)} max={2} /> <span className="muted" style={{ fontSize: ".8rem" }}>(+ os do predador)</span></h3>
             <AdvantageEditor items={flaws} testid="flaws" onChange={(v) => set("flaws", v)}
-              ph="ex.: Inimigo, Caçado, Suspeito…" options={catalog?.flaws} />
+              ph="ex.: Inimigo, Suspeito, Presa Restrita…" options={catalog?.flaws} />
           </section>
         )}
 
@@ -1117,18 +1117,36 @@ function DotsOnly({ value, max, onChange, disabled }: {
 }
 
 function AdvantageEditor({ items, onChange, ph, testid, options }: {
-  items: Advantage[]; onChange: (v: Advantage[]) => void; ph?: string; testid: string; options?: string[];
+  items: Advantage[]; onChange: (v: Advantage[]) => void; ph?: string; testid: string; options?: MeritView[];
 }) {
   const listId = `${testid}-opts`;
+  // Agrupa as opções pelas categorias do livro (Antecedentes, Aparência, Alimentação…),
+  // preservando a ordem em que aparecem no catálogo.
+  const groups: { name: string; opts: MeritView[] }[] = [];
+  for (const o of options ?? []) {
+    let g = groups.find((x) => x.name === o.group);
+    if (!g) { g = { name: o.group, opts: [] }; groups.push(g); }
+    g.opts.push(o);
+  }
   return (
     <div data-testid={testid}>
       {options && options.length > 0 && (
         <>
-          <datalist id={listId}>{options.map((o) => <option key={o} value={o} />)}</datalist>
-          <div className="chips" style={{ marginBottom: 8 }}>
-            {options.map((o) => (
-              <button key={o} type="button" className="badge" style={{ cursor: "pointer" }}
-                onClick={() => onChange([...items, { name: o, dots: 1, note: "" }])}>+ {o}</button>
+          <datalist id={listId}>{options.map((o) => <option key={o.name} value={o.name} />)}</datalist>
+          <div className="merit-picker">
+            {groups.map((g) => (
+              <div key={g.name} className="merit-group">
+                <span className="merit-group-label">{g.name}</span>
+                <div className="chips">
+                  {g.opts.map((o) => (
+                    <button key={o.name} type="button" className="badge merit-chip" style={{ cursor: "pointer" }}
+                      title={o.hint ? `${o.name} — ${o.hint} ponto(s)` : o.name}
+                      onClick={() => onChange([...items, { name: o.name, dots: 1, note: "" }])}>
+                      + {o.name}{o.hint ? <span className="merit-hint">{o.hint}</span> : null}
+                    </button>
+                  ))}
+                </div>
+              </div>
             ))}
           </div>
         </>

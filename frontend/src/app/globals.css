@@ -335,6 +335,15 @@ th { font-size: .72rem; text-transform: uppercase; letter-spacing: .5px; color: 
 .empty { color: var(--muted); border: 1px dashed var(--border); border-radius: 14px; padding: 34px; text-align: center; }
 .chips { display: flex; flex-wrap: wrap; gap: .4rem; }
 
+/* Seletor de Vantagens/Defeitos agrupado pelas categorias do livro (V5) */
+.merit-picker { display: flex; flex-direction: column; gap: 10px; margin-bottom: 10px; }
+.merit-group { display: flex; flex-direction: column; gap: 5px; }
+.merit-group-label { font: 600 11px var(--ui); text-transform: uppercase; letter-spacing: .5px; color: var(--muted); }
+.merit-chip { display: inline-flex; align-items: baseline; gap: 5px; }
+.merit-chip:hover { border-color: var(--accent); color: var(--accent-hover); }
+.merit-hint { font: 500 10px var(--mono); color: var(--muted); opacity: .8; }
+.merit-chip:hover .merit-hint { color: var(--accent); }
+
 /* --- campaign detail ------------------------------------------------------- */
 .cam-hero { min-height: 150px; border-bottom: 1px solid var(--border); display: flex; align-items: flex-end; }
 .cam-hero .inner { padding: 0 38px 18px; display: flex; align-items: center; gap: 16px; width: 100%; }

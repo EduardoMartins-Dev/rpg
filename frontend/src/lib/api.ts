@@ -234,10 +234,11 @@ export interface DisciplineView { name: string; summary: string; powers: PowerVi
 export interface PredatorView { name: string; summary: string; disciplines: string[]; }
 export interface ResonanceView { name: string; emotion: string; disciplines: string[]; }
 export interface CoterieView { name: string; summary: string; }
+export interface MeritView { name: string; group: string; hint?: string; }
 export interface V5Catalog {
   types: string[]; clans: ClanView[]; abilities: AbilityGroup[];
   bloodPotency?: BloodPotencyView[]; disciplines?: DisciplineView[]; predatorTypes?: PredatorView[];
-  advantages?: string[]; flaws?: string[]; resonances?: ResonanceView[]; coterieTypes?: CoterieView[];
+  advantages?: MeritView[]; flaws?: MeritView[]; resonances?: ResonanceView[]; coterieTypes?: CoterieView[];
 }
 
 // --- Tormenta 20 -------------------------------------------------------------
