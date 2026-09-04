@@ -112,6 +112,20 @@ export function T20Sheet({ sheet, catalog, onPersist }: {
   const atributos: Atributos = {};
   for (const a of attrDefs) atributos[a.key] = num(atributosBase[a.key]) + num(racaMods[a.key]);
 
+  // Point-buy de criação (Tabela 1-1): começa tudo em 0, recebe 10 pontos; custo por valor
+  // base (−1 a +4). Reduzir a −1 devolve 1 ponto. Só vale na criação — níveis acima sobem
+  // atributos por fora, então isto é um guia (avisa se estourar), não um bloqueio.
+  const POINT_COST: Record<number, number> = { "-1": -1, 0: 0, 1: 1, 2: 2, 3: 4, 4: 7 };
+  const pointCost = (v: number): number | null => (v in POINT_COST ? POINT_COST[v] : null);
+  const POINT_BUDGET = 10;
+  const pointsUsed = attrDefs.reduce((t, a) => t + (pointCost(num(atributosBase[a.key])) ?? 0), 0);
+  const pointsRestantes = POINT_BUDGET - pointsUsed;
+  const foraDaFaixa = attrDefs.some((a) => pointCost(num(atributosBase[a.key])) === null);
+  function stepAttr(key: string, delta: number) {
+    const v = Math.max(-1, Math.min(10, num(atributosBase[key]) + delta));
+    return { ...s, atributosBase: { ...atributosBase, [key]: v } };
+  }
+
   const con = num(atributos.constituicao);
   const des = num(atributos.destreza);
   const pvMax = cls ? cls.pvBase + (nivel - 1) * cls.pvPerLevel + nivel * con : null;
@@ -314,20 +328,43 @@ export function T20Sheet({ sheet, catalog, onPersist }: {
       {cur === "atributos" && (<>
       {/* Atributos: você edita o BASE; a raça soma o modificador; o total é o valor final */}
       <h4 className="t20-h">Atributos <span className="muted" style={{ fontSize: 12, fontWeight: 400 }}>(base + raça = total)</span></h4>
+
+      {/* Point-buy de criação: 10 pontos (Tabela 1-1) */}
+      <div className={`t20-race${pointsUsed > POINT_BUDGET ? " t20-warn" : ""}`} data-testid="t20-pointbuy" style={{ padding: "8px 12px" }}>
+        <span style={{ fontSize: 13 }}>
+          <b>Distribuição (criação):</b>{" "}
+          <b style={{ color: pointsUsed > POINT_BUDGET ? "var(--err)" : "var(--accent-hover)" }} data-testid="t20-points-used">{pointsUsed}</b>
+          <span className="muted"> / {POINT_BUDGET} pontos</span>
+          {pointsRestantes >= 0
+            ? <span className="muted"> · restam <b style={{ color: "var(--text)" }}>{pointsRestantes}</b></span>
+            : <span className="error" style={{ fontSize: 12, marginLeft: 8 }}>⚠ {-pointsRestantes} ponto(s) além do limite</span>}
+          {foraDaFaixa && <span className="muted" style={{ fontSize: 12, marginLeft: 8 }}>(algum atributo fora da faixa de criação −1 a +4)</span>}
+        </span>
+        <div className="muted" style={{ fontSize: 11, marginTop: 2 }}>Custo por valor: −1 → −1 · 0 → 0 · +1 → 1 · +2 → 2 · +3 → 4 · +4 → 7. Reduzir a −1 devolve 1 ponto.</div>
+      </div>
+
       <div className="t20-attrs">
         {attrDefs.map((a) => {
+          const base = num(atributosBase[a.key]);
           const mod = num(racaMods[a.key]);
+          const custo = pointCost(base);
           return (
-            <label key={a.key} className="t20-attr" data-testid={`t20-attr-${a.key}`}>
+            <div key={a.key} className="t20-attr" data-testid={`t20-attr-${a.key}`}>
               <span className="t20-attr-abbr">{a.abbr}</span>
-              <input type="number" value={num(atributosBase[a.key])} data-testid={`t20-attr-base-${a.key}`}
-                onChange={(e) => setLocal(setAttr(a.key, num(e.target.value)))}
-                onBlur={() => commit(s)} />
+              <div className="t20-attr-buy">
+                <button type="button" className="ghost" data-testid={`t20-attr-minus-${a.key}`} title="−1"
+                  disabled={base <= -1} onClick={() => commit(stepAttr(a.key, -1))}>−</button>
+                <input type="number" value={base} data-testid={`t20-attr-base-${a.key}`}
+                  onChange={(e) => setLocal(setAttr(a.key, num(e.target.value)))} onBlur={() => commit(s)} />
+                <button type="button" className="ghost" data-testid={`t20-attr-plus-${a.key}`} title="+1"
+                  onClick={() => commit(stepAttr(a.key, 1))}>＋</button>
+              </div>
               <span className="t20-attr-total" data-testid={`t20-attr-total-${a.key}`}>
                 = {num(atributos[a.key])}{mod !== 0 && <span className="muted" style={{ fontSize: 11 }}> ({mod > 0 ? "+" : ""}{mod})</span>}
               </span>
+              <span className="t20-attr-cost muted" style={{ fontSize: 10.5 }}>{custo == null ? "fora da faixa" : `custo ${custo}`}</span>
               <span className="t20-attr-label">{a.label}</span>
-            </label>
+            </div>
           );
         })}
       </div>
