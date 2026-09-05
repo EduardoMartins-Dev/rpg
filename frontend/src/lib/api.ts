@@ -234,7 +234,7 @@ export interface DisciplineView { name: string; summary: string; powers: PowerVi
 export interface PredatorView { name: string; summary: string; disciplines: string[]; }
 export interface ResonanceView { name: string; emotion: string; disciplines: string[]; }
 export interface CoterieView { name: string; summary: string; }
-export interface MeritView { name: string; group: string; hint?: string; }
+export interface MeritView { name: string; group: string; hint?: string; desc?: string; }
 export interface V5Catalog {
   types: string[]; clans: ClanView[]; abilities: AbilityGroup[];
   bloodPotency?: BloodPotencyView[]; disciplines?: DisciplineView[]; predatorTypes?: PredatorView[];

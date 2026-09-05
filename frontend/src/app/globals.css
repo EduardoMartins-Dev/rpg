@@ -344,6 +344,37 @@ th { font-size: .72rem; text-transform: uppercase; letter-spacing: .5px; color: 
 .merit-hint { font: 500 10px var(--mono); color: var(--muted); opacity: .8; }
 .merit-chip:hover .merit-hint { color: var(--accent); }
 
+/* Célula "ícone i + nome" nas linhas de Vantagem/Defeito escolhidas */
+.merit-name-cell { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.merit-name-cell > input { flex: 1; min-width: 0; }
+
+/* Ícone "i" que revela a descrição */
+.infodot {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 16px; height: 16px; flex: 0 0 auto; border-radius: 50%;
+  border: 1px solid var(--border); background: var(--elev);
+  color: var(--muted); font: 700 10px var(--serif); font-style: italic;
+  cursor: help; user-select: none; line-height: 1;
+}
+.infodot:hover, .infodot:focus-visible { border-color: var(--accent); color: var(--accent); outline: none; }
+
+/* Nome com dica no modo leitura da ficha */
+.has-tip { border-bottom: 1px dotted var(--muted); cursor: help; }
+.has-tip:hover { border-bottom-color: var(--accent); color: var(--accent-hover); }
+
+/* Dica flutuante (descrição do Livro Básico) */
+.hovertip {
+  position: fixed; z-index: 1000; pointer-events: none;
+  max-width: 300px; width: max-content; padding: 9px 11px;
+  background: var(--elev); border: 1px solid var(--border); border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, .5);
+  color: var(--text); font: 400 12.5px/1.5 var(--ui); text-transform: none;
+  letter-spacing: normal; text-align: left; white-space: normal;
+}
+.hovertip-title { display: block; font-weight: 700; color: var(--accent); margin-bottom: 3px; }
+.hovertip-hint { font: 500 10px var(--mono); color: var(--muted); }
+.hovertip-body { display: block; }
+
 /* --- campaign detail ------------------------------------------------------- */
 .cam-hero { min-height: 150px; border-bottom: 1px solid var(--border); display: flex; align-items: flex-end; }
 .cam-hero .inner { padding: 0 38px 18px; display: flex; align-items: center; gap: 16px; width: 100%; }

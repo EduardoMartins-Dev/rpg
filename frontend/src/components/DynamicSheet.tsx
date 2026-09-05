@@ -7,6 +7,8 @@ import { AttributeRadial } from "@/components/AttributeRadial";
 import { ClanTrait } from "@/components/ClanTrait";
 import { AuthImage } from "@/components/AuthImage";
 import { UserImageField } from "@/components/UserImageField";
+import { HoverTip, InfoDot } from "@/components/InfoTip";
+import { meritDesc } from "@/lib/v5-merits";
 
 type Dmg = { sup: number; agg: number };
 type XpUndo =
@@ -1139,11 +1141,12 @@ function AdvantageEditor({ items, onChange, ph, testid, options }: {
                 <span className="merit-group-label">{g.name}</span>
                 <div className="chips">
                   {g.opts.map((o) => (
-                    <button key={o.name} type="button" className="badge merit-chip" style={{ cursor: "pointer" }}
-                      title={o.hint ? `${o.name} — ${o.hint} ponto(s)` : o.name}
-                      onClick={() => onChange([...items, { name: o.name, dots: 1, note: "" }])}>
-                      + {o.name}{o.hint ? <span className="merit-hint">{o.hint}</span> : null}
-                    </button>
+                    <HoverTip key={o.name} desc={o.desc} title={o.name} hint={o.hint}>
+                      <button type="button" className="badge merit-chip" style={{ cursor: "pointer" }}
+                        onClick={() => onChange([...items, { name: o.name, dots: 1, note: "" }])}>
+                        + {o.name}{o.hint ? <span className="merit-hint">{o.hint}</span> : null}
+                      </button>
+                    </HoverTip>
                   ))}
                 </div>
               </div>
@@ -1153,8 +1156,11 @@ function AdvantageEditor({ items, onChange, ph, testid, options }: {
       )}
       {items.map((a, i) => (
         <div key={i} className="disc-row">
-          <input aria-label="nome" placeholder={ph} value={a.name} list={listId}
-            onChange={(e) => onChange(items.map((x, j) => j === i ? { ...x, name: e.target.value } : x))} />
+          <div className="merit-name-cell">
+            <InfoDot desc={meritDesc(a.name)} title={a.name} />
+            <input aria-label="nome" placeholder={ph} value={a.name} list={listId}
+              onChange={(e) => onChange(items.map((x, j) => j === i ? { ...x, name: e.target.value } : x))} />
+          </div>
           <DotsOnly value={a.dots} max={5} onChange={(d) => onChange(items.map((x, j) => j === i ? { ...x, dots: d } : x))} />
           <input aria-label="nota" placeholder="nota" value={a.note}
             onChange={(e) => onChange(items.map((x, j) => j === i ? { ...x, note: e.target.value } : x))} />

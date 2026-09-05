@@ -4,6 +4,8 @@ import type { SchemaShape, V5Catalog, ClanView } from "@/lib/api";
 import { DamageTrack } from "@/components/DamageTrack";
 import { AttributeRadial } from "@/components/AttributeRadial";
 import { ClanTrait } from "@/components/ClanTrait";
+import { HoverTip } from "@/components/InfoTip";
+import { meritDesc } from "@/lib/v5-merits";
 
 type Sheet = Record<string, unknown>;
 type Dmg = { sup: number; agg: number };
@@ -275,12 +277,20 @@ function ListBlock({ title, items }: { title: string; items: Advantage[] }) {
     <div className="panel" style={{ margin: 0 }}>
       <span className="kv-label">{title}</span>
       {items.length === 0 && <p className="muted" style={{ margin: "6px 0 0" }}>—</p>}
-      {items.map((a, i) => (
-        <div key={i} style={{ display: "flex", justifyContent: "space-between", gap: 8, padding: "2px 0" }}>
-          <span>{a.name || "—"} <span style={{ color: "var(--accent)" }}>{dots(a.dots, 5)}</span></span>
-          <span className="muted" style={{ fontSize: 13 }}>{a.note}</span>
-        </div>
-      ))}
+      {items.map((a, i) => {
+        const desc = meritDesc(a.name);
+        return (
+          <div key={i} style={{ display: "flex", justifyContent: "space-between", gap: 8, padding: "2px 0" }}>
+            <span>
+              <HoverTip desc={desc} title={a.name}>
+                <span className={desc ? "has-tip" : undefined}>{a.name || "—"}</span>
+              </HoverTip>{" "}
+              <span style={{ color: "var(--accent)" }}>{dots(a.dots, 5)}</span>
+            </span>
+            <span className="muted" style={{ fontSize: 13 }}>{a.note}</span>
+          </div>
+        );
+      })}
     </div>
   );
 }
