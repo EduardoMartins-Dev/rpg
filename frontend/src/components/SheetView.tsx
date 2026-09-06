@@ -6,6 +6,7 @@ import { AttributeRadial } from "@/components/AttributeRadial";
 import { ClanTrait } from "@/components/ClanTrait";
 import { HoverTip } from "@/components/InfoTip";
 import { meritDesc } from "@/lib/v5-merits";
+import { powerDesc } from "@/lib/v5-disciplines";
 
 type Sheet = Record<string, unknown>;
 type Dmg = { sup: number; agg: number };
@@ -180,7 +181,17 @@ export function SheetView({ schema, sheet, catalog }: {
                 <div><b>{d.name || "—"}</b> <span style={{ color: "var(--accent)" }}>{dots(d.level, 5)}</span></div>
                 {powers.length > 0 && (
                   <ul style={{ margin: "4px 0 0", paddingLeft: 18, fontSize: 13 }} className="muted">
-                    {powers.map((p, k) => <li key={k}>{p.level ? `•${p.level} ` : ""}{p.name}</li>)}
+                    {powers.map((p, k) => {
+                      const pd = powerDesc(p.name);
+                      return (
+                        <li key={k}>
+                          {p.level ? `•${p.level} ` : ""}
+                          <HoverTip desc={pd} title={p.name}>
+                            <span className={pd ? "has-tip" : undefined}>{p.name}</span>
+                          </HoverTip>
+                        </li>
+                      );
+                    })}
                   </ul>
                 )}
               </div>

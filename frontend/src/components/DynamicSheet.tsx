@@ -9,6 +9,7 @@ import { AuthImage } from "@/components/AuthImage";
 import { UserImageField } from "@/components/UserImageField";
 import { HoverTip, InfoDot } from "@/components/InfoTip";
 import { meritDesc } from "@/lib/v5-merits";
+import { powerDesc } from "@/lib/v5-disciplines";
 
 type Dmg = { sup: number; agg: number };
 type XpUndo =
@@ -467,8 +468,11 @@ export function DynamicSheet({
                               onChange={(e) => updPower(i, pi, { level: Number(e.target.value) })}>
                               {[1, 2, 3, 4, 5].map((lv) => <option key={lv} value={lv}>•{lv}</option>)}
                             </select>
-                            <input aria-label="poder" placeholder="Nome do poder (ex.: Sentir o Inimigo)" value={p.name}
-                              onChange={(e) => updPower(i, pi, { name: e.target.value })} />
+                            <div className="merit-name-cell">
+                              <InfoDot desc={powerDesc(p.name)} title={p.name} hint={p.level ? `•${p.level}` : undefined} />
+                              <input aria-label="poder" placeholder="Nome do poder (ex.: Sentir o Inimigo)" value={p.name}
+                                onChange={(e) => updPower(i, pi, { name: e.target.value })} />
+                            </div>
                             <button type="button" className="secondary" aria-label="remover poder"
                               onClick={() => delPower(i, pi)}>✕</button>
                           </div>
@@ -742,9 +746,11 @@ function DisciplineCatalog({ list, onAdd, onAddPower }: {
                       <span className="badge" style={{ minWidth: 28, justifyContent: "center" }}>•{lvl}</span>
                       <div style={{ display: "flex", flexWrap: "wrap", gap: 6, flex: 1 }}>
                         {powers.map((p) => (
-                          <button key={p.name} type="button" className="badge" style={{ cursor: "pointer" }}
-                            title="Adicionar este poder à ficha"
-                            onClick={() => onAddPower(d.name, p.name, Number(lvl))}>+ {p.name}</button>
+                          <HoverTip key={p.name} desc={p.desc ?? undefined} title={p.name} hint={`•${lvl}`}>
+                            <button type="button" className="badge" style={{ cursor: "pointer" }}
+                              aria-label={`Adicionar ${p.name} à ficha`}
+                              onClick={() => onAddPower(d.name, p.name, Number(lvl))}>+ {p.name}</button>
+                          </HoverTip>
                         ))}
                       </div>
                     </div>
