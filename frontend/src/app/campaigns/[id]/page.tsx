@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useRequireUser } from "@/lib/guard";
@@ -81,6 +81,14 @@ export default function CampaignDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<Tab>("overview");
 
+  // Auto-save coalescido POR personagem (Escudo do Mestre / aba Fichas): a UI muda na
+  // hora (otimista) e a gravação é agrupada por debounce, um PUT por vez por ficha. Sem
+  // isso, cliques rápidos de dano viravam PUTs concorrentes que disputavam a mesma linha
+  // e respostas fora de ordem sobrescreviam o estado novo (o "reset").
+  const pendingSaves = useRef<Map<string, { name: string; sheet: Record<string, unknown> }>>(new Map());
+  const savingChars = useRef<Set<string>>(new Set());
+  const saveTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+
   // personalização (mestre): nome, descrição, banner, tema
   const [editing, setEditing] = useState(false);
   const [cName, setCName] = useState("");
@@ -110,6 +118,18 @@ export default function CampaignDetailPage() {
   }, [id]);
 
   useEffect(() => { if (user) load(); }, [user, load]);
+
+  // Ao sair da campanha, grava as fichas com alterações pendentes (não perder o último clique).
+  useEffect(() => {
+    const pending = pendingSaves.current, timers = saveTimers.current, cid = id;
+    return () => {
+      timers.forEach((t) => clearTimeout(t));
+      pending.forEach((entry, charId) => {
+        void api.put<Character>(`/campaigns/${cid}/characters/${charId}`, { name: entry.name, sheetData: entry.sheet });
+      });
+      pending.clear();
+    };
+  }, [id]);
 
   const isMaster = campaign?.role === "MASTER";
   const charByPlayer = useMemo(() => {
@@ -172,14 +192,44 @@ export default function CampaignDetailPage() {
     catch (err) { setError(err instanceof Error ? err.message : "erro ao excluir ficha"); }
   }
 
-  // Vitais editáveis direto na aba Fichas (sem entrar em "Editar"): cada interação da
-  // SessionSheet do jogador grava a ficha na hora e reconcilia os derivados do servidor.
-  async function persistCharacter(c: Character, next: Record<string, unknown>) {
-    setCharacters((list) => list.map((x) => (x.id === c.id ? { ...x, sheetData: next } : x)));
+  // Grava o último estado pendente de UMA ficha. Serializado por ficha (um PUT por vez);
+  // edições que cheguem durante o save re-disparam ao final. A resposta (derivados
+  // recalculados) só é aplicada se nada mais novo entrou para aquela ficha — assim uma
+  // resposta em trânsito não sobrescreve um clique posterior.
+  async function flushCharSave(charId: string) {
+    if (savingChars.current.has(charId)) return;
+    const entry = pendingSaves.current.get(charId);
+    if (entry == null) return;
+    savingChars.current.add(charId);
+    pendingSaves.current.delete(charId);
     try {
-      const saved = await api.put<Character>(`/campaigns/${id}/characters/${c.id}`, { name: c.name, sheetData: next });
-      setCharacters((list) => list.map((x) => (x.id === c.id ? { ...x, sheetData: saved.sheetData } : x)));
-    } catch { await load(); }
+      const saved = await api.put<Character>(`/campaigns/${id}/characters/${charId}`, { name: entry.name, sheetData: entry.sheet });
+      if (!pendingSaves.current.has(charId)) {
+        setCharacters((list) => list.map((x) => (x.id === charId ? { ...x, sheetData: saved.sheetData } : x)));
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "erro ao salvar");
+      pendingSaves.current.delete(charId);
+      await load();
+    } finally {
+      savingChars.current.delete(charId);
+      if (pendingSaves.current.has(charId)) void flushCharSave(charId); // grava o que chegou durante o save
+    }
+  }
+
+  // Debounce por ficha: agrupa cliques rápidos num único PUT ~400ms após a última alteração.
+  function scheduleSave(charId: string, charName: string, next: Record<string, unknown>) {
+    pendingSaves.current.set(charId, { name: charName, sheet: next });
+    const prev = saveTimers.current.get(charId);
+    if (prev) clearTimeout(prev);
+    saveTimers.current.set(charId, setTimeout(() => { void flushCharSave(charId); }, 400));
+  }
+
+  // Vitais editáveis direto na aba Fichas (sem entrar em "Editar"): a UI muda na hora
+  // (otimista) e a gravação é coalescida (ver scheduleSave), sem esperar o banco.
+  function persistCharacter(c: Character, next: Record<string, unknown>) {
+    setCharacters((list) => list.map((x) => (x.id === c.id ? { ...x, sheetData: next } : x)));
+    scheduleSave(c.id, c.name, next);
   }
   async function recordRollFor(c: Character, e: RolledEvent) {
     try { await api.post(`/campaigns/${id}/rolls`, { ...e, characterName: c.name || null }); }
@@ -203,18 +253,10 @@ export default function CampaignDetailPage() {
 
   /** Mescla um patch no sheetData e persiste (otimista, reconcilia). Usado pelo Escudo
    * do Mestre para dano V5 e para PV/PM do T20. */
-  async function patchSheet(c: Character, patch: Record<string, unknown>) {
+  function patchSheet(c: Character, patch: Record<string, unknown>) {
     const newSheet = { ...(c.sheetData ?? {}), ...patch };
     setCharacters((list) => list.map((x) => (x.id === c.id ? { ...c, sheetData: newSheet } : x)));
-    try {
-      const saved = await api.put<Character>(`/campaigns/${id}/characters/${c.id}`, {
-        name: c.name, sheetData: newSheet,
-      });
-      setCharacters((list) => list.map((x) => (x.id === c.id ? saved : x)));
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "erro ao salvar");
-      await load();
-    }
+    scheduleSave(c.id, c.name, newSheet);
   }
 
   async function removeMember(m: Member) {

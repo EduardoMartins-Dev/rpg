@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useRequireUser } from "@/lib/guard";
@@ -33,6 +33,18 @@ export default function CharacterSheetPage() {
   const [msg, setMsg] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [savedAt, setSavedAt] = useState<number | null>(null);
+
+  // --- Auto-save coalescido (debounce + 1 gravação por vez) --------------------
+  // Cada clique nas barras de status atualiza a UI na hora (otimista), mas a
+  // gravação no banco é adiada e agrupada: uma rajada de cliques vira UM PUT com
+  // o estado final. Sem isso, N cliques disparavam N PUTs concorrentes que, no
+  // ambiente serverless (conexões distintas no pooler), disputavam a mesma linha
+  // e uma resposta antiga sobrescrevia o estado novo — o "reset" que se via.
+  const pendingRef = useRef<Sheet | null>(null); // último estado ainda não gravado
+  const savingRef = useRef(false);               // uma gravação por vez
+  const [saveTick, setSaveTick] = useState(0);   // cada persist incrementa → reinicia o debounce
+  const nameRef = useRef(name);
+  useEffect(() => { nameRef.current = name; }, [name]);
 
   const load = useCallback(async () => {
     setError(null);
@@ -72,6 +84,8 @@ export default function CharacterSheetPage() {
 
   async function save() {
     setMsg(null); setError(null);
+    // Descarta qualquer auto-save pendente para não competir com esta gravação manual.
+    pendingRef.current = null;
     try {
       const updated = await api.put<Character>(`/campaigns/${id}/characters/${charId}`, {
         name, sheetData: sheet,
@@ -90,22 +104,53 @@ export default function CharacterSheetPage() {
     catch { /* histórico é acessório */ }
   }, [id, name]);
 
-  // Auto-save da SESSÃO: cada interação na barra de status grava na hora (otimista),
-  // depois reconcilia com os derivados recalculados no servidor. Em erro, recarrega.
-  async function persist(next: Sheet) {
+  // Auto-save da SESSÃO: a UI muda na hora (otimista, sem esperar o banco). A gravação
+  // é agendada pelo `saveTick`; cada persist reinicia o debounce abaixo.
+  function persist(next: Sheet) {
     setError(null);
     setSheet(next);
-    try {
-      const updated = await api.put<Character>(`/campaigns/${id}/characters/${charId}`, {
-        name, sheetData: next,
-      });
-      setSheet(updated.sheetData ?? {});
-      setSavedAt(Date.now());
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "erro ao salvar");
-      await load();
-    }
+    pendingRef.current = next;
+    setSaveTick((t) => t + 1);
   }
+
+  // Debounce: reinicia a cada persist (a limpeza cancela o timer anterior) e, ~400ms após
+  // o ÚLTIMO clique, faz UM PUT com o estado final. Serializado por `savingRef` (uma
+  // gravação por vez); edições que cheguem durante o save re-disparam ao final. A resposta
+  // do servidor (derivados recalculados) só é aplicada se nada mais novo entrou nesse
+  // meio-tempo, para não sobrescrever um clique posterior.
+  useEffect(() => {
+    if (saveTick === 0) return;
+    const timer = setTimeout(async () => {
+      if (savingRef.current || pendingRef.current == null) return;
+      savingRef.current = true;
+      const body = pendingRef.current;
+      pendingRef.current = null;
+      try {
+        const updated = await api.put<Character>(`/campaigns/${id}/characters/${charId}`, {
+          name: nameRef.current, sheetData: body,
+        });
+        setSavedAt(Date.now());
+        if (pendingRef.current == null) setSheet(updated.sheetData ?? {});
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "erro ao salvar");
+        pendingRef.current = null;
+        await load();
+      } finally {
+        savingRef.current = false;
+        if (pendingRef.current != null) setSaveTick((t) => t + 1); // grava o que chegou durante o save
+      }
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [saveTick, id, charId, load]);
+
+  // Ao sair da tela (ou trocar de personagem), grava o pendente para não perder o último clique.
+  useEffect(() => () => {
+    if (pendingRef.current != null && !savingRef.current) {
+      const body = pendingRef.current;
+      pendingRef.current = null;
+      void api.put<Character>(`/campaigns/${id}/characters/${charId}`, { name: nameRef.current, sheetData: body });
+    }
+  }, [id, charId]);
 
   if (!user) return <p className="muted" style={{ padding: 38 }}>Carregando…</p>;
 
