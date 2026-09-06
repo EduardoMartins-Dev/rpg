@@ -19,6 +19,7 @@ export async function GET(req: NextRequest) {
       disciplines: c.disciplines,
       bane: c.bane,
       compulsion: c.compulsion,
+      source: c.source,
     }));
 
     const abilities = (["FISICAS", "SOCIAIS", "MENTAIS"] as const).map(abilityGroup);
@@ -28,7 +29,7 @@ export async function GET(req: NextRequest) {
     const disciplines = V5Catalog.disciplines().map((d) => ({
       name: d.name,
       summary: d.summary,
-      powers: d.powers.map((p) => ({ level: p.level, name: p.name, en: p.en, desc: p.desc })),
+      powers: d.powers.map((p) => ({ level: p.level, name: p.name, en: p.en, desc: p.desc, source: p.source })),
     }));
 
     const predatorTypes = V5Catalog.predatorTypes().map((pt) => ({

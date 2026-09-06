@@ -375,6 +375,18 @@ th { font-size: .72rem; text-transform: uppercase; letter-spacing: .5px; color: 
 .hovertip-hint { font: 500 10px var(--mono); color: var(--muted); }
 .hovertip-body { display: block; }
 
+/* Selo de origem: conteúdo do Guia Suplementar (V5 Companion) vs. Livro Básico */
+.src-badge {
+  display: inline-flex; align-items: center; margin-left: 8px; padding: 1px 7px;
+  border-radius: 999px; font: 700 9.5px var(--ui); text-transform: uppercase; letter-spacing: .4px;
+  color: var(--info); background: rgba(91, 141, 239, .14); border: 1px solid rgba(91, 141, 239, .35);
+  vertical-align: middle; white-space: nowrap;
+}
+.src-dot {
+  margin-left: 3px; padding: 0 3px; border-radius: 4px; line-height: 1;
+  font: 700 8px var(--ui); color: var(--info); background: rgba(91, 141, 239, .16); vertical-align: super;
+}
+
 /* --- campaign detail ------------------------------------------------------- */
 .cam-hero { min-height: 150px; border-bottom: 1px solid var(--border); display: flex; align-items: flex-end; }
 .cam-hero .inner { padding: 0 38px 18px; display: flex; align-items: center; gap: 16px; width: 100%; }

@@ -222,13 +222,14 @@ export interface CampaignRoll {
 export interface ClanView {
   id: string; label: string; description: string;
   disciplines: string[]; bane: string; compulsion: string;
+  source?: "base" | "companion";
 }
 export interface AbilityGroup { category: string; abilities: string[]; }
 export interface BloodPotencyView {
   potency: number; bloodSurge: number; rouseReroll: number;
   disciplineBonus: number; baneSeverity: number; mendingRouse: number;
 }
-export interface PowerView { level: number; name: string; en?: string | null; desc?: string | null; }
+export interface PowerView { level: number; name: string; en?: string | null; desc?: string | null; source?: "base" | "companion"; }
 export interface PowerTextResponse { systemId: string; power: string; text: string | null; }
 export interface DisciplineView { name: string; summary: string; powers: PowerView[]; }
 export interface PredatorView { name: string; summary: string; disciplines: string[]; }

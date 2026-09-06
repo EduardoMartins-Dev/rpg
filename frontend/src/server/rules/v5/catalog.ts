@@ -5,7 +5,7 @@
  */
 
 import { V5_ADVANTAGES, V5_FLAWS, type MeritOption } from "@/lib/v5-merits";
-import { V5_DISCIPLINES, type Power, type DisciplineInfo } from "@/lib/v5-disciplines";
+import { V5_DISCIPLINES, type Power, type DisciplineInfo, type Source } from "@/lib/v5-disciplines";
 
 // --- Clãs (núcleo + Companion) ------------------------------------------------
 
@@ -23,6 +23,7 @@ export type ClanInfo = {
   disciplines: string[];
   bane: string;
   compulsion: string;
+  source?: Source; // "companion" para clãs do Guia Suplementar; ausente = Livro Básico
 };
 
 const CLANS: Record<Clan, ClanInfo> = {
@@ -121,6 +122,7 @@ const CLANS: Record<Clan, ClanInfo> = {
     disciplines: ["Animalismo", "Ofuscação", "Presença"],
     bane: "queima ao dormir 2x no mesmo local em 7 noites (dano agravado por Gravidade da Perdição)",
     compulsion: "Destino Tentador",
+    source: "companion",
   },
   SALUBRI: {
     clan: "SALUBRI", label: "Salubri",
@@ -128,6 +130,7 @@ const CLANS: Record<Clan, ClanInfo> = {
     disciplines: ["Auspícios", "Dominação", "Fortitude"],
     bane: "caçados: quem bebe seu vitae testa frenesi p/ parar; 3º olho chora sangue ao usar disciplina",
     compulsion: "Empatia Afetiva",
+    source: "companion",
   },
   TZIMISCE: {
     clan: "TZIMISCE", label: "Tzimisce",
@@ -135,6 +138,7 @@ const CLANS: Record<Clan, ClanInfo> = {
     disciplines: ["Animalismo", "Dominação", "Proteanismo"],
     bane: "enraizado: dormir cercado da posse escolhida ou dano agravado à FdV",
     compulsion: "Cobiça",
+    source: "companion",
   },
 };
 

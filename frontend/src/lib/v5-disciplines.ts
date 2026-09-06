@@ -7,11 +7,18 @@
  * (o texto INTEGRAL vem do PDF indexado via RAG, no Chat da campanha).
  */
 
-export type Power = { level: number; name: string; en: string | null; desc: string | null };
+/** "base" = Livro Básico; "companion" = Guia Suplementar (V5 Companion). */
+export type Source = "base" | "companion";
+export type Power = { level: number; name: string; en: string | null; desc: string | null; source?: Source };
 export type DisciplineInfo = { name: string; summary: string; powers: Power[] };
 
 function p(level: number, name: string, en: string | null = null, desc: string | null = null): Power {
   return { level, name, en, desc };
+}
+
+// Poder introduzido no V5 Companion (Guia Suplementar) — marcado para a UI.
+function pc(level: number, name: string, en: string, desc: string): Power {
+  return { level, name, en, desc, source: "companion" };
 }
 
 export const V5_DISCIPLINES: DisciplineInfo[] = [
@@ -34,6 +41,8 @@ export const V5_DISCIPLINES: DisciplineInfo[] = [
     name: "Auspícios",
     summary: "Sentidos aguçados, percepção sobrenatural e premonições.",
     powers: [
+      pc(2, "Obeah", "Obeah", "Amálgama com Fortitude 1. Um Rouse Check (e Força de Vontade conforme o caso), teste de Compostura + Auspícios (Dif 2). Cura dano Superficial de Força de Vontade de OUTRA pessoa igual à margem (ou 1 Agravado a cada 3 sucessos); em mortais, também os acalma. Um alvo por noite. Poder dos Salubri."),
+      pc(5, "Aliviando a Alma Bestial", "Unburdening the Bestial Soul", "Amálgama com Dominação 3 (pré-requisito Obeah). Dois Rouse Checks e ganha 1 Mancha; uma cena a sós, teste de Compostura + Auspícios vs. Humanidade do alvo. Remove Manchas de um vampiro arrependido (ou o blinda contra Manchas futuras); num crítico, pode restaurar 1 de Humanidade — só uma vez na eternidade. Apenas em vampiros de Humanidade menor que a sua. Assinatura dos Salubri."),
       p(1, "Sentidos Aguçados", "Heightened Senses", "Passiva, ativável de graça. Amplia os cinco sentidos a níveis sobre-humanos (some a Auspícios em testes de percepção). Estímulos súbitos e intensos podem exigir um teste para não ser sobrecarregado."),
       p(1, "Sentir o Invisível", "Sense the Unseen", "Simples, sem custo (ou um Rouse Check para busca ativa). Percebe o sobrenatural oculto — vampiros ofuscados, fantasmas, magia — com um teste de Percepção/Inteligência + Auspícios contra o poder que oculta."),
       p(2, "Premonição", "Premonition", "Passiva; para forçar uma visão, um Rouse Check. Lampejos premonitórios de perigo iminente. O Narrador dá uma pista ou aviso; funciona como um sexto sentido que dispara sozinho em momentos críticos."),
@@ -64,6 +73,7 @@ export const V5_DISCIPLINES: DisciplineInfo[] = [
     name: "Dominação",
     summary: "Controle da mente através de um olhar penetrante. Exige contato visual e uma língua que a vítima entenda.",
     powers: [
+      pc(2, "Favor do Domitor", "Domitor's Favor", "Um Rouse Check. Um servo preso a você por Laço de Sangue tem muito mais dificuldade de resistir: as rolagens de Desafio dele sofrem −3 dados e ele não pode gastar Força de Vontade nelas; em falha total, o Laço não enfraquece naquele mês. Favorito dos Tzimisce. Duração: um mês."),
       p(1, "Nublar a Memória", "Cloud Memory", "Um Rouse Check, teste de Carisma + Dominação contra Inteligência + Firmeza se resistido. Apaga da vítima a lembrança do último minuto ou de um momento recente específico."),
       p(1, "Compelir", "Compel", "Sem custo (um Rouse Check se a vítima resistir). Uma ordem curta de uma frase que a vítima obedece imediatamente e de forma literal; Carisma + Dominação contra Inteligência + Firmeza."),
       p(2, "Hipnotizar", "Mesmerize", "Um Rouse Check, teste de Manipulação + Dominação contra Inteligência + Firmeza. Implanta um comando complexo, de várias etapas, que a vítima executa depois, quando o gatilho que você definir ocorrer."),
@@ -79,6 +89,7 @@ export const V5_DISCIPLINES: DisciplineInfo[] = [
     name: "Fortitude",
     summary: "Tenacidade sobrenatural: resistir a dano, fogo e luz solar.",
     powers: [
+      pc(2, "Valeren", "Valeren", "Amálgama com Auspícios 1. Um Rouse Check (e Vitalidade conforme o caso), teste de Inteligência + Fortitude (Dif 2). Cura dano Superficial de Vitalidade de OUTRO vampiro igual à margem (ou 1 Agravado a cada 3 sucessos). Só em vampiros, um alvo por noite. Cura dos Salubri."),
       p(1, "Resiliência", "Resilience", "Passiva, sem custo. Soma a pontuação de Fortitude à Vitalidade para fins de aparar dano, reduzindo o dano superficial sofrido a cada ataque."),
       p(1, "Mente Inabalável", "Unswayable Mind", "Passiva; um Rouse Check para reforçar. Concede dados extras para resistir a coerção, leitura de mente, intimidação e manipulação sobrenatural."),
       p(2, "Robustez", "Toughness", "Um Rouse Check. Soma a Fortitude ao dano físico aparado e ignora, por uma cena, as penalidades de ferimento causadas pelo dano superficial."),
@@ -94,6 +105,8 @@ export const V5_DISCIPLINES: DisciplineInfo[] = [
     name: "Ofuscação",
     summary: "Permanecer obscuro e invisível, mesmo em meio a multidões.",
     powers: [
+      pc(2, "Quimerismo", "Chimerstry", "Amálgama com Presença 1. Um Rouse Check, teste de Manipulação + Ofuscação. Cria uma alucinação breve e vívida em um único sentido (um vulto, uma voz), distraindo quem está à vista: −2 dados na próxima ação e, se falhar em Compostura + Raciocínio, perde a próxima ação. Não pode ser gravada. Poder dos Ravnos."),
+      pc(3, "Fata Morgana", "Fata Morgana", "Amálgama com Presença 2. Um Rouse Check, teste de Manipulação + Ofuscação (Dif = 1 + nº de sentidos afetados). Cria alucinações elaboradas e multissensoriais que várias vítimas veem, ouvem e sentem — mas que não alteram a realidade (não ferem, não bloqueiam a visão, não são gravadas). Vítimas podem descrer com Inteligência + Prontidão. Dura uma cena. Dos Ravnos."),
       p(1, "Manto de Sombras", "Cloak of Shadows", "Passiva, sem custo. Fica imperceptível enquanto permanecer imóvel e junto a alguma cobertura (parede, sombra, canto); mover-se ou ser procurado ativamente quebra o efeito."),
       p(1, "Silêncio da Morte", "Silence of Death", "Um Rouse Check. Anula todo o som que você produz — passos, voz, tiros — tornando suas ações completamente silenciosas por uma cena."),
       p(2, "Passagem Invisível", "Unseen Passage", "Um Rouse Check. Move-se permanecendo oculto, mesmo andando; deixa de ser notado por observadores, mas interagir bruscamente ou atacar rompe a ofuscação."),
@@ -139,6 +152,10 @@ export const V5_DISCIPLINES: DisciplineInfo[] = [
     name: "Proteanismo",
     summary: "Mudança de forma: garras, formas bestiais e fusão com a terra.",
     powers: [
+      pc(2, "Vicissitude", "Vicissitude", "Amálgama com Dominação 2. Um Rouse Check, teste de Determinação + Proteanismo. Molda a própria carne: cada sucesso é uma alteração (até o valor de Proteanismo), custando 1 ponto de Atributo Físico cada — redistribuir atributos, criar armas ósseas (+2 de dano), armadura ou mudar a aparência. Permanente (curável como Agravado). Assinatura dos Tzimisce."),
+      pc(3, "Modelagem de Carne", "Fleshcrafting", "Amálgama com Dominação 2 (pré-requisito Vicissitude). Um Rouse Check, teste de Determinação + Proteanismo (vs. Vigor + Determinação se a vítima resistir). Como Vicissitude, mas moldando o corpo de OUTROS — aliado voluntário ou vítima contida. Leva uma cena; temida como ferramenta de tortura dos Tzimisce."),
+      pc(4, "Forma Hedionda", "Horrid Form", "Amálgama com Dominação 2 (pré-requisito Vicissitude). Um Rouse Check. Assume uma forma monstruosa (garras, presas, músculos) com um número de alterações de Vicissitude grátis (sem perder Atributos) igual ao Proteanismo. Enquanto ativa, críticos viram desastrosos e testes de frenesi ficam +2 de Dificuldade; você mal se comunica. Dura uma cena."),
+      pc(5, "Um com a Terra", "One with the Land", "Amálgama com Animalismo 2 (pré-requisito Fundir-se à Terra). Dois Rouse Checks. Como Fundir-se à Terra, mas em qualquer superfície (paredes, assoalho, água parada), e você percebe o que acontece num raio de ~1,6 km através dos animais da região. Sair antes do anoitecer seguinte exige Determinação + Proteanismo (Dif 4). Dos Tzimisce."),
       p(1, "Olhos da Besta", "Eyes of the Beast", "Passiva, sem custo. Enxerga perfeitamente no escuro total; ao ativar, os olhos brilham de forma bestial, servindo também para intimidar."),
       p(1, "Peso da Pluma", "Weight of the Feather", "Passiva, reflexa, sem custo. Torna-se leve como uma pluma: ignora dano de quedas, caminha sobre superfícies frágeis e resiste a ser derrubado ou empurrado."),
       p(2, "Armas Ferais", "Feral Weapons", "Um Rouse Check. Faz crescer garras longas e afiadas (ou presas) que causam dano agravado em combate e servem para escalar e dilacerar; dura uma cena."),
@@ -188,4 +205,9 @@ for (const d of V5_DISCIPLINES) for (const pw of d.powers) POWER_BY_NAME.set(nor
 /** Resumo do efeito de um poder de disciplina, ou undefined se desconhecido. */
 export function powerDesc(name: string): string | undefined {
   return POWER_BY_NAME.get(norm(name))?.desc ?? undefined;
+}
+
+/** Origem de um poder ("companion" para o Guia Suplementar), ou undefined. */
+export function powerSource(name: string): Source | undefined {
+  return POWER_BY_NAME.get(norm(name))?.source;
 }
