@@ -212,7 +212,7 @@ export function disciplines(): DisciplineInfo[] {
 
 // --- Tipos de Predador -----------------------------------------------------------
 
-export type PredatorType = { name: string; summary: string; disciplines: string[] };
+export type PredatorType = { name: string; summary: string; disciplines: string[]; source?: Source };
 
 const PREDATORS: PredatorType[] = [
   { name: "Gatuno", summary: "Caça pela força e violência, em becos e ruas.", disciplines: ["Celeridade", "Potência"] },
@@ -225,6 +225,13 @@ const PREDATORS: PredatorType[] = [
   { name: "Sandman", summary: "Alimenta-se de vítimas adormecidas.", disciplines: ["Auspícios", "Ofuscação"] },
   { name: "Rainha da Cena", summary: "Alimenta-se de uma subcultura que adora.", disciplines: ["Ofuscação", "Presença"] },
   { name: "Sereia", summary: "Alimenta-se por sedução.", disciplines: ["Fortitude", "Presença"] },
+  // --- Players Guide (Guia do Jogador) ---
+  { name: "Extorsionário", summary: "Extorque sangue das vítimas em troca de 'proteção' — coerção sutil e escancarada.", disciplines: ["Dominação", "Potência"], source: "players_guide" },
+  { name: "Ladrão de Túmulos", summary: "Alimenta-se de cadáveres frescos e de enlutados/pacientes; prefere Ressonância Melancólica.", disciplines: ["Fortitude", "Oblivion"], source: "players_guide" },
+  { name: "Ceifador", summary: "Só se alimenta de quem está à beira da morte (asilos, hospícios, abrigos).", disciplines: ["Auspícios", "Oblivion"], source: "players_guide" },
+  { name: "Montero", summary: "Usa lacaios para encurralar as vítimas até você, como numa caçada (montería).", disciplines: ["Dominação", "Ofuscação"], source: "players_guide" },
+  { name: "Perseguidor", summary: "Estuda e persegue uma vítima que ninguém sentirá falta, atacando no ápice.", disciplines: ["Animalismo", "Auspícios"], source: "players_guide" },
+  { name: "Alçapão", summary: "Constrói um covil e atrai a presa para dentro dele (como a aranha-alçapão).", disciplines: ["Proteanismo", "Ofuscação"], source: "players_guide" },
 ];
 
 export function predatorTypes(): PredatorType[] {

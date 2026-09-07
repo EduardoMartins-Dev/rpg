@@ -36,6 +36,7 @@ export async function GET(req: NextRequest) {
       name: pt.name,
       summary: pt.summary,
       disciplines: pt.disciplines,
+      source: pt.source,
     }));
 
     const resonances = V5Catalog.resonances().map((r) => ({

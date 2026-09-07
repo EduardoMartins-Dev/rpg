@@ -5,7 +5,7 @@ import { DamageTrack } from "@/components/DamageTrack";
 import { AttributeRadial } from "@/components/AttributeRadial";
 import { ClanTrait } from "@/components/ClanTrait";
 import { HoverTip, SourceBadge, SourceDot } from "@/components/InfoTip";
-import { meritDesc } from "@/lib/v5-merits";
+import { meritDesc, meritSource } from "@/lib/v5-merits";
 import { powerDesc, powerSource } from "@/lib/v5-disciplines";
 
 type Sheet = Record<string, unknown>;
@@ -298,7 +298,7 @@ function ListBlock({ title, items }: { title: string; items: Advantage[] }) {
             <span>
               <HoverTip desc={desc} title={a.name}>
                 <span className={desc ? "has-tip" : undefined}>{a.name || "—"}</span>
-              </HoverTip>{" "}
+              </HoverTip><SourceDot source={meritSource(a.name)} />{" "}
               <span style={{ color: "var(--accent)" }}>{dots(a.dots, 5)}</span>
             </span>
             <span className="muted" style={{ fontSize: 13 }}>{a.note}</span>

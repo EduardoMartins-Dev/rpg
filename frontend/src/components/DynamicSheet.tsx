@@ -1063,11 +1063,16 @@ function PredatorField({ catalog, value, onChange, disabled }: {
       <label>Tipo de Predador</label>
       <select value={value} disabled={disabled} onChange={(e) => onChange(e.target.value)} style={{ marginTop: 7 }}>
         <option value="">—</option>
-        {list.map((p) => <option key={p.name} value={p.name}>{p.name}</option>)}
+        {list.map((p) => (
+          <option key={p.name} value={p.name}>
+            {p.name}{p.source === "players_guide" ? " (PG)" : p.source === "companion" ? " (Companion)" : ""}
+          </option>
+        ))}
       </select>
       {sel && (
         <div className="muted" style={{ fontSize: 12, marginTop: 6 }}>
           {sel.summary} · aumenta <b style={{ color: "var(--accent)" }}>{sel.disciplines.join(" ou ")}</b>
+          <SourceBadge source={sel.source} />
         </div>
       )}
     </div>
@@ -1157,7 +1162,7 @@ function AdvantageEditor({ items, onChange, ph, testid, options }: {
                     <HoverTip key={o.name} desc={o.desc} title={o.name} hint={o.hint}>
                       <button type="button" className="badge merit-chip" style={{ cursor: "pointer" }}
                         onClick={() => onChange([...items, { name: o.name, dots: 1, note: "" }])}>
-                        + {o.name}{o.hint ? <span className="merit-hint">{o.hint}</span> : null}
+                        + {o.name}{o.hint ? <span className="merit-hint">{o.hint}</span> : null}<SourceDot source={o.source} />
                       </button>
                     </HoverTip>
                   ))}

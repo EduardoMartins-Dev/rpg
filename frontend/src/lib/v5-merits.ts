@@ -7,7 +7,8 @@
  * fiéis do Livro Básico (cap. Vantagens); `hint` traz a faixa de pontos.
  */
 
-export type MeritOption = { name: string; group: string; hint?: string; desc: string };
+/** source: ausente = Livro Básico; "players_guide" = Guia do Jogador (V5 Players Guide). */
+export type MeritOption = { name: string; group: string; hint?: string; desc: string; source?: "base" | "companion" | "players_guide" };
 
 // Vantagens = Antecedentes + Méritos (e aprimoramentos de Refúgio/Máscara).
 export const V5_ADVANTAGES: MeritOption[] = [
@@ -155,6 +156,51 @@ export const V5_ADVANTAGES: MeritOption[] = [
   {
     name: "Falsário", group: "Máscara · aprimoramentos", hint: "1 · requer Máscara ••",
     desc: "Você consegue fabricar ou conseguir Máscaras. Fabricar leva 3 dias por ponto (e pode te expor online); conseguir leva 1 dia por ponto, mas cobra algo em troca.",
+  },
+  // --- Players Guide (Guia do Jogador) ---
+  {
+    name: "Segredos da Cidade", group: "Antecedentes", hint: "1–3", source: "players_guide",
+    desc: "Você guarda um segredo comprometedor sobre a estrutura de poder Membro da cidade. Funciona como proteção (quem quer o segredo enterrado te mantém bem) e, às vezes, como Influência. Pode ser adquirido até 3 vezes, um segredo diferente por vez.",
+  },
+  {
+    name: "Rosto Famoso", group: "Aparência", hint: "1", source: "players_guide",
+    desc: "Você é muito parecido com alguém famoso. +2 dados em testes Sociais quando dá para usar a semelhança a seu favor — mas −2 para se esconder na multidão ou evitar ser reconhecido.",
+  },
+  {
+    name: "Ingênuo", group: "Aparência", hint: "1", source: "players_guide",
+    desc: "Você parece inocente e incapaz de fazer mal, e os outros acreditam nas suas boas intenções com mais facilidade. +2 dados para evitar suspeita ou desviar a culpa, a critério do Narrador.",
+  },
+  {
+    name: "Traço Marcante", group: "Aparência", hint: "1", source: "players_guide",
+    desc: "Você tem um traço raro e memorável (cor de olhos incomum, pupilas atípicas, tez singular...). +2 dados em interações sociais com estranhos (a novidade logo passa), mas −1 para se disfarçar.",
+  },
+  {
+    name: "Reconhecer Vessel", group: "Alimentação", hint: "1", source: "players_guide",
+    desc: "Você aprendeu a farejar de quem NÃO se alimentar. Determinação + Prontidão (Dif 2) revela se um mortal foi drenado recentemente; num crítico, percebe se a alimentação é recorrente (provável rebanho ou Boneca de Sangue de alguém).",
+  },
+  {
+    name: "Sorte do Diabo", group: "Míticos", hint: "4", source: "players_guide",
+    desc: "Sempre há alguém para pagar o pato por você. 1x por sessão, um infortúnio dirigido a você (um ataque, uma acusação, uma culpa) recai sobre alguém próximo — aliado, lacaio, membro da coterie ou até um Pilar.",
+  },
+  {
+    name: "Modo Nuit", group: "Míticos", hint: "2", source: "players_guide",
+    desc: "Seu corpo não volta ao estado de morte toda noite: cortes de cabelo, tatuagens e outras modificações permanecem (você ainda pode revertê-las, curando-as como dano Agravado). Só para Potência de Sangue 1 ou menor.",
+  },
+  {
+    name: "Olhar no Porta-Malas", group: "Outros", hint: "1", source: "players_guide",
+    desc: "Você mantém um arsenal/caixa de ferramentas à mão (nada acima de Recursos 2: espingarda serrada, alicate, fita, estacas caseiras...). +2 dados em paradas de Preparação para itens dessa faixa. Perder o carro/refúgio pode interromper o Mérito até reconstruir o estoque.",
+  },
+  {
+    name: "Bico", group: "Outros", hint: "2", source: "players_guide",
+    desc: "Você vive de virações e favores. 1x por sessão, consegue um item, uma informação ou acesso como se tivesse 2 pontos no Antecedente apropriado (Recursos, Contatos ou Influência) — geralmente cobrando favores da sua rede informal.",
+  },
+  {
+    name: "Vontade Temperada", group: "Outros", hint: "3", source: "players_guide",
+    desc: "Você sempre percebe quando tentam te forçar com Dominação ou Presença. 1x por sessão, ao resistir a Dominação ou Presença, +2 dados na parada de resistência. Só para quem tem 0 em Dominação E em Presença.",
+  },
+  {
+    name: "Intocável", group: "Outros", hint: "5", source: "players_guide",
+    desc: "Os poderosos relutam em te punir. 1x por história, escapa de toda punição oficial por um crime que normalmente te destruiria ou exilaria da seita (ainda pode haver represálias por vias informais).",
   },
 ];
 
@@ -310,6 +356,43 @@ export const V5_FLAWS: MeritOption[] = [
     name: "Analfabeto", group: "Linguística", hint: "2",
     desc: "Você não sabe ler nem escrever. Suas perícias Erudição e Ciência ficam limitadas a 1, e você não pode ter nelas especialidades que envolvam conhecimento moderno.",
   },
+  // --- Players Guide (Guia do Jogador) ---
+  {
+    name: "Fedor", group: "Aparência", hint: "1", source: "players_guide",
+    desc: "Seu hálito e odor são sobrenaturalmente pútridos (cheiro de cova aberta e carne podre); até Nosferatu torcem o nariz. −1 dado em sedução e Sociais afins, e −2 em Furtividade contra quem sente cheiro — a menos que você esteja a favor do vento.",
+  },
+  {
+    name: "Transparente", group: "Aparência", hint: "1", source: "players_guide",
+    desc: "Você é um péssimo mentiroso — cara de paisagem impossível. −1 dado em qualquer parada que exija Subterfúgio, e você não pode ganhar pontos em Subterfúgio.",
+  },
+  {
+    name: "Sugador Furtivo", group: "Alimentação", hint: "1", source: "players_guide",
+    desc: "A alimentação é íntima demais para você: não consegue tirar sangue de um mortal sendo observado. Costuma se alimentar de desavisados ou de vítimas drogadas/inconscientes.",
+  },
+  {
+    name: "Decadência Faminta", group: "Míticos", hint: "2", source: "players_guide",
+    desc: "Seu corpo vive à beira de apodrecer; só a Fome o segura. Com Fome 3 ou mais, ele murcha: −2 dados em testes físicos e em interações sociais com mortais, além de risco à Máscara.",
+  },
+  {
+    name: "Duas Vezes Amaldiçoado", group: "Míticos", hint: "2", source: "players_guide",
+    desc: "Você carrega um Bane a mais: sofre o Bane variante do seu clã ALÉM do Bane normal. O Narrador pode vetar se o segundo Bane não fizer sentido (ou não pesar) na crônica.",
+  },
+  {
+    name: "Faminto por Conhecimento", group: "Outros", hint: "1", source: "players_guide",
+    desc: "Escolha um tema que seu personagem anseia estudar. Ao topar com livros, aulas ou vídeos sobre ele, role Força de Vontade (Dif 3) para não largar tudo e mergulhar no assunto.",
+  },
+  {
+    name: "Dívidas de Prestígio", group: "Outros", hint: "1", source: "players_guide",
+    desc: "Você deve dois favores menores (boons) a outro Membro. Enquanto a dívida existir, ele tem +1 dado em conflitos sociais contra você e pode cobrá-la na pior hora possível.",
+  },
+  {
+    name: "Aventureiro Imprudente", group: "Outros", hint: "1", source: "players_guide",
+    desc: "Você se sente compelido a viver cada novo risco. Diante de uma tentação arriscada inédita (uma droga nova, sangue de vampiro, um amante Membro), −2 dados em tudo até você ceder ou a cena acabar. Não te leva ao suicídio, mas você nem sempre mede as consequências.",
+  },
+  {
+    name: "Fraco de Vontade", group: "Outros", hint: "2", source: "players_guide",
+    desc: "Você custa a impor a própria vontade diante da de outro. −1 dado em paradas Sociais contra seu líder ou superior; e, mesmo ciente de uma tentativa de Dominação ou Presença, não pode usar a resistência ativa contra ela.",
+  },
 ];
 
 // Busca por nome (tolerante a acentuação/caixa/espaços) → descrição do livro.
@@ -319,7 +402,12 @@ const norm = (s: string) =>
 const BY_NAME = new Map<string, MeritOption>();
 for (const m of [...V5_ADVANTAGES, ...V5_FLAWS]) BY_NAME.set(norm(m.name), m);
 
-/** Descrição oficial (Livro Básico) de uma Vantagem/Defeito, ou undefined se desconhecida. */
+/** Descrição oficial de uma Vantagem/Defeito, ou undefined se desconhecida. */
 export function meritDesc(name: string): string | undefined {
   return BY_NAME.get(norm(name))?.desc;
+}
+
+/** Origem de uma Vantagem/Defeito ("players_guide", "companion"...), ou undefined. */
+export function meritSource(name: string): MeritOption["source"] {
+  return BY_NAME.get(norm(name))?.source;
 }
