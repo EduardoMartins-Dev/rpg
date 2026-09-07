@@ -375,17 +375,21 @@ th { font-size: .72rem; text-transform: uppercase; letter-spacing: .5px; color: 
 .hovertip-hint { font: 500 10px var(--mono); color: var(--muted); }
 .hovertip-body { display: block; }
 
-/* Selo de origem: conteúdo do Guia Suplementar (V5 Companion) vs. Livro Básico */
+/* Selo de origem (fora do Livro Básico): layout comum; a cor vem do modificador
+   (.src-companion = azul, .src-pg = vermelho). */
 .src-badge {
   display: inline-flex; align-items: center; margin-left: 8px; padding: 1px 7px;
   border-radius: 999px; font: 700 9.5px var(--ui); text-transform: uppercase; letter-spacing: .4px;
-  color: var(--info); background: rgba(91, 141, 239, .14); border: 1px solid rgba(91, 141, 239, .35);
-  vertical-align: middle; white-space: nowrap;
+  vertical-align: middle; white-space: nowrap; border: 1px solid transparent;
 }
 .src-dot {
   margin-left: 3px; padding: 0 3px; border-radius: 4px; line-height: 1;
-  font: 700 8px var(--ui); color: var(--info); background: rgba(91, 141, 239, .16); vertical-align: super;
+  font: 700 8px var(--ui); vertical-align: super;
 }
+.src-companion { color: var(--info); background: rgba(91, 141, 239, .14); }
+.src-badge.src-companion { border-color: rgba(91, 141, 239, .35); }
+.src-pg { color: var(--err); background: rgba(217, 72, 59, .16); }
+.src-badge.src-pg { border-color: rgba(217, 72, 59, .45); }
 
 /* --- campaign detail ------------------------------------------------------- */
 .cam-hero { min-height: 150px; border-bottom: 1px solid var(--border); display: flex; align-items: flex-end; }

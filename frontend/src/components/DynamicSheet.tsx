@@ -7,7 +7,7 @@ import { AttributeRadial } from "@/components/AttributeRadial";
 import { ClanTrait } from "@/components/ClanTrait";
 import { AuthImage } from "@/components/AuthImage";
 import { UserImageField } from "@/components/UserImageField";
-import { HoverTip, InfoDot } from "@/components/InfoTip";
+import { HoverTip, InfoDot, SourceBadge, SourceDot } from "@/components/InfoTip";
 import { meritDesc } from "@/lib/v5-merits";
 import { powerDesc } from "@/lib/v5-disciplines";
 
@@ -254,7 +254,7 @@ export function DynamicSheet({
                         </span>
                       </span>
                       <span className="clan-disc">{c.disciplines.length ? c.disciplines.join(" · ") : "sem disciplinas fixas"}</span>
-                      {c.source === "companion" && <span className="src-badge" title="Do Guia Suplementar (V5 Companion)">Companion</span>}
+                      <SourceBadge source={c.source} />
                     </div>
                   ))}
                 </div>
@@ -262,7 +262,7 @@ export function DynamicSheet({
                   <div className="clan-detail" data-testid="clan-detail">
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
                       <h4 style={{ margin: 0 }}>{detailClan.label}
-                        {detailClan.source === "companion" && <span className="src-badge" title="Do Guia Suplementar (V5 Companion)">Companion</span>}
+                        <SourceBadge source={detailClan.source} />
                       </h4>
                       {detailClan.id !== clanId && (
                         <button type="button" className="secondary" style={{ padding: "6px 12px", fontSize: 13 }}
@@ -750,12 +750,12 @@ function DisciplineCatalog({ list, onAdd, onAddPower }: {
                       <div style={{ display: "flex", flexWrap: "wrap", gap: 6, flex: 1 }}>
                         {powers.map((p) => (
                           <HoverTip key={p.name} desc={p.desc ?? undefined} title={p.name}
-                            hint={`•${lvl}${p.source === "companion" ? " · Companion" : ""}`}>
+                            hint={`•${lvl}${p.source === "companion" ? " · Companion" : p.source === "players_guide" ? " · Players Guide" : ""}`}>
                             <button type="button" className="badge" style={{ cursor: "pointer" }}
                               aria-label={`Adicionar ${p.name} à ficha${p.source === "companion" ? " (V5 Companion)" : ""}`}
                               onClick={() => onAddPower(d.name, p.name, Number(lvl))}>
                               + {p.name}
-                              {p.source === "companion" && <sup className="src-dot" title="Do Guia Suplementar (V5 Companion)">C</sup>}
+                              <SourceDot source={p.source} />
                             </button>
                           </HoverTip>
                         ))}

@@ -4,7 +4,7 @@ import type { SchemaShape, V5Catalog, ClanView } from "@/lib/api";
 import { DamageTrack } from "@/components/DamageTrack";
 import { AttributeRadial } from "@/components/AttributeRadial";
 import { ClanTrait } from "@/components/ClanTrait";
-import { HoverTip } from "@/components/InfoTip";
+import { HoverTip, SourceBadge, SourceDot } from "@/components/InfoTip";
 import { meritDesc } from "@/lib/v5-merits";
 import { powerDesc, powerSource } from "@/lib/v5-disciplines";
 
@@ -109,7 +109,7 @@ export function SheetView({ schema, sheet, catalog }: {
       {clan && (
         <div className="panel" style={{ marginTop: 14 }}>
           <h3 style={{ marginTop: 0 }}>{clan.label}
-            {clan.source === "companion" && <span className="src-badge" title="Do Guia Suplementar (V5 Companion)">Companion</span>}
+            <SourceBadge source={clan.source} />
           </h3>
           <p style={{ marginTop: 0, lineHeight: 1.55 }}>{clan.description}</p>
           <div>
@@ -191,7 +191,7 @@ export function SheetView({ schema, sheet, catalog }: {
                           <HoverTip desc={pd} title={p.name}>
                             <span className={pd ? "has-tip" : undefined}>{p.name}</span>
                           </HoverTip>
-                          {powerSource(p.name) === "companion" && <sup className="src-dot" title="Do Guia Suplementar (V5 Companion)">C</sup>}
+                          <SourceDot source={powerSource(p.name)} />
                         </li>
                       );
                     })}

@@ -96,3 +96,23 @@ export function InfoDot({ desc, title, hint }: { desc?: string; title?: string; 
     </HoverTip>
   );
 }
+
+// Origem do conteúdo (fora do Livro Básico): rótulo, sigla e cor por fonte.
+const SOURCE_META: Record<string, { label: string; short: string; cls: string; title: string }> = {
+  companion: { label: "Companion", short: "C", cls: "src-companion", title: "Do Guia Suplementar (V5 Companion)" },
+  players_guide: { label: "PG", short: "PG", cls: "src-pg", title: "Do Guia do Jogador (V5 Players Guide)" },
+};
+
+/** Pílula de origem (ex.: "Companion" azul, "PG" vermelho). Nada para conteúdo do Livro Básico. */
+export function SourceBadge({ source }: { source?: string }) {
+  const m = source ? SOURCE_META[source] : undefined;
+  if (!m) return null;
+  return <span className={`src-badge ${m.cls}`} title={m.title}>{m.label}</span>;
+}
+
+/** Sigla sobrescrita de origem ao lado de um nome (ex.: poder "C" / "PG"). */
+export function SourceDot({ source }: { source?: string }) {
+  const m = source ? SOURCE_META[source] : undefined;
+  if (!m) return null;
+  return <sup className={`src-dot ${m.cls}`} title={m.title}>{m.short}</sup>;
+}

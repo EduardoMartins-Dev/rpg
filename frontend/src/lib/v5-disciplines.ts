@@ -7,8 +7,9 @@
  * (o texto INTEGRAL vem do PDF indexado via RAG, no Chat da campanha).
  */
 
-/** "base" = Livro Básico; "companion" = Guia Suplementar (V5 Companion). */
-export type Source = "base" | "companion";
+/** Origem do conteúdo: base = Livro Básico; companion = Guia Suplementar (V5
+ * Companion); players_guide = Guia do Jogador (V5 Players Guide). */
+export type Source = "base" | "companion" | "players_guide";
 export type Power = { level: number; name: string; en: string | null; desc: string | null; source?: Source };
 export type DisciplineInfo = { name: string; summary: string; powers: Power[] };
 
@@ -21,11 +22,21 @@ function pc(level: number, name: string, en: string, desc: string): Power {
   return { level, name, en, desc, source: "companion" };
 }
 
+// Poder introduzido no V5 Players Guide (Guia do Jogador) — marcado para a UI.
+function pg(level: number, name: string, en: string, desc: string): Power {
+  return { level, name, en, desc, source: "players_guide" };
+}
+
 export const V5_DISCIPLINES: DisciplineInfo[] = [
   {
     name: "Animalismo",
     summary: "Comunhão e controle de animais e da Besta interior.",
     powers: [
+      pg(2, "Mensageiro Animal", "Animal Messenger", "Amálgama com Auspícios 1. Um Rouse Check por noite. O famulus leva uma frase curta até uma pessoa designada e a entrega como se falasse com a voz do vampiro; se não souber onde o alvo está, o rastreia (teste, Dif 2, uma vez por noite)."),
+      pg(3, "Comando do Mensageiro", "Messenger's Command", "Amálgama com Dominação 1 (pré-requisito Mensageiro Animal + Compelir ou Hipnotizar). Sem custo próprio. Embute uma ordem de Compelir ou Hipnotizar na mensagem do famulus; o teste ocorre quando o famulus faz contato visual com o alvo."),
+      pg(3, "Praga de Bestas", "Plague of Beasts", "Um Rouse Check, teste de Manipulação + Animalismo vs. Compostura + Empatia com Animais. Marca um alvo à vista para que todos os animais e pragas da região o assediem a noite toda: penalidade em perícias igual à margem e +margem para quem o rastreia (não vale em combate). Dura uma noite."),
+      pg(4, "Reger o Bando", "Sway the Flock", "Um ou mais Rouse Checks, teste de Compostura + Animalismo. Dita o humor geral dos animais numa área — da apatia sonolenta à fúria indiscriminada; quanto mais sucessos, mais dominados. Área de ~um campo de futebol, ampliável até uma cidadezinha com mais Rouse Checks. Dura uma noite."),
+      pg(5, "Instigar o Temperamento Bestial", "Coax the Bestial Temper", "Um Rouse Check, teste de Manipulação + Animalismo (Dif 3). Cantarolando ou rosnando baixo, atiça ou aplaca a Besta de todos os vampiros ao alcance da voz: cada sucesso na margem sobe ou desce em 1 a Dificuldade deles para resistir ao frenesi; se baixar, quem já está em frenesi pode testar para sair dele."),
       p(1, "Sentir a Besta", "Sense the Beast", "Passiva/simples, sem custo. Percebe a Besta em outro ser: raiva contida, Fome, natureza sobrenatural e propensão a frenesi. Se a pessoa esconder, é um teste resistido de Resolução + Animalismo contra Compostura + Lábia."),
       p(1, "Vínculo Famulus", "Bond Famulus", "Ritual longo. Alimenta um animal com o próprio vitae por três noites (um Rouse Check cada) para criar um famulus vinculado, que passa a obedecê-lo e servir de canal para outros poderes de Animalismo."),
       p(2, "Sussurros Selvagens", "Feral Whispers", "Um Rouse Check. Conversa com animais e dá ordens; para bichos comuns o Narrador decide, para tarefas complexas role Manipulação (ou Carisma) + Animalismo. Também convoca criaturas da região da espécie escolhida."),
@@ -41,6 +52,8 @@ export const V5_DISCIPLINES: DisciplineInfo[] = [
     name: "Auspícios",
     summary: "Sentidos aguçados, percepção sobrenatural e premonições.",
     powers: [
+      pg(2, "Revelar o Temperamento", "Reveal Temperament", "Um Rouse Check, teste de Inteligência + Auspícios vs. Compostura + Subterfúgio. Fareja a Ressonância (e Dyscrasias) do sangue de um mortal; contra um vampiro, revela a Ressonância da última vítima dele — e, num crítico, o método e o Tipo de Predador."),
+      pg(3, "Falha Fatal", "Fatal Flaw", "Amálgama com Oblivion 1. Um Rouse Check; gasta um turno observando; teste de Inteligência + Auspícios vs. Compostura (fraqueza mental) ou Vigor (física) + Subterfúgio. Revela a menor defesa do alvo: +2 dados em ataques contra ela (e +1 dado a aliados a quem você contar). Dura uma cena."),
       pc(2, "Obeah", "Obeah", "Amálgama com Fortitude 1. Um Rouse Check (e Força de Vontade conforme o caso), teste de Compostura + Auspícios (Dif 2). Cura dano Superficial de Força de Vontade de OUTRA pessoa igual à margem (ou 1 Agravado a cada 3 sucessos); em mortais, também os acalma. Um alvo por noite. Poder dos Salubri."),
       pc(5, "Aliviando a Alma Bestial", "Unburdening the Bestial Soul", "Amálgama com Dominação 3 (pré-requisito Obeah). Dois Rouse Checks e ganha 1 Mancha; uma cena a sós, teste de Compostura + Auspícios vs. Humanidade do alvo. Remove Manchas de um vampiro arrependido (ou o blinda contra Manchas futuras); num crítico, pode restaurar 1 de Humanidade — só uma vez na eternidade. Apenas em vampiros de Humanidade menor que a sua. Assinatura dos Salubri."),
       p(1, "Sentidos Aguçados", "Heightened Senses", "Passiva, ativável de graça. Amplia os cinco sentidos a níveis sobre-humanos (some a Auspícios em testes de percepção). Estímulos súbitos e intensos podem exigir um teste para não ser sobrecarregado."),
@@ -58,6 +71,10 @@ export const V5_DISCIPLINES: DisciplineInfo[] = [
     name: "Celeridade",
     summary: "Velocidade e reflexos sobre-humanos.",
     powers: [
+      pg(2, "Serviço Relâmpago", "Rush Job", "Um Rouse Check. Completa em segundos tarefas de perícia que levariam turnos inteiros — trata uma ação completa como ação menor. Não acelera ataques, defesas nem tarefas resistidas. Dura uma cena."),
+      pg(3, "Serpentear", "Weaving", "Pré-requisito: Reflexos Rápidos. Um Rouse Check. Enxerga projéteis como se fossem lentos: não sofre redução de dados ao se defender de múltiplos ataques à distância (Destreza + Atletismo) e ainda soma a Celeridade a todas essas defesas. Dura uma cena."),
+      pg(4, "Ímpeto Borrado", "Blurred Momentum", "Um Rouse Check por turno. Seu movimento vira um borrão trêmulo: ataques com menos sucessos que a sua Celeridade sempre erram — mesmo por surpresa ou Golpe Relâmpago."),
+      pg(5, "Golpe Invisível", "Unseen Strike", "Amálgama com Ofuscação 4 (pré-requisito Lampejo). Dois Rouse Checks, teste de Destreza + Celeridade vs. Raciocínio + Prontidão. Some da vista e reaparece junto ao inimigo para um golpe: um ataque-surpresa contra Dificuldade 1 (se o alvo perder o teste resistido)."),
       p(1, "Graça Felina", "Cat's Grace", "Passiva, sem custo. Equilíbrio perfeito: passa automaticamente em qualquer teste para manter o equilíbrio, andar em fios, beiras estreitas, etc."),
       p(1, "Reflexos Rápidos", "Rapid Reflexes", "Passiva, sem custo. Reações velozes: permite ações reflexas rápidas e sacar armas ou reagir sem gastar a ação, além de reduzir surpresa."),
       p(2, "Fugacidade", "Fleetness", "Um Rouse Check. Soma a pontuação de Celeridade a qualquer teste de Destreza (fora combate) e à Defesa durante a rodada — reflexos e agilidade sobre-humanos."),
@@ -73,6 +90,9 @@ export const V5_DISCIPLINES: DisciplineInfo[] = [
     name: "Dominação",
     summary: "Controle da mente através de um olhar penetrante. Exige contato visual e uma língua que a vítima entenda.",
     powers: [
+      pg(1, "Devoção Servil", "Slavish Devotion", "Amálgama com Fortitude 1. Passiva, sem custo. Quem já está sob a sua Dominação resiste melhor à Dominação de terceiros: qualquer tentativa alheia sofre penalidade de dados igual à sua Fortitude."),
+      pg(4, "Domínio Ancestral", "Ancestral Dominion", "Amálgama com Feitiçaria de Sangue 2 (pré-requisito Hipnotizar). Um Rouse Check, teste de Manipulação + Dominação vs. Determinação + Ocultismo. Compele um descendente de sangue a agir por você — sem contato visual nem palavra, transmitido de Sangue a Sangue (desde que não se fira). Cada geração de distância dá +1 dado de resistência ao alvo."),
+      pg(4, "Implantar Sugestão", "Implant Suggestion", "Amálgama com Presença 1. Um Rouse Check, teste de Manipulação + Dominação vs. Compostura + Determinação (mortal despreparado dispensa teste). Altera a personalidade ou as opiniões do alvo — desejar um estranho, largar a família, desconfiar das próprias crenças. Mudanças radicais permitem resistir. Dura uma cena."),
       pc(2, "Favor do Domitor", "Domitor's Favor", "Um Rouse Check. Um servo preso a você por Laço de Sangue tem muito mais dificuldade de resistir: as rolagens de Desafio dele sofrem −3 dados e ele não pode gastar Força de Vontade nelas; em falha total, o Laço não enfraquece naquele mês. Favorito dos Tzimisce. Duração: um mês."),
       p(1, "Nublar a Memória", "Cloud Memory", "Um Rouse Check, teste de Carisma + Dominação contra Inteligência + Firmeza se resistido. Apaga da vítima a lembrança do último minuto ou de um momento recente específico."),
       p(1, "Compelir", "Compel", "Sem custo (um Rouse Check se a vítima resistir). Uma ordem curta de uma frase que a vítima obedece imediatamente e de forma literal; Carisma + Dominação contra Inteligência + Firmeza."),
@@ -89,6 +109,9 @@ export const V5_DISCIPLINES: DisciplineInfo[] = [
     name: "Fortitude",
     summary: "Tenacidade sobrenatural: resistir a dano, fogo e luz solar.",
     powers: [
+      pg(2, "Perseverança da Terra", "Earth's Perseverance", "Um Rouse Check. Fica quase impossível de mover: só se desloca se quiser (não protege de ser esmagado ou despedaçado, só de ser empurrado/arrastado). Dura uma cena."),
+      pg(2, "Vitae Revigorante", "Invigorating Vitae", "Amálgama com Auspícios 1. Fortalece o poder de cura do seu sangue nos vivos: cada Rouse Check de vitae doado cura 3 níveis de dano (inclusive Agravado) em quem o bebe (mortais e ghouls)."),
+      pg(4, "Escamas da Górgona", "Gorgon's Scales", "Um Rouse Check. Concede imunidades/resistências conforme a Ressonância do último sangue bebido: Colérico (estaca no coração não paralisa), Melancólico (Agravado de fogo vira Superficial), Fleumático (+4 dados p/ resistir a Auspícios), Sanguíneo (Agravado de sol vira Superficial)."),
       pc(2, "Valeren", "Valeren", "Amálgama com Auspícios 1. Um Rouse Check (e Vitalidade conforme o caso), teste de Inteligência + Fortitude (Dif 2). Cura dano Superficial de Vitalidade de OUTRO vampiro igual à margem (ou 1 Agravado a cada 3 sucessos). Só em vampiros, um alvo por noite. Cura dos Salubri."),
       p(1, "Resiliência", "Resilience", "Passiva, sem custo. Soma a pontuação de Fortitude à Vitalidade para fins de aparar dano, reduzindo o dano superficial sofrido a cada ataque."),
       p(1, "Mente Inabalável", "Unswayable Mind", "Passiva; um Rouse Check para reforçar. Concede dados extras para resistir a coerção, leitura de mente, intimidação e manipulação sobrenatural."),
@@ -105,6 +128,8 @@ export const V5_DISCIPLINES: DisciplineInfo[] = [
     name: "Ofuscação",
     summary: "Permanecer obscuro e invisível, mesmo em meio a multidões.",
     powers: [
+      pg(3, "Labirinto Mental", "Mental Maze", "Amálgama com Dominação 1. Um Rouse Check, teste de Carisma + Ofuscação vs. Raciocínio + Determinação. Tira todo o senso de direção e localização do alvo, prendendo-o no ambiente (não acha portas nem saídas). Dura uma cena."),
+      pg(3, "Máscara Mental", "Mind Masque", "Amálgama com Dominação 2. Um Rouse Check. Cria uma persona falsa que engana quem tenta ler sua mente, aura ou emoções (Auspícios, telepatia etc.): quem sonda vê o disfarce, não você. Dura uma cena."),
       pc(2, "Quimerismo", "Chimerstry", "Amálgama com Presença 1. Um Rouse Check, teste de Manipulação + Ofuscação. Cria uma alucinação breve e vívida em um único sentido (um vulto, uma voz), distraindo quem está à vista: −2 dados na próxima ação e, se falhar em Compostura + Raciocínio, perde a próxima ação. Não pode ser gravada. Poder dos Ravnos."),
       pc(3, "Fata Morgana", "Fata Morgana", "Amálgama com Presença 2. Um Rouse Check, teste de Manipulação + Ofuscação (Dif = 1 + nº de sentidos afetados). Cria alucinações elaboradas e multissensoriais que várias vítimas veem, ouvem e sentem — mas que não alteram a realidade (não ferem, não bloqueiam a visão, não são gravadas). Vítimas podem descrer com Inteligência + Prontidão. Dura uma cena. Dos Ravnos."),
       p(1, "Manto de Sombras", "Cloak of Shadows", "Passiva, sem custo. Fica imperceptível enquanto permanecer imóvel e junto a alguma cobertura (parede, sombra, canto); mover-se ou ser procurado ativamente quebra o efeito."),
@@ -122,6 +147,10 @@ export const V5_DISCIPLINES: DisciplineInfo[] = [
     name: "Potência",
     summary: "Força e vigor físicos sobre-humanos.",
     powers: [
+      pg(2, "Agarre Implacável", "Relentless Grasp", "Um Rouse Check. Seu aperto fica quase impossível de soltar: some a Potência como sucessos automáticos em qualquer tentativa de segurar algo (inclusive manter um agarrão — mas não o agarrão inicial). Dura uma cena."),
+      pg(3, "Demolidor", "Wrecker", "Pré-requisito: Proeza. Sem custo extra. Ao usar Proeza para feitos de força que danificam ou destroem objetos inanimados, conta a Potência em dobro. Não serve em combate (leva tempo demais para acumular)."),
+      pg(4, "Aterrissagem Devastadora", "Crash Down", "Pré-requisito: Salto Elevado. Um Rouse Check. Ao pousar de um Salto Elevado, gera uma onda de impacto numa pequena área: dano Superficial a quem está por perto e derruba os atingidos."),
+      pg(5, "Martelo Sutil", "Subtle Hammer", "Sem custo. Concentra toda a força em movimentos mínimos: ataques desarmados e feitos de força viram ações menores de dois dados. Não te deixa mais forte — só aplica melhor a força que você já tem."),
       p(1, "Corpo Letal", "Lethal Body", "Passiva; um Rouse Check para intensificar. Golpes desarmados causam dano agravado a mortais e ignoram armaduras leves — punhos e chutes viram armas mortais."),
       p(1, "Salto Elevado", "Soaring Leap", "Passiva, sem custo. Salta distâncias horizontais e alturas enormes de um só pulo, alcançando telhados ou cruzando ruas sem impulso."),
       p(2, "Proeza", "Prowess", "Um Rouse Check. Soma a pontuação de Potência ao dano de ataques corpo a corpo e a todos os feitos de força bruta (arrombar, levantar, arremessar) por uma cena."),
@@ -137,6 +166,10 @@ export const V5_DISCIPLINES: DisciplineInfo[] = [
     name: "Presença",
     summary: "Atrair, influenciar e controlar emoções.",
     powers: [
+      pg(1, "Olhos da Serpente", "Eyes of the Serpent", "Amálgama com Proteanismo 1. Os olhos viram fendas de serpente e prendem o olhar de um mortal enquanto houver contato visual — ele fica imóvel (ainda fala, mas não grita). Para paralisar um vampiro, vença um teste resistido; ele escapa gastando Força de Vontade."),
+      pg(2, "Melpominee", "Melpominee", "Sua voz vira a de uma sereia: pode usar Admiração, Intimidar, Olhar Aterrador, Enlevo e Majestade só pela voz — sem ver o alvo nem estar presente, bastando ser ouvido. Não funciona por gravação/transmissão."),
+      pg(3, "Voz Projetada", "Thrown Voice", "Amálgama com Auspícios 1. Um Rouse Check. Faz sua voz sair de qualquer ponto ao seu alcance de visão (de um sussurro a um grito), como se você estivesse lá. Dura uma cena."),
+      pg(4, "Impregnar o Edifício", "Suffuse the Edifice", "Estende Admiração, Intimidar e Majestade pela própria estrutura de um prédio: quem está dentro ou o observa reage ao lugar como se você estivesse presente (os bônus se aplicam às reações ao ambiente). Use Majestade com cautela — o efeito é volátil."),
       p(1, "Admiração", "Awe", "Um Rouse Check, teste de Carisma + Presença. Torna-se magneticamente atraente e cativante para todos por perto, que passam a admirá-lo e a lhe dar o benefício da dúvida por uma cena."),
       p(1, "Intimidar", "Daunt", "Um Rouse Check (ou passiva). Projeta uma aura ameaçadora que afasta, intimida e desencoraja os outros de se aproximarem ou confrontá-lo; some a Presença a testes de intimidação."),
       p(2, "Beijo Persistente", "Lingering Kiss", "Passiva ao alimentar-se. Sua mordida causa êxtase viciante que beneficia a vítima temporariamente, mas cria dependência — ela passa a desejar o próximo beijo."),
