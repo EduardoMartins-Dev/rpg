@@ -234,7 +234,7 @@ export interface PowerTextResponse { systemId: string; power: string; text: stri
 export interface DisciplineView { name: string; summary: string; powers: PowerView[]; }
 export interface PredatorView { name: string; summary: string; disciplines: string[]; source?: "base" | "companion" | "players_guide"; }
 export interface ResonanceView { name: string; emotion: string; disciplines: string[]; }
-export interface CoterieView { name: string; summary: string; }
+export interface CoterieView { name: string; summary: string; source?: "base" | "companion" | "players_guide"; }
 export interface MeritView { name: string; group: string; hint?: string; desc?: string; source?: "base" | "companion" | "players_guide"; }
 export interface V5Catalog {
   types: string[]; clans: ClanView[]; abilities: AbilityGroup[];

@@ -269,7 +269,7 @@ export function resonances(): Resonance[] {
   return RESONANCES;
 }
 
-export type CoterieType = { name: string; summary: string };
+export type CoterieType = { name: string; summary: string; source?: Source };
 
 const COTERIES: CoterieType[] = [
   { name: "Grupo de Caça", summary: "Captura presas para terceiros ou para a própria mesa." },
@@ -278,6 +278,23 @@ const COTERIES: CoterieType[] = [
   { name: "Questári", summary: "Busca realizar um grande empreendimento ou objetivo." },
   { name: "Recência", summary: "Administra os negócios até que um ancião retorne." },
   { name: "Coterie Social", summary: "Reúne-se por status, prazer e influência." },
+  // --- Players Guide (Guia do Jogador) ---
+  { name: "Culto de Sangue", summary: "Controla um culto humano e se alimenta dele; domina magias de sangue e converte fiéis em poder.", source: "players_guide" },
+  { name: "Cérbero", summary: "Guarda um local importante (Elísio, marco), aprende seus segredos e troca acesso por poder.", source: "players_guide" },
+  { name: "Campeões", summary: "Protege o domínio de predadores piores e combate o crime — sem perder a esperança nem a Humanidade.", source: "players_guide" },
+  { name: "Comando", summary: "Unidade de combate a serviço de um mestre: explora e explora defesas inimigas mantendo coesão.", source: "players_guide" },
+  { name: "Corporação", summary: "Cuida dos negócios, cresce o valor aos acionistas, infiltra-se no poder mortal e desvia por cima.", source: "players_guide" },
+  { name: "Emissários", summary: "Media entre facções, cria alianças e terreno comum, identifica um inimigo em comum.", source: "players_guide" },
+  { name: "Família", summary: "Mantém a domesticidade, expande laços de sangue, perpetua a linhagem e negocia Casamentos de Sangue.", source: "players_guide" },
+  { name: "Gangue de Presas", summary: "Não-mortos que cometem crimes: estudam alvos, dão o golpe e defendem o território.", source: "players_guide" },
+  { name: "Fugitivos", summary: "Manter-se escondido e em movimento, limpar o nome e atrair os caçadores para uma emboscada.", source: "players_guide" },
+  { name: "Guardiões do Portão", summary: "Vigiam o Véu, lidam com wraiths, caçam fantasmas e controlam (ou saqueiam) sepulturas.", source: "players_guide" },
+  { name: "Marechal", summary: "Serve e protege o senhor da cidade, faz o trabalho sujo e alavanca o acesso ao poder.", source: "players_guide" },
+  { name: "Plumaires", summary: "Socializa, cultiva uma arte ou interesse em comum, ofusca rivais e descobre novos talentos.", source: "players_guide" },
+  { name: "Sabotadores", summary: "Escondidos, atacam os inimigos de forma dramática ou astuta — na política ou por meio de mortais.", source: "players_guide" },
+  { name: "Sbirri", summary: "Vivem sob disfarce: coletam informação e mantêm uma rede de espiões e traidores.", source: "players_guide" },
+  { name: "Vehme", summary: "Polícia secreta da Máscara: caça e subjuga quem a viola, leva a julgamento e executa a sentença.", source: "players_guide" },
+  { name: "Sentinelas", summary: "Patrulham e protegem, expandem o poder da seita e enfrentam oponentes, lobisomens e o Sabá.", source: "players_guide" },
 ];
 
 export function coterieTypes(): CoterieType[] {

@@ -45,7 +45,7 @@ export async function GET(req: NextRequest) {
       disciplines: r.disciplines,
     }));
 
-    const coterieTypes = V5Catalog.coterieTypes().map((c) => ({ name: c.name, summary: c.summary }));
+    const coterieTypes = V5Catalog.coterieTypes().map((c) => ({ name: c.name, summary: c.summary, source: c.source }));
 
     return NextResponse.json({
       types: [...V5Catalog.CHARACTER_TYPES],

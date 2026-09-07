@@ -328,7 +328,7 @@ export function DynamicSheet({
               <div className="grid2" style={{ marginTop: 12 }}>
                 {catalog?.coterieTypes && (
                   <CatalogSelect label="Coterie" value={str(sheet.coterie)} onChange={(v) => set("coterie", v || undefined)}
-                    options={catalog.coterieTypes.map((c) => ({ name: c.name, detail: c.summary }))} />
+                    options={catalog.coterieTypes.map((c) => ({ name: c.name, detail: c.summary, tag: c.source === "players_guide" ? "PG" : c.source === "companion" ? "Companion" : undefined }))} />
                 )}
                 {catalog?.resonances && (
                   <CatalogSelect label="Ressonância do sangue" value={str(sheet.resonance)} onChange={(v) => set("resonance", v || undefined)}
@@ -836,7 +836,8 @@ function AttrBudget({ attributes, attrs }: { attributes: string[]; attrs: Record
 }
 
 function CatalogSelect({ label, value, onChange, options }: {
-  label: string; value: string; onChange: (v: string) => void; options: { name: string; detail: string }[];
+  label: string; value: string; onChange: (v: string) => void;
+  options: { name: string; detail: string; tag?: string }[];
 }) {
   const sel = options.find((o) => o.name === value);
   return (
@@ -844,9 +845,9 @@ function CatalogSelect({ label, value, onChange, options }: {
       <label>{label}</label>
       <select value={value} onChange={(e) => onChange(e.target.value)} style={{ marginTop: 7 }}>
         <option value="">—</option>
-        {options.map((o) => <option key={o.name} value={o.name}>{o.name}</option>)}
+        {options.map((o) => <option key={o.name} value={o.name}>{o.name}{o.tag ? ` (${o.tag})` : ""}</option>)}
       </select>
-      {sel && <div className="muted" style={{ fontSize: 12, marginTop: 6 }}>{sel.detail}</div>}
+      {sel && <div className="muted" style={{ fontSize: 12, marginTop: 6 }}>{sel.detail}{sel.tag ? ` · ${sel.tag}` : ""}</div>}
     </div>
   );
 }
