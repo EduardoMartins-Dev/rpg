@@ -202,6 +202,61 @@ export const V5_ADVANTAGES: MeritOption[] = [
     name: "Intocável", group: "Outros", hint: "5", source: "players_guide",
     desc: "Os poderosos relutam em te punir. 1x por história, escapa de toda punição oficial por um crime que normalmente te destruiria ou exilaria da seita (ainda pode haver represálias por vias informais).",
   },
+  // --- Players Guide · Méritos de Caitiff ---
+  {
+    name: "Sangue Favorecido", group: "Caitiff", hint: "4", source: "players_guide",
+    desc: "Só para Caitiff. Pode comprar pontos em qualquer Disciplina mesmo sem nunca ter provado o sangue de um vampiro dela. Não combina com o Defeito Sangue Confuso.",
+  },
+  {
+    name: "Marca de Caim", group: "Caitiff", hint: "2", source: "players_guide",
+    desc: "Só para Caitiff. Uma marca (física ou espiritual) que impõe respeito: +2 dados para intimidar/coagir vampiros que creem no mito de Caim; quem tenta diablerie em você não soma a Potência de Sangue e qualquer falha vira falha bestial.",
+  },
+  {
+    name: "Pássaro Imitador", group: "Caitiff", hint: "3", source: "players_guide",
+    desc: "Só para Caitiff. Após beber 1 dado de Fome do sangue de um vampiro, por uma noite pode usar UM poder de Disciplina dele (de nível até sua maior Disciplina), sofrendo o bane de clã do doador enquanto isso. Um poder emprestado por noite.",
+  },
+  {
+    name: "Marcado pelo Sol", group: "Caitiff", hint: "5", source: "players_guide",
+    desc: "Só para Caitiff. Raro Andarilho Diurno: no 1º turno exposto ao sol numa cena não sofre dano de Vitalidade, leva 1 de Agravado de FdV e passa automático em testes de frenesi de terror; pelo resto da cena, todo Agravado de sol vira Superficial.",
+  },
+  {
+    name: "Tio Presas", group: "Caitiff", hint: "3", source: "players_guide",
+    desc: "Só para Caitiff. Os sangues-fracos locais te veem como mentor: acesso fácil a uma coterie de 3–5 deles (como um grupo de Aliados, porém mortos-vivos). Não combina com o Defeito Liquidante.",
+  },
+  // --- Players Guide · Méritos de Sangue-Fraco (sem custo em pontos) ---
+  {
+    name: "Sangue Repugnante", group: "Sangue-Fraco", hint: "—", source: "players_guide",
+    desc: "Só para sangue-fraco. Seu sangue enoja outros vampiros: eles vomitam e abortam a mordida após o dano inicial, e quem insiste em beber gasta 2 de Força de Vontade por turno. Não afeta mortais nem a Alquimia.",
+  },
+  {
+    name: "À Prova de Fé", group: "Sangue-Fraco", hint: "—", source: "players_guide",
+    desc: "Só para sangue-fraco. Você está perto demais da mortalidade para ser afetado pela Fé Verdadeira.",
+  },
+  {
+    name: "Pouco Apetite", group: "Sangue-Fraco", hint: "—", source: "players_guide",
+    desc: "Só para sangue-fraco. Com Fome 0 ou 1, ao subir a Fome no anoitecer, role dois dados no Rouse Check e fique com o melhor.",
+  },
+  {
+    name: "Sonhador Lúcido", group: "Sangue-Fraco", hint: "—", source: "players_guide",
+    desc: "Só para sangue-fraco. Você sonha e pode controlar os sonhos: 1x por sessão, dormindo de dia, pode pedir ao Narrador uma pista das memórias da noite anterior ou da trama.",
+  },
+  {
+    name: "Semblante Mortal", group: "Sangue-Fraco", hint: "—", source: "players_guide",
+    desc: "Só para sangue-fraco. Sua aura parece mortal, não vampírica, para quem detecta o sobrenatural; +2 dados para parecer mortal por outros meios (maquiagem etc.).",
+  },
+  {
+    name: "Bebedor Ágil", group: "Sangue-Fraco", hint: "—", source: "players_guide",
+    desc: "Só para sangue-fraco. Você bebe com delicadeza: sacia 1 de Fome em um turno e lambe a ferida, fechando-a. Uma vez por cena.",
+  },
+  // --- Players Guide · Méritos de Carniçal ---
+  {
+    name: "Empatia de Sangue", group: "Carniçal", hint: "2", source: "players_guide",
+    desc: "Só para carniçais. Sente o estado emocional/psicológico do seu domitor à distância (até ~1,6 km), mesmo sem estar presente — percebe se ele corre perigo ou precisa de você. Não é telepatia; o domitor é aquele cujo sangue você bebeu por último.",
+  },
+  {
+    name: "Aura Imprópria", group: "Carniçal", hint: "2", source: "players_guide",
+    desc: "Só para carniçais. Sua aura ficou abafada, quase indistinguível da de um Membro; pode fazer os outros te superestimarem — ou gerar situações constrangedoras.",
+  },
 ];
 
 // Defeitos, agrupados pelo Antecedente/Mérito de onde derivam.
@@ -392,6 +447,77 @@ export const V5_FLAWS: MeritOption[] = [
   {
     name: "Fraco de Vontade", group: "Outros", hint: "2", source: "players_guide",
     desc: "Você custa a impor a própria vontade diante da de outro. −1 dado em paradas Sociais contra seu líder ou superior; e, mesmo ciente de uma tentativa de Dominação ou Presença, não pode usar a resistência ativa contra ela.",
+  },
+  // --- Players Guide · Defeitos de Caitiff ---
+  {
+    name: "Vitae Corrompido", group: "Caitiff", hint: "2", source: "players_guide",
+    desc: "Só para Caitiff. Todo mortal que você Abraça ou mata se alimentando volta como um wight (morto faminto) em poucas noites — e o Príncipe/Barão pode te visitar por causa disso.",
+  },
+  {
+    name: "Maldição de Clã", group: "Caitiff", hint: "2", source: "players_guide",
+    desc: "Só para Caitiff. Você sofre o bane de um clã à sua escolha (geralmente o do seu senhor), com Gravidade da Perdição pela metade (mín. 1).",
+  },
+  {
+    name: "Servo por Dívida", group: "Caitiff", hint: "2", source: "players_guide",
+    desc: "Só para Caitiff. Você deve vários favores (boons) a um vampiro de Status alto; ele tem +2 dados em conflitos sociais contra você e nunca considera a dívida quitada. Recusar pagar adiciona o Defeito Rejeitado.",
+  },
+  {
+    name: "Liquidante", group: "Caitiff", hint: "1", source: "players_guide",
+    desc: "Só para Caitiff. Os sangues-fracos te chamam de 'alcoviteiro' e te evitam: −2 dados em testes Sociais com eles (exceto Intimidação). Não combina com Tio Presas.",
+  },
+  {
+    name: "Sangue Confuso", group: "Caitiff", hint: "1", source: "players_guide",
+    desc: "Só para Caitiff. Seu Sangue não recorda a própria natureza: mesmo já tendo uma Disciplina, precisa beber o sangue de quem a possui para comprar pontos nela. Não combina com Sangue Favorecido.",
+  },
+  {
+    name: "Presságio Ambulante", group: "Caitiff", hint: "2", source: "players_guide",
+    desc: "Só para Caitiff. Toda premonição, scrying ou adivinhação no domínio aponta você como fonte de desastre e desgraça — oráculos te apontam mesmo sem estarem te procurando.",
+  },
+  // --- Players Guide · Defeitos de Sangue-Fraco (sem custo em pontos) ---
+  {
+    name: "Heliofobia", group: "Sangue-Fraco", hint: "—", source: "players_guide",
+    desc: "Só para sangue-fraco. Você teme o sol como um vampiro pleno: está sujeito a frenesi de terror diante da luz solar.",
+  },
+  {
+    name: "Terrores Noturnos", group: "Sangue-Fraco", hint: "—", source: "players_guide",
+    desc: "Só para sangue-fraco. Seus sonhos voltam como pesadelos nas piores horas: 1x por sessão, sob estresse, −1 dado em todas as ações pelo resto da cena.",
+  },
+  {
+    name: "Portador de Pragas", group: "Sangue-Fraco", hint: "—", source: "players_guide",
+    desc: "Só para sangue-fraco. Você ainda pega doenças mortais: a cada Fome saciada, role 1 dado — se cair 1, contraiu algo (e pode infectar de quem se alimentou). Só cura saciando a Fome até 0.",
+  },
+  {
+    name: "Bebedor Desleixado", group: "Sangue-Fraco", hint: "—", source: "players_guide",
+    desc: "Só para sangue-fraco. Sua mordida é grosseira: ao se alimentar, teste Destreza + Medicina (Dif = Fome saciada) para fechar as marcas; falhando, a vítima pode sangrar até morrer, com ferimentos que ameaçam a Máscara.",
+  },
+  {
+    name: "Apagado pelo Sol", group: "Sangue-Fraco", hint: "—", source: "players_guide",
+    desc: "Só para sangue-fraco. Você não usa Disciplinas (nem Alquimia) sob o sol, e poderes ativos cessam ao entrar nele; à luz do dia em ambiente fechado, usa-os com −2 dados, desde que evite qualquer réstia de sol.",
+  },
+  {
+    name: "Estigma Sobrenatural", group: "Sangue-Fraco", hint: "—", source: "players_guide",
+    desc: "Só para sangue-fraco. Algo em você (cheiro, aura) denuncia sua presença a outros seres sobrenaturais: −2 dados em Furtividade e afins contra oponentes sobrenaturais, incluindo vampiros.",
+  },
+  {
+    name: "Presença Crepuscular", group: "Sangue-Fraco", hint: "—", source: "players_guide",
+    desc: "Só para sangue-fraco. Você incomoda: mortais não querem chegar perto e Membros gostam ainda menos de você que dos outros sangue-fracos. −1 dado em testes Sociais com qualquer um que não seja sangue-fraco.",
+  },
+  {
+    name: "Fome Sem Fim", group: "Sangue-Fraco", hint: "—", source: "players_guide",
+    desc: "Só para sangue-fraco. Sua Besta sempre quer mais: ao se alimentar numa cena, sacia 1 de Fome a menos que os outros sangue-fracos. Uma vez por cena.",
+  },
+  // --- Players Guide · Defeitos de Carniçal ---
+  {
+    name: "Sangue Nefasto", group: "Carniçal", hint: "1–2", source: "players_guide",
+    desc: "Só para carniçais. Você sofre o bane do clã do seu primeiro domitor (Lasombra, Malkavian, Ministry, Nosferatu, Ravnos, Salubri ou Toreador), em um nível por ponto do Defeito. Trocar de domitor não muda o bane.",
+  },
+  {
+    name: "Maldição da Anciã", group: "Carniçal", hint: "2", source: "players_guide",
+    desc: "Só para carniçais. Ao beber o vitae do domitor, você envelheceu rápido: aparenta pelo menos uma década a mais e tem 1 caixa a menos na trilha de Vitalidade. O Abraço anula este Defeito.",
+  },
+  {
+    name: "Presas Perturbadoras", group: "Carniçal", hint: "1", source: "players_guide",
+    desc: "Só para carniçais. O Sangue te deu presas estranhas e curtas que incomodam quem as percebe: −1 dado em testes Sociais com mortais.",
   },
 ];
 
