@@ -229,7 +229,7 @@ export interface BloodPotencyView {
   potency: number; bloodSurge: number; rouseReroll: number;
   disciplineBonus: number; baneSeverity: number; mendingRouse: number;
 }
-export interface PowerView { level: number; name: string; en?: string | null; desc?: string | null; source?: "base" | "companion" | "players_guide"; }
+export interface PowerView { level: number; name: string; en?: string | null; desc?: string | null; source?: "base" | "companion" | "players_guide"; kind?: "ritual" | "ceremony"; }
 export interface PowerTextResponse { systemId: string; power: string; text: string | null; }
 export interface DisciplineView { name: string; summary: string; powers: PowerView[]; }
 export interface PredatorView { name: string; summary: string; disciplines: string[]; source?: "base" | "companion" | "players_guide"; }

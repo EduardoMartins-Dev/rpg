@@ -10,7 +10,10 @@
 /** Origem do conteúdo: base = Livro Básico; companion = Guia Suplementar (V5
  * Companion); players_guide = Guia do Jogador (V5 Players Guide). */
 export type Source = "base" | "companion" | "players_guide";
-export type Power = { level: number; name: string; en: string | null; desc: string | null; source?: Source };
+/** kind: "power" (padrão) | "ritual" (Feitiçaria de Sangue) | "ceremony" (Oblivion).
+ *  Rituais/Cerimônias são aprendidos à parte dos poderes, mas têm nível 1–5. */
+export type PowerKind = "ritual" | "ceremony";
+export type Power = { level: number; name: string; en: string | null; desc: string | null; source?: Source; kind?: PowerKind };
 export type DisciplineInfo = { name: string; summary: string; powers: Power[] };
 
 function p(level: number, name: string, en: string | null = null, desc: string | null = null): Power {
@@ -25,6 +28,16 @@ function pc(level: number, name: string, en: string, desc: string): Power {
 // Poder introduzido no V5 Players Guide (Guia do Jogador) — marcado para a UI.
 function pg(level: number, name: string, en: string, desc: string): Power {
   return { level, name, en, desc, source: "players_guide" };
+}
+
+// Ritual de Feitiçaria de Sangue (V5 Players Guide) — aprendido à parte, mas com nível.
+function rit(level: number, name: string, en: string, desc: string): Power {
+  return { level, name, en, desc, source: "players_guide", kind: "ritual" };
+}
+
+// Cerimônia de Oblivion (V5 Players Guide) — aprendida à parte, mas com nível.
+function cer(level: number, name: string, en: string, desc: string): Power {
+  return { level, name, en, desc, source: "players_guide", kind: "ceremony" };
 }
 
 export const V5_DISCIPLINES: DisciplineInfo[] = [
@@ -203,6 +216,17 @@ export const V5_DISCIPLINES: DisciplineInfo[] = [
     name: "Feitiçaria de Sangue",
     summary: "Magia do sangue (exclusiva de alguns clãs); além dos poderes, há rituais aprendidos à parte.",
     powers: [
+      rit(1, "Apagar o Medo", "Douse the Fear", "Ritual. Tocando um objeto sagrado numa chama, dispersa por uma noite o medo vampírico do fogo: +2 dados para resistir ao Rötschreck (num crítico, nenhum teste de terror)."),
+      rit(1, "Selar a Marca", "Seal the Brand", "Ritual. Derramando prata derretida, torna permanente uma tatuagem, marca ou modificação corporal do alvo (que normalmente some no sono diurno); causa 1 de dano Superficial."),
+      rit(2, "Como Névoa sobre a Água", "As Fog on Water", "Ritual. Caminha silenciosamente sobre qualquer massa d'água como se fosse sólida, névoa aos pés, pelo resto da noite."),
+      rit(2, "Calix Secretus", "Calix Secretus", "Ritual. Transforma um objeto comum num receptáculo para armazenar sangue (sacia 1 de Fome a cada 2 Rouse Checks guardados), recuperável com uma palavra de comando."),
+      rit(2, "Toque Soporífero", "Soporific Touch", "Ritual. Converte o vitae num narcótico de toque: a vítima fica desinibida e vulnerável a Presença/Dominação e à coerção — penalidade em resistências de Compostura/Determinação igual à margem, por uma cena."),
+      rit(3, "Fogo no Sangue", "Fire in the Blood", "Ritual. Com uma amostra de sangue e um retrato do alvo, ferve o sangue dele à distância: cada sucesso de margem é 1 de Superficial + dor (−2 dados Físicos na cena; −3 num crítico). Uma vez por noite por vítima."),
+      rit(3, "Um com a Lâmina", "One with the Blade", "Ritual. Consagra uma arma predileta ao próprio vitae: ela nunca enferruja e, se ungida com sangue (1 turno, 1 Rouse Check), dá +2 dados em combate por uma cena. Só uma arma consagrada por vez."),
+      rit(4, "Banquete de Cinzas", "Feast of Ashes", "Ritual. Nome do alvo escrito e queimado: por uma noite ele não consegue beber sangue (vomita como comida mortal) e só cinzas saciam — a Fome não baixa de 3."),
+      rit(4, "Memória Guiada", "Guided Memory", "Ritual. Bebendo o vitae de um Membro voluntário, revive as memórias do doador e pode 'destravar' temporariamente poderes de Disciplina e Méritos do Sangue dele (conforme o nível do ritual)."),
+      rit(4, "Correntes Invisíveis", "Invisible Chains of Binding", "Ritual. Um elo de corrente preparado, lançado aos pés do alvo, o prende no lugar por 1 hora por sucesso de margem (−4 dados em defesas físicas). O elo vira pó ao fim do efeito."),
+      rit(5, "Antebrachia Ignium", "Antebrachia Ignium", "Ritual. Cobrindo os braços com vitae e acendendo uma chama, manifesta fogo faminto da própria carne para atear em itens e pessoas, sem se queimar enquanto o poder durar."),
       p(1, "Vitae Corrosivo", "Corrosive Vitae", "Um Rouse Check. Torna uma porção do próprio sangue num ácido capaz de corroer e derreter matéria — metal, madeira, fechaduras, correntes."),
       p(1, "Gosto pelo Sangue", "A Taste for Blood", "Sem custo, ao provar um pouco do sangue de alguém. Teste de Inteligência + Feitiçaria de Sangue revela dados sobre a criatura: humano/vampiro, geração aproximada, ressonância e se se alimentou há pouco."),
       p(2, "Extinguir Vitae", "Extinguish Vitae", "Um Rouse Check, teste de Resolução + Feitiçaria de Sangue contra Firmeza + Compostura. Queima o sangue armazenado da vítima, forçando Rouse Checks extras que elevam a Fome dela — chega a arrastá-la para o frenesi."),
@@ -238,6 +262,15 @@ export const V5_DISCIPLINES: DisciplineInfo[] = [
     name: "Oblivion",
     summary: "Controle das sombras e do reino dos mortos — a arte sombria dos Lasombra e Hecata (Guia do Jogador). Além dos poderes há Cerimônias, aprendidas à parte (como os rituais). Usar Oblivion pode gerar Manchas.",
     powers: [
+      cer(1, "Dádiva da Falsa Vida", "The Gift of False Life", "Cerimônia (pré-requisito Cinzas às Cinzas). Anima um ou mais cadáveres para tarefas simples e repetitivas ('varra o chão', 'segure a porta') — número igual ao seu Oblivion. Corpos sem mente, que não se defendem e apodrecem normalmente."),
+      cer(1, "Convocar Espírito", "Summon Spirit", "Cerimônia (pré-requisito Elo Vinculante). Chama um wraith do Submundo por meio de um elo (fetter) dele; surge como sombra na parede, sem obrigação de servir — pode ajudar ou ser hostil. Some ao fim da cena."),
+      cer(2, "Despertar o Servo Homúnculo", "Awaken the Homuncular Servant", "Cerimônia (pré-requisito Onde o Véu se Adelgaça). Cria um homúnculo espião a partir de um membro ou pequeno animal morto, leal ao criador; espiona e transmite imagens telepaticamente. Fica inerte além de ~100 m de você."),
+      cer(2, "Compelir Espírito", "Compel Spirit", "Cerimônia (pré-requisito Onde o Véu se Adelgaça). Dobra um wraith à sua vontade num confronto (Oblivion vs. Determinação + Compostura); vencendo, ele executa tarefas — quanto mais sucessos, mais difíceis. Atacá-lo encerra a compulsão."),
+      cer(3, "Hospedar Espírito", "Host Spirit", "Cerimônia (pré-requisito Aura de Decomposição). Abre o próprio corpo à possessão de um wraith: enquanto ele o 'cavalga', +2 dados em Atributos Físicos, +2 de Vitalidade e conselhos/perícias dele — mas o wraith pode assumir o controle."),
+      cer(3, "Hordas Cambaleantes", "Shambling Hordes", "Cerimônia (pré-requisito Aura de Decomposição). Sacrificando um mortal sobre cadáveres, ergue mortos-vivos agressivos (número igual ao seu Oblivion) que atacam qualquer um ao redor sem ordens. Exige teste de frenesi de Fome (Dif 2) e pode gerar Manchas."),
+      cer(4, "Atar o Espírito", "Bind the Spirit", "Cerimônia (pré-requisito Praga Necrótica). Acorrenta um wraith (já compelido) a um local ou pessoa para assombrá-lo: a emoção intensa do wraith contamina quem estiver ali (−2 dados para resistir). Requer o sacrifício de um inocente."),
+      cer(4, "Rasgar o Véu", "Split the Veil", "Cerimônia (pré-requisito Praga Necrótica). Sacrificando um humano sobre um lençol de seda, corta um portal no véu: cada sucesso reduz em 1 a densidade do véu numa área; se chegar a 'ausente', wraiths transbordam para o mundo físico até o fim da sessão. Exige teste de frenesi de Fome (Dif 2)."),
+      cer(5, "Bênção Lazarena", "Lazarene Blessing", "Cerimônia (pré-requisito Skuld Consumada). Traz um corpo recém-morto de volta à vida — mas não como os entes queridos o lembram. Exige o sacrifício de um mortal, o coração de um mamífero e prata em pó."),
       pg(1, "Cinzas às Cinzas", "Ashes to Ashes", "Um Rouse Check, teste de Vigor + Oblivion vs. Vigor + Medicina/Fortitude (se o corpo estiver animado). Introduz o próprio vitae num cadáver (fresco ou antigo) e o desintegra em três turnos. Não funciona em vampiros."),
       pg(1, "Elo Vinculante", "The Binding Fetter", "Sem custo, teste de Raciocínio + Oblivion. Identifica objetos ou locais que servem de 'elos' (fetters) que prendem um fantasma à existência — cada um com sua aura —, ajudando a manipular o morto."),
       pg(1, "Visão do Oblivion", "Oblivion's Sight", "Sem custo. Os olhos ficam negros: enxerga na escuridão total (ignora penalidades de pouca luz) e vê fantasmas que não estejam se ocultando. Os olhos negros dão −2 dados em interações sociais com mortais."),

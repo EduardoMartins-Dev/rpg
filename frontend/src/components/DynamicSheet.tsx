@@ -755,6 +755,7 @@ function DisciplineCatalog({ list, onAdd, onAddPower }: {
                               aria-label={`Adicionar ${p.name} à ficha${p.source === "companion" ? " (V5 Companion)" : ""}`}
                               onClick={() => onAddPower(d.name, p.name, Number(lvl))}>
                               + {p.name}
+                              {p.kind === "ritual" ? <span className="kind-tag">Ritual</span> : p.kind === "ceremony" ? <span className="kind-tag">Cerimônia</span> : null}
                               <SourceDot source={p.source} />
                             </button>
                           </HoverTip>

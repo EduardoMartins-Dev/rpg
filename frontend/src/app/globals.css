@@ -391,6 +391,13 @@ th { font-size: .72rem; text-transform: uppercase; letter-spacing: .5px; color: 
 .src-pg { color: var(--err); background: rgba(217, 72, 59, .16); }
 .src-badge.src-pg { border-color: rgba(217, 72, 59, .45); }
 
+/* Rótulo de tipo de poder: Ritual (Feitiçaria de Sangue) / Cerimônia (Oblivion) */
+.kind-tag {
+  margin-left: 5px; padding: 0 5px; border-radius: 4px; vertical-align: middle;
+  font: 600 9px var(--ui); text-transform: uppercase; letter-spacing: .3px;
+  color: var(--muted); background: rgba(255, 255, 255, .06); border: 1px solid var(--border);
+}
+
 /* --- campaign detail ------------------------------------------------------- */
 .cam-hero { min-height: 150px; border-bottom: 1px solid var(--border); display: flex; align-items: flex-end; }
 .cam-hero .inner { padding: 0 38px 18px; display: flex; align-items: center; gap: 16px; width: 100%; }
