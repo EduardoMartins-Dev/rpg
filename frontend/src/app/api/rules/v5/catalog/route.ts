@@ -20,6 +20,7 @@ export async function GET(req: NextRequest) {
       bane: c.bane,
       compulsion: c.compulsion,
       source: c.source,
+      baneVariant: c.baneVariant,
     }));
 
     const abilities = (["FISICAS", "SOCIAIS", "MENTAIS"] as const).map(abilityGroup);

@@ -119,6 +119,15 @@ export function SheetView({ schema, sheet, catalog }: {
             </div>
           </div>
           <ClanTrait kind="bane" text={clan.bane} />
+          {clan.baneVariant && (
+            <div style={{ marginTop: 8, padding: "8px 12px", borderRadius: 8, borderLeft: "3px solid var(--muted)", background: "rgba(255,255,255,.03)" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, fontWeight: 700, color: "var(--muted)", fontSize: 13 }}>
+                <span aria-hidden>⛧</span><span>Bane alternativo</span>
+                <span className="src-badge src-pg" title="Do Guia do Jogador (V5 Players Guide)">PG</span>
+              </div>
+              <p style={{ margin: ".35rem 0 0", lineHeight: 1.5, fontSize: 13 }}>{clan.baneVariant}</p>
+            </div>
+          )}
           <ClanTrait kind="compulsion" text={clan.compulsion} />
         </div>
       )}

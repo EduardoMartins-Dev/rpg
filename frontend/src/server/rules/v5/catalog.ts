@@ -24,6 +24,7 @@ export type ClanInfo = {
   bane: string;
   compulsion: string;
   source?: Source; // "companion" para clãs do Guia Suplementar; ausente = Livro Básico
+  baneVariant?: string; // Bane alternativo do V5 Players Guide (p.56), opcional
 };
 
 const CLANS: Record<Clan, ClanInfo> = {
@@ -142,8 +143,27 @@ const CLANS: Record<Clan, ClanInfo> = {
   },
 };
 
+// Banes alternativos do V5 Players Guide (p.56) — trocáveis pelo Bane padrão à mesa.
+// "Gravidade da Perdição" = Bane Severity.
+const BANE_VARIANTS: Partial<Record<Clan, string>> = {
+  BRUJAH: "Violência: num crítico desastroso em QUALQUER teste de perícia, você causa dano (físico ou mental) igual à Gravidade da Perdição ao alvo da interação — Agravado, ou Superficial se gastar 1 de Força de Vontade.",
+  GANGREL: "Instintos de Sobrevivência: −(Gravidade da Perdição) dados em qualquer teste para resistir a frenesi de medo (nunca abaixo de 1 dado).",
+  MALKAVIAN: "Manifestações Anormais: ao usar uma Disciplina, mortais por perto se assustam — interações sociais com eles (exceto intimidação) sofrem −(Gravidade da Perdição) por uma cena; outros vampiros o reconhecem na hora como Membro.",
+  NOSFERATU: "Infestação: pragas os seguem; seu refúgio fica infestado, impondo −(2 + Gravidade da Perdição) a testes de concentração e sociais no local (−Gravidade em outros ambientes fechados). Controlar as pragas com Animalismo sofre −Gravidade. Nesta variante, você não é necessariamente deformado.",
+  TOREADOR: "Empatia Agonizante: ao ferir um mortal ao se alimentar, você sofre dano semelhante (em geral Agravado), até a Gravidade da Perdição, como hemorragia interna/hematomas no mesmo ponto da mordida.",
+  TREMERE: "Sangue Roubado: um Surto de Sangue exige Rouse Checks iguais à Gravidade da Perdição; se isso levar a Fome a 5+, escolha recuar do Surto ou executá-lo e ir direto para Fome 5.",
+  VENTRUE: "Hierarquia: −(Gravidade da Perdição) em Disciplinas usadas contra um vampiro de geração MENOR; e é preciso gastar Força de Vontade igual à Gravidade para atacá-lo diretamente.",
+  BANU_HAQIM: "Sangue Nocivo: seu vitae é veneno para mortais — quem bebe sofre dano Agravado igual à Gravidade da Perdição por Rouse Check ingerido, e seu sangue não cura mortais. (Ghouls Banu Haqim são raríssimos.)",
+  HECATA: "Decomposição: sua presença apodrece o que está por perto (refúgios decaem, plantas murcham, mortais adoecem). Você carrega pontos extras de Defeitos iguais à Gravidade da Perdição entre Lacaios, Refúgio e Recursos.",
+  LASOMBRA: "Insensibilidade: em rolagens de Remorso, subtraia dados iguais à Gravidade da Perdição (nunca abaixo de 1 dado).",
+  MINISTRY: "Sangue Frio: só usa Rubor da Vida se tiver se alimentado de um vessel vivo há pouco, e isso custa Rouse Checks iguais à Gravidade da Perdição (em vez de um).",
+  RAVNOS: "Nome de Não-Nascença: quem diz o seu verdadeiro nome de batismo na sua cara ganha +(Gravidade da Perdição) para resistir às suas Disciplinas, e você sofre −Gravidade para resistir aos poderes sobrenaturais dessa pessoa.",
+  SALUBRI: "Ascetismo: com Fome abaixo de 3, você sofre −(Gravidade da Perdição) nas paradas de Disciplina (além do terceiro olho).",
+  TZIMISCE: "Cortesia Amaldiçoada: entrar num lar ou refúgio alheio sem convite causa aflição severa — gaste Força de Vontade igual à Gravidade da Perdição e sofra −Gravidade nas Disciplinas durante a estadia. Quem usa este Bane não pode ter o Defeito Bloqueio Folclórico.",
+};
+
 export function clans(): ClanInfo[] {
-  return Object.values(CLANS);
+  return Object.values(CLANS).map((c) => ({ ...c, baneVariant: BANE_VARIANTS[c.clan] }));
 }
 
 export function clan(c: Clan): ClanInfo {
