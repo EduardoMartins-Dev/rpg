@@ -25,6 +25,7 @@ export type ClanInfo = {
   compulsion: string;
   source?: Source; // "companion" para clãs do Guia Suplementar; ausente = Livro Básico
   baneVariant?: string; // Bane alternativo do V5 Players Guide (p.56), opcional
+  archetypes?: { name: string; desc: string }[]; // Arquétipos de conceito (V5 Players Guide)
 };
 
 const CLANS: Record<Clan, ClanInfo> = {
@@ -162,8 +163,54 @@ const BANE_VARIANTS: Partial<Record<Clan, string>> = {
   TZIMISCE: "Cortesia Amaldiçoada: entrar num lar ou refúgio alheio sem convite causa aflição severa — gaste Força de Vontade igual à Gravidade da Perdição e sofra −Gravidade nas Disciplinas durante a estadia. Quem usa este Bane não pode ter o Defeito Bloqueio Folclórico.",
 };
 
+// Arquétipos de conceito por clã (V5 Players Guide) — sugestões de personagem, sem regra.
+const ARCHETYPES: Partial<Record<Clan, { name: string; desc: string }[]>> = {
+  BANU_HAQIM: [
+    { name: "Executor", desc: "Traz a Morte Final a quem violou irremediavelmente as leis dos Membros; com respaldo, aceita até contratos não sancionados quando concorda com a causa." },
+    { name: "Anfitrião Charmoso", desc: "Mantém um jogo de cartas num hotel de luxo — um quase-Elísio para Membros e mortais —, favorecendo com convites quem lhe convém." },
+    { name: "Líder Sindical", desc: "Sabe quando levar às ruas e quando recuar; junta apoiadores em torno de mudança, equilibrando isso com o que a sociedade Membro espera dele." },
+    { name: "Arquiteto Esotérico", desc: "Constrói coisas duradouras — refúgios e falsas covas pela cidade que guardam Membros em torpor; a questão é quem ele decide enterrar." },
+  ],
+  HECATA: [
+    { name: "Reanimador", desc: "Traz cadáveres de volta a falar (ou dançar) para você — descobre o que o morto sabia, sem julgamentos; só deixe o corpo com ele no fim." },
+    { name: "Perito Forense", desc: "Usa a expertise de cena de crime para alterar provas e forjar narrativas de morte que protegem a coterie, dividido entre os jovens Membros e a família macabra." },
+    { name: "Necromante Natural", desc: "Descobriu talento genuíno para magia da morte (seances, exorcismos, ocultismo) e foi mais chantageado que Abraçado para a Hecata; tem planos próprios." },
+    { name: "Banqueiro Inescrupuloso", desc: "Scion Giovanni/Dunsirn, atua como parte neutra para 'investidores' Membros em negócios ilícitos — inclusive guardar sangue e Membros em torpor." },
+  ],
+  LASOMBRA: [
+    { name: "Mentor", desc: "Transformou o mínimo aceno de um Príncipe num dos territórios de caça mais prestigiados; forma protegidos e acumula favores e segredos." },
+    { name: "Provocador", desc: "Enganou o próprio senhor e virou isca de caçadores por encomenda: planta provas e atrai a Segunda Inquisição contra os alvos de quem o contrata." },
+    { name: "Cronista da Moda", desc: "Transforma histórias de anciães (que esquecem o próprio passado) em memórias tangíveis — e assim recolhe os segredos deles." },
+    { name: "Valete", desc: "A serviço de um aristocrata tolo, circula invisível entre 'a criadagem', colhendo segredos da alta sociedade que ninguém percebe." },
+  ],
+  MINISTRY: [
+    { name: "Curandeiro da Fé", desc: "Constrói confiança pela fé e pela palavra; onde antes pregava contra o pecado, agora prega contra a Besta, e a Máscara religiosa lhe rende Status." },
+    { name: "Fraude Vitalícia", desc: "Vigaristas e charlatães acham lugar no Ministério: nome falso, contratos furados e a lábia de sempre — agora vendendo 'alívio da culpa' de cidade em cidade." },
+    { name: "Porta-Voz do Divino", desc: "Ouvia a voz de Deus antes do Abraço; agora, entre a Besta, o Sangue e as ressonâncias das vítimas, crê-se um canal de algo maior que a vida ou a morte." },
+    { name: "Ator Coadjuvante", desc: "Uma carreira de TV diurna e papéis pequenos lhe dão um ar de familiaridade — uma boa fachada para o culto se misturar aos semi-famosos." },
+  ],
+  RAVNOS: [
+    { name: "Motoboy da Meia-Noite", desc: "Quando a entrega precisa chegar inteira, na hora e na calada, é ele; conhece as rotas na guerra de seitas, quem subornar e onde se esconder — acima de tudo, tem opções." },
+    { name: "Operativo de Aluguel", desc: "Raro entre os Rogues: discreto, profissional e confiável. Cumpre a missão (espionagem, diplomacia ou assassinato), recebe e some — útil demais para virar inimigo." },
+    { name: "Agente de Viagens", desc: "Toca uma agência discreta com contatos pelo mundo: leva quem combusta ao sol e é caçado por inteligência a qualquer canto — o cliente pode chegar um pouco diferente." },
+    { name: "Antiquário", desc: "Faro para a história e razões próprias para desenterrar artefatos esquecidos — inclusive relíquias de interesse dos Membros; se vale achar, ele acha e desenterra." },
+  ],
+  SALUBRI: [
+    { name: "Buscador da Verdade", desc: "Certo de que há um sentido mais profundo em tudo, dedica a não-vida a uma grande busca: estuda o próprio corpo (e o terceiro olho) e mata a Besta atrás da Golconda." },
+    { name: "Curandeiro Relutante", desc: "Nasceu para curar e o Abraço lhe deu novas ferramentas — mas, arrancado da vida que julgava odiar, cura à força, por dever e pela Compulsão empática." },
+    { name: "Monstro Contra Monstros", desc: "Ressentido com a própria condição, trabalha contra a sociedade Membro: informa à polícia mortal e sabota a alimentação de outros predadores — um jogo perigosíssimo." },
+    { name: "Espião de Aluguel", desc: "Esconder o olho (e o sangue que escorre dele) exige tanta disciplina que ele vive disfarçado — o que o torna candidato confiável para tarefas incógnitas, por um bom preço." },
+  ],
+  TZIMISCE: [
+    { name: "Senhorio", desc: "Senhores dos seus domínios desde sempre; hoje controlam cortiços ou arranha-céus da moda e sangram os inquilinos como sangram as vítimas — tudo é extensão da sua posse." },
+    { name: "Líder de Gangue", desc: "Menos gangue e mais forma de garantir que todos se protejam: mostra que quem a sociedade descartou pode simplesmente tomar o que quer (nem que seja num cartel)." },
+    { name: "Rancoroso", desc: "Desde que reivindicam domínio, guerreiam contra quem o cobiça — sobretudo Tremere, Gangrel e Nosferatu; cada noite cobram alguma migalha de vingança fria." },
+    { name: "Comandante das Forças Especiais", desc: "Sem um domínio de terra tradicional, tem o respeito quase fanático da sua unidade; treina as tropas para transformar uma insurreição em reivindicação de domínio." },
+  ],
+};
+
 export function clans(): ClanInfo[] {
-  return Object.values(CLANS).map((c) => ({ ...c, baneVariant: BANE_VARIANTS[c.clan] }));
+  return Object.values(CLANS).map((c) => ({ ...c, baneVariant: BANE_VARIANTS[c.clan], archetypes: ARCHETYPES[c.clan] }));
 }
 
 export function clan(c: Clan): ClanInfo {

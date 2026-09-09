@@ -290,6 +290,18 @@ export function DynamicSheet({
                       </div>
                     )}
                     <ClanTrait kind="compulsion" text={detailClan.compulsion} />
+                    {detailClan.archetypes && detailClan.archetypes.length > 0 && (
+                      <div style={{ marginTop: 10 }}>
+                        <span className="kv-label">Arquétipos <SourceBadge source="players_guide" /> <span className="muted" style={{ fontSize: 11 }}>(passe o mouse)</span></span>
+                        <div className="chips" style={{ marginTop: 6 }}>
+                          {detailClan.archetypes.map((a) => (
+                            <HoverTip key={a.name} desc={a.desc} title={a.name}>
+                              <span className="badge" style={{ cursor: "help" }}>{a.name}</span>
+                            </HoverTip>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </>

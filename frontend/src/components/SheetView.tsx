@@ -129,6 +129,18 @@ export function SheetView({ schema, sheet, catalog }: {
             </div>
           )}
           <ClanTrait kind="compulsion" text={clan.compulsion} />
+          {clan.archetypes && clan.archetypes.length > 0 && (
+            <div style={{ marginTop: 10 }}>
+              <span className="kv-label">Arquétipos <SourceBadge source="players_guide" /></span>
+              <div className="chips" style={{ marginTop: 6 }}>
+                {clan.archetypes.map((a) => (
+                  <HoverTip key={a.name} desc={a.desc} title={a.name}>
+                    <span className="badge" style={{ cursor: "help" }}>{a.name}</span>
+                  </HoverTip>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 

@@ -224,6 +224,7 @@ export interface ClanView {
   disciplines: string[]; bane: string; compulsion: string;
   source?: "base" | "companion" | "players_guide";
   baneVariant?: string;
+  archetypes?: { name: string; desc: string }[];
 }
 export interface AbilityGroup { category: string; abilities: string[]; }
 export interface BloodPotencyView {
