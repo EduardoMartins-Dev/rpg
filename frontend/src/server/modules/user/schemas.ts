@@ -10,3 +10,7 @@ export const createUserSchema = z.object({
 export const setAdminSchema = z.object({
   admin: z.boolean(),
 });
+
+export const resetPasswordSchema = z.object({
+  password: z.string().min(8, "size must be between 8 and 255").max(255, "size must be between 8 and 255"),
+});

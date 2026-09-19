@@ -51,6 +51,18 @@ export async function setAdmin(targetId: string, requesterId: string, admin: boo
   return toView(updated);
 }
 
+/** Redefine a senha de um usuário (ação de admin). Grava um hash bcrypt compatível
+ *  com o login; sessões/tokens já emitidos seguem válidos até expirar. */
+export async function resetPassword(targetId: string, newPassword: string): Promise<AdminUserView> {
+  const [target] = await db.select().from(users).where(eq(users.id, targetId)).limit(1);
+  if (!target) {
+    throw ApiError.notFound("user not found");
+  }
+  const passwordHash = await hashPassword(newPassword);
+  const [updated] = await db.update(users).set({ passwordHash }).where(eq(users.id, targetId)).returning();
+  return toView(updated);
+}
+
 export async function deleteUser(targetId: string, requesterId: string): Promise<void> {
   const [target] = await db.select().from(users).where(eq(users.id, targetId)).limit(1);
   if (!target) {

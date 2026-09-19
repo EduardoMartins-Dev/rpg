@@ -128,6 +128,19 @@ export default function AdminPage() {
     }
   }
 
+  async function resetUserPassword(u: AdminUser) {
+    setError(null); setMsg(null);
+    const pass = prompt(`Nova senha para ${u.displayName} (${u.email}) — mínimo 8 caracteres:`);
+    if (pass == null) return; // cancelou
+    if (pass.length < 8) { setError("A nova senha precisa ter pelo menos 8 caracteres."); return; }
+    try {
+      await api.put(`/admin/users/${u.id}/password`, { password: pass });
+      setMsg(`Senha de ${u.displayName} redefinida. Avise a nova senha ao usuário.`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "erro ao redefinir senha");
+    }
+  }
+
   async function deleteUser(u: AdminUser) {
     setError(null); setMsg(null);
     if (!confirm(`Excluir a conta de ${u.displayName} (${u.email})? Ação permanente.`)) return;
@@ -329,6 +342,10 @@ export default function AdminPage() {
                   <td className="muted">{u.email}</td>
                   <td><span className={`badge ${u.admin ? "role-MASTER" : ""}`}>{u.admin ? "Admin" : "Usuário"}</span></td>
                   <td style={{ textAlign: "right", paddingRight: 20, whiteSpace: "nowrap" }}>
+                    <button className="secondary" data-testid={`user-reset-password-${u.id}`} onClick={() => resetUserPassword(u)}
+                      style={{ padding: "6px 10px", fontSize: 13, marginRight: 8 }}>
+                      Resetar senha
+                    </button>
                     <button className="secondary" data-testid={`user-toggle-admin-${u.id}`} onClick={() => toggleAdmin(u)}
                       style={{ padding: "6px 10px", fontSize: 13, marginRight: 8 }}>
                       {u.admin ? "Rebaixar" : "Tornar admin"}
