@@ -39,3 +39,6 @@ corpus/
 *.pdf
 corpus-en/
 corpus-companion/
+
+# Doc de continuidade/ops — fica só local (repo é público; descreve postura de segurança)
+CONTEXTO-PROJETO.md
