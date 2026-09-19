@@ -199,7 +199,7 @@ export interface SendMessageResponse { conversationId: string; title: string; an
 // --- anotações da campanha (player escreve; mestre vê todas) -----------------
 export interface CampaignNote {
   id: string; authorId: string; authorName: string; folderId: string | null; title: string | null;
-  body: string; canEdit: boolean; createdAt: string | null; updatedAt: string | null;
+  body: string; imageUrl: string | null; canEdit: boolean; createdAt: string | null; updatedAt: string | null;
 }
 
 // --- mural da campanha (cards livres do mestre) ------------------------------

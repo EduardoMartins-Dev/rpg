@@ -12,6 +12,7 @@ export type NoteResponse = {
   folderId: string | null;
   title: string | null;
   body: string;
+  imageUrl: string | null;
   canEdit: boolean;
   createdAt: string;
   updatedAt: string;
@@ -43,6 +44,7 @@ function toResponse(n: typeof campaignNotes.$inferSelect, authorName: string | u
     folderId: n.folderId,
     title: n.title,
     body: n.body,
+    imageUrl: n.imageUrl,
     canEdit,
     createdAt: n.createdAt.toISOString(),
     updatedAt: n.updatedAt.toISOString(),
@@ -82,7 +84,7 @@ export async function create(campaignId: string, userId: string, master: boolean
   await assertFolder(campaignId, req.folderId);
   const [n] = await db
     .insert(campaignNotes)
-    .values({ campaignId, authorId: userId, folderId: req.folderId ?? null, title: trim(req.title), body: req.body ?? "" })
+    .values({ campaignId, authorId: userId, folderId: req.folderId ?? null, title: trim(req.title), body: req.body ?? "", imageUrl: trim(req.imageUrl) })
     .returning();
   const [author] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
   return toResponse(n, author?.displayName, userId, master);
@@ -97,6 +99,7 @@ export async function update(campaignId: string, noteId: string, userId: string,
     .set({
       title: trim(req.title),
       body: req.body ?? "",
+      imageUrl: trim(req.imageUrl),
       updatedAt: new Date(),
       ...(req.folderId !== undefined ? { folderId: req.folderId } : {}),
     })

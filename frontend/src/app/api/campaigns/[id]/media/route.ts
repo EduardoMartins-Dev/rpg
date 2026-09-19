@@ -1,14 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { ApiError, withRoute } from "@/server/http/errors";
-import { requireAuth, requireCampaignRole } from "@/server/http/guards";
+import { requireAuth, requireCampaignMember } from "@/server/http/guards";
 import { MAX_IMAGE_BYTES, saveImage } from "@/server/modules/board/media";
 
-/** Upload de imagem do dispositivo para o mural — só o MESTRE publica no mural. */
+/**
+ * Upload de imagem do dispositivo para a mesa. Qualquer membro da campanha pode enviar:
+ * o mestre usa no mural (a criação de card do mural continua sendo só do mestre), e os
+ * jogadores anexam imagens às próprias anotações. A mídia fica atrelada à campanha.
+ */
 export async function POST(req: NextRequest, ctx: RouteContext<"/api/campaigns/[id]/media">) {
   return withRoute(async () => {
     const principal = await requireAuth(req);
     const { id } = await ctx.params;
-    await requireCampaignRole(id, principal.userId, "MASTER");
+    await requireCampaignMember(id, principal.userId);
 
     const form = await req.formData();
     const file = form.get("file");

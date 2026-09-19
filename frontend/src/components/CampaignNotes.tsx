@@ -2,9 +2,12 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { api, type CampaignNote, type Folder } from "@/lib/api";
+import { AuthImage } from "@/components/AuthImage";
+import { ImageField } from "@/components/ImageField";
+import { Lightbox } from "@/components/Lightbox";
 
-type Draft = { title: string; body: string };
-const EMPTY: Draft = { title: "", body: "" };
+type Draft = { title: string; body: string; imageUrl: string };
+const EMPTY: Draft = { title: "", body: "", imageUrl: "" };
 
 /** Caminho da raiz até a pasta `id` (para a trilha). */
 function pathTo(folders: Folder[], id: string | null): Folder[] {
@@ -37,6 +40,7 @@ export function CampaignNotes({ campaignId, isMaster }: { campaignId: string; is
   const [fMenuFor, setFMenuFor] = useState<string | null>(null); // menu ⋯ de uma pasta
   const [dragId, setDragId] = useState<string | null>(null);     // nota sendo arrastada
   const [dropOn, setDropOn] = useState<string | null>(null);     // alvo sob o cursor
+  const [zoom, setZoom] = useState<{ src: string; alt: string } | null>(null); // imagem ampliada
 
   const load = useCallback(async () => {
     setError(null);
@@ -58,7 +62,7 @@ export function CampaignNotes({ campaignId, isMaster }: { campaignId: string; is
     return Array.from(m, ([id, name]) => ({ id, name }));
   }, [notes]);
 
-  const empty = (d: Draft) => !d.title.trim() && !d.body.trim();
+  const empty = (d: Draft) => !d.title.trim() && !d.body.trim() && !d.imageUrl.trim();
 
   const subfolders = folders.filter((f) => (f.parentId ?? null) === current);
   const crumbs = pathTo(folders, current);
@@ -81,7 +85,7 @@ export function CampaignNotes({ campaignId, isMaster }: { campaignId: string; is
 
   function startEdit(n: CampaignNote) {
     setEditing(n.id);
-    setEditDraft({ title: n.title ?? "", body: n.body ?? "" });
+    setEditDraft({ title: n.title ?? "", body: n.body ?? "", imageUrl: n.imageUrl ?? "" });
   }
 
   async function saveEdit(n: CampaignNote) {
@@ -103,7 +107,7 @@ export function CampaignNotes({ campaignId, isMaster }: { campaignId: string; is
   async function moveNote(n: CampaignNote, folderId: string | null) {
     setError(null);
     try {
-      await api.put(`/campaigns/${campaignId}/notes/${n.id}`, { title: n.title, body: n.body, folderId });
+      await api.put(`/campaigns/${campaignId}/notes/${n.id}`, { title: n.title, body: n.body, imageUrl: n.imageUrl, folderId });
       await load();
     } catch (err) { setError(err instanceof Error ? err.message : "erro ao mover anotação"); }
   }
@@ -199,6 +203,8 @@ export function CampaignNotes({ campaignId, isMaster }: { campaignId: string; is
             onChange={(e) => setDraft({ ...draft, title: e.target.value })} />
           <textarea data-testid="note-body" value={draft.body} placeholder="Escreva sua anotação…" rows={5}
             onChange={(e) => setDraft({ ...draft, body: e.target.value })} style={{ resize: "vertical" }} />
+          <ImageField campaignId={campaignId} value={draft.imageUrl}
+            onChange={(url) => setDraft({ ...draft, imageUrl: url })} onError={setError} testid="note-image" />
           <div style={{ display: "flex", gap: 8 }}>
             <button type="submit" data-testid="note-save" disabled={empty(draft)}>Salvar em “{crumbs.length ? crumbs[crumbs.length - 1].name : "Anotações"}”</button>
             <button type="button" className="secondary" onClick={() => { setCreating(false); setDraft(EMPTY); }}>Cancelar</button>
@@ -256,6 +262,8 @@ export function CampaignNotes({ campaignId, isMaster }: { campaignId: string; is
                   onChange={(e) => setEditDraft({ ...editDraft, title: e.target.value })} />
                 <textarea value={editDraft.body} placeholder="Anotação" rows={5} style={{ resize: "vertical" }}
                   onChange={(e) => setEditDraft({ ...editDraft, body: e.target.value })} />
+                <ImageField campaignId={campaignId} value={editDraft.imageUrl}
+                  onChange={(url) => setEditDraft({ ...editDraft, imageUrl: url })} onError={setError} testid={`note-image-edit-${n.id}`} />
                 <div style={{ display: "flex", gap: 8 }}>
                   <button onClick={() => saveEdit(n)} disabled={empty(editDraft)}>Salvar</button>
                   <button className="secondary" onClick={() => setEditing(null)}>Cancelar</button>
@@ -268,6 +276,14 @@ export function CampaignNotes({ campaignId, isMaster }: { campaignId: string; is
                   {isMaster && <span className="badge" data-testid="note-author">{n.authorName}</span>}
                 </div>
                 <p className="note-card__body">{n.body || <span className="muted">—</span>}</p>
+                {n.imageUrl && (
+                  <button type="button" className="board-card-imgbtn" title="Clique para ampliar"
+                    aria-label={`Ampliar imagem${n.title ? `: ${n.title}` : ""}`} data-testid={`note-zoom-${n.id}`}
+                    onClick={() => setZoom({ src: n.imageUrl!, alt: n.title ?? "Imagem da anotação" })}>
+                    <AuthImage src={n.imageUrl} alt={n.title ?? ""} className="board-card-img" />
+                    <span className="board-card-zoomhint" aria-hidden>🔍</span>
+                  </button>
+                )}
                 {n.canEdit && (
                   <div className="board-menu-wrap" onClick={(e) => e.stopPropagation()}>
                     <button className="board-menu-btn" aria-label="Opções da anotação" data-testid={`note-menu-${n.id}`}
@@ -305,6 +321,8 @@ export function CampaignNotes({ campaignId, isMaster }: { campaignId: string; is
         </p>
       )}
       {error && <p className="error" data-testid="notes-error" style={{ marginTop: 14 }}>⚠ {error}</p>}
+
+      {zoom && <Lightbox src={zoom.src} alt={zoom.alt} onClose={() => setZoom(null)} />}
     </div>
   );
 }

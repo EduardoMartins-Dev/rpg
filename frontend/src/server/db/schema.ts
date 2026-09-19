@@ -306,6 +306,8 @@ export const campaignNotes = pgTable(
     folderId: uuid("folder_id").references(() => campaignFolders.id, { onDelete: "set null" }),
     title: varchar("title", { length: 255 }),
     body: text("body").notNull().default(""),
+    // Imagem opcional anexada à anotação (mesma mídia do mural: /api/campaigns/{id}/media/{mediaId}).
+    imageUrl: text("image_url"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().default(sql`now()`),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().default(sql`now()`),
   },
