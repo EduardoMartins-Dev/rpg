@@ -23,7 +23,24 @@ function Err($m){ Write-Host $m -ForegroundColor Red }
 function ChatBody($txt){ @{ model=$model; messages=@(@{role="user";content=$txt}); stream=$false; options=@{ num_ctx=16384 } } | ConvertTo-Json -Depth 5 }
 
 if (-not (Test-Path $ollama)) { Err "Ollama nao encontrado em $ollama"; Read-Host "Enter para sair"; exit 1 }
-if (-not (Test-Path $ngrok))  { $c=(Get-Command ngrok -ErrorAction SilentlyContinue).Source; if($c){$ngrok=$c} else { Err "ngrok nao encontrado"; Read-Host "Enter para sair"; exit 1 } }
+
+# Resolve o ngrok mesmo que o winget mude o caminho ou o binario suma num upgrade:
+# 1) caminho fixo do pacote  2) shim do winget no PATH  3) Get-Command  4) .old orfao de upgrade interrompido
+if (-not (Test-Path $ngrok)) {
+  $cand = @(
+    (Join-Path $env:LOCALAPPDATA "Microsoft\WinGet\Links\ngrok.exe"),
+    (Get-Command ngrok -ErrorAction SilentlyContinue).Source,
+    (Join-Path $env:LOCALAPPDATA "Microsoft\WinGet\Packages\Ngrok.Ngrok_Microsoft.Winget.Source_8wekyb3d8bbwe\.ngrok.exe.old")
+  ) | Where-Object { $_ -and (Test-Path $_) } | Select-Object -First 1
+  if ($cand) { $ngrok = $cand } else { Err "ngrok nao encontrado. Repare com:  winget install --id Ngrok.Ngrok --force"; Read-Host "Enter para sair"; exit 1 }
+}
+
+# O flag da URL fixa mudou de nome entre versoes do ngrok:
+#   >= 3.5  usa  --url=https://<host>     (URL completa)
+#   <  3.5  usa  --domain=<host>          (host puro, sem https://)
+# O winget hoje entrega o 3.3.1, entao detectamos o que o binario aceita.
+$domainHost = $domain -replace '^https?://',''
+if (& $ngrok http --help 2>&1 | Select-String -Quiet -- '--url') { $urlArg = "--url=$domain" } else { $urlArg = "--domain=$domainHost" }
 
 # 1) Ollama no ar?
 Info "[1/4] Verificando Ollama..."
@@ -39,7 +56,7 @@ catch { Warn "      aviso: nao pre-carregou agora ($($_.Exception.Message)); seg
 Info "[3/4] Abrindo tunel ngrok em $domain ..."
 Get-Process ngrok -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
 if (Test-Path $log) { Remove-Item $log -Force -ErrorAction SilentlyContinue }
-$ng = Start-Process $ngrok -ArgumentList "http","11434","--url=$domain","--host-header=localhost:11434","--log=stdout","--log-level=info" -RedirectStandardOutput $log -WindowStyle Hidden -PassThru
+$ng = Start-Process $ngrok -ArgumentList "http","11434",$urlArg,"--host-header=localhost:11434","--log=stdout","--log-level=info" -RedirectStandardOutput $log -WindowStyle Hidden -PassThru
 
 # 4) Confirma prontidao PELA URL PUBLICA (o que a Vercel enxerga)
 Info "[4/4] Confirmando a URL publica (ate ~40s)..."
