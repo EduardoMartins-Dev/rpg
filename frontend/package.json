@@ -13,6 +13,7 @@
     "db:migrate": "drizzle-kit migrate",
     "db:seed": "tsx --env-file=.env.local scripts/dev-seed.ts",
     "db:bootstrap-admin": "tsx --env-file=.env.local scripts/prod-bootstrap.ts",
+    "db:reset-password": "tsx --env-file=.env.local scripts/reset-password.ts",
     "ingest": "tsx --env-file=.env.local scripts/ingest.ts"
   },
   "dependencies": {
